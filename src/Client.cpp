@@ -68,18 +68,52 @@ void Client::onChannelCallback(const std::string &audio_track_id, const float *d
   // Send to webRTC
   connection_service_.broadcast(audio_track_id, data, frame_count);
 }
-void Client::onPlaybackCallback(float *data[], std::size_t num_output_channels, std::size_t frame_count) {
+void Client::onPlaybackCallback(float *data[], std::size_t num_output_channels, const std::size_t frame_count) {
+  //const size = frame_count;
+  float left[frame_count];
+  float right[frame_count];
+  memset(left, 0, frame_count * sizeof(float));
+  memset(right, 0, frame_count * sizeof(float));
+
   for (const auto &item: channels_) {
     auto gain = audio_mixer_.getGain(item.first);
     for (int frame = 0; frame < frame_count; frame++) {
+      // Read next float from channel
       float f = item.second->get();
+      // And apply gain
       if (gain) {
         f *= gain->second ? 0 : gain->first;
       }
-      for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
-        // Just mixdown to mono for now. TODO: Replace with logic (l,r when num_output_channels % 2 == 0, otherwise l/mono for all)
-        data[output_channel][frame] = f;
+
+      // Now mix with existing
+      left[frame] += f;
+      right[frame] += f;
+    }
+  }
+
+  if (num_output_channels % 2 == 0) {
+    // Use stereo for all
+    for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
+      // Just mixdown to mono for now. TODO: Replace with logic (l,r when num_output_channels % 2 == 0, otherwise l/mono for all)
+      if (output_channel % 2 == 0) {
+        memcpy(data[output_channel], &left, frame_count * sizeof(float));
+        /*for (int frame = 0; frame < frame_count; frame++) {
+          data[output_channel][frame] = left[frame];
+        }*/
+      } else {
+        memcpy(data[output_channel], &right, frame_count * sizeof(float));
+        /*for (int frame = 0; frame < frame_count; frame++) {
+          data[output_channel][frame] = right[frame];
+        }*/
       }
+    }
+  } else {
+    // Use mono for all
+    for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
+      memcpy(data[output_channel], &left, frame_count * sizeof(float));
+      /*for (int frame = 0; frame < frame_count; frame++) {
+        data[output_channel][frame] = right[frame];
+      }*/
     }
   }
 }
