@@ -31,9 +31,7 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       if (device.active) {
         auto local_stage_device_id = store->getStageDeviceId();
-        std::unique_lock lock(peer_connections_mutex_);
         createPeerConnection(device._id, *local_stage_device_id, client);
-        peer_connections_mutex_.unlock();
       }
     }
   });
@@ -48,15 +46,11 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
           auto item = peer_connections_[_id];
           if (is_active) {
             if (item) {
-              std::unique_lock lock(peer_connections_mutex_);
               createPeerConnection(_id, *local_stage_device_id, client);
-              peer_connections_mutex_.unlock();
             }
           } else {
             if (item) {
-              std::unique_lock lock(peer_connections_mutex_);
               closePeerConnection(_id);
-              peer_connections_mutex_.unlock();
             }
           }
         }
@@ -68,11 +62,8 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     assert(offer.to == *local_stage_device_id);
     assert(offer.from != *local_stage_device_id);
     if (!peer_connections_.count(offer.from)) {
-      std::unique_lock lock(peer_connections_mutex_);
       createPeerConnection(offer.from, offer.to, client);
-      peer_connections_mutex_.unlock();
     }
-    std::shared_lock lock(peer_connections_mutex_);
     assert(peer_connections_.at(offer.from));
     peer_connections_.at(offer.from)->setRemoteSessionDescription(offer.offer);
   });
@@ -81,7 +72,6 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
     if (peer_connections_.count(answer.from)) {
-      std::shared_lock lock(peer_connections_mutex_);
       assert(peer_connections_.at(answer.from));
       peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
     }
@@ -91,7 +81,6 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
     if (ice.iceCandidate && peer_connections_.count(ice.from)) {
-      std::shared_lock lock(peer_connections_mutex_);
       assert(peer_connections_.at(ice.from));
       peer_connections_[ice.from]->addRemoteIceCandidate(*ice.iceCandidate);
     }
@@ -116,14 +105,12 @@ void ConnectionService::onStageChanged(DigitalStage::Api::Client &client) {
               // Active
               if (peer_connections_.count(item._id) == 0) {
                 // But no connection yet
-                std::unique_lock lock(peer_connections_mutex_);
                 createPeerConnection(item._id, *local_stage_device_id, client);
               }
             } else {
               // Not active
               if (peer_connections_.count(item._id) != 0) {
                 // But connection is still alive
-                std::unique_lock lock(peer_connections_mutex_);
                 closePeerConnection(item._id);
               }
             }
@@ -136,6 +123,11 @@ void ConnectionService::onStageChanged(DigitalStage::Api::Client &client) {
 void ConnectionService::createPeerConnection(const std::string &stage_device_id,
                                              const std::string &local_stage_device_id,
                                              DigitalStage::Api::Client &client) {
+  std::unique_lock<std::mutex> lock(peer_connections_mutex_);
+  // And (double) check if the connection has not been created by a thread we had to probably wait for
+  if (peer_connections_.at(stage_device_id)) {
+    return;
+  }
   bool polite = local_stage_device_id.compare(stage_device_id) > 0;
   peer_connections_[stage_device_id] = std::make_shared<PeerConnection>(configuration_, polite);
   peer_connections_[stage_device_id]->onLocalIceCandidate = [local_stage_device_id, stage_device_id, &client](
@@ -168,11 +160,10 @@ void ConnectionService::createPeerConnection(const std::string &stage_device_id,
   };
 }
 void ConnectionService::closePeerConnection(const std::string &stage_device_id) {
+  std::unique_lock<std::mutex> lock(peer_connections_mutex_);
   peer_connections_.erase(stage_device_id);
-
 }
 void ConnectionService::broadcast(const std::string &audio_track_id, const std::byte *data, const std::size_t size) {
-  std::shared_lock lock(peer_connections_mutex_);
   for (const auto &item: peer_connections_) {
     if (item.second) {
       item.second->send(audio_track_id, data, size);

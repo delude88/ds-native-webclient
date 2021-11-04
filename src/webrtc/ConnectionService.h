@@ -17,7 +17,6 @@
 #include <plog/Log.h>
 #include <sigslot/signal.hpp>
 #include <mutex>
-#include <shared_mutex>
 
 class ConnectionService {
  public:
@@ -38,7 +37,8 @@ class ConnectionService {
   void closePeerConnection(const std::string &stage_device_id);
 
   std::unordered_map<std::string, std::shared_ptr<PeerConnection>> peer_connections_;
-  mutable std::shared_mutex peer_connections_mutex_;
+  std::mutex peer_connections_mutex_;
+
   rtc::Configuration configuration_;
 };
 
