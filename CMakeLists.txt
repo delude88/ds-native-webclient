@@ -32,12 +32,6 @@ if (APPLE)
 endif (APPLE)
 
 # Dependencies
-#  - RingBuffer
-add_subdirectory(include/ringbuffer)
-#  - HashMap
-#add_subdirectory(include/HashMap)
-#  - SPSCQueue
-#add_subdirectory(include/SPSCQueue)
 find_package(Threads REQUIRED)
 #  - libds
 add_subdirectory(include/libds)
