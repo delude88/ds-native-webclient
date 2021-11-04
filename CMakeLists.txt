@@ -70,6 +70,10 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.tpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.tpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.h

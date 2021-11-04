@@ -6,11 +6,15 @@
 #include "utils/conversion.h"
 
 Client::Client(DigitalStage::Api::Client &client)
-    : MiniAudioIO(client), connection_service_(client), output_buffer_(5000) {
+    : MiniAudioIO(client),
+      connection_service_(client),
+      audio_mixer_(client),
+      audio_renderer_(client),
+      output_buffer_(5000) {
   connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
-      channels_[audio_track_id] = std::make_shared<RingBuffer2<float>>(output_buffer_);
+      channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(output_buffer_);
       lock.unlock();
     }
     auto values_size = data.size() / 4;
@@ -51,7 +55,7 @@ void Client::onChannelCallback(const std::string &audio_track_id, const float *d
   // Write to channels
   if (channels_.count(audio_track_id) == 0) {
     std::unique_lock lock(channels_mutex_);
-    channels_[audio_track_id] = std::make_shared<RingBuffer2<float>>(output_buffer_);
+    channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(output_buffer_);
     lock.unlock();
   }
   std::shared_lock lock(channels_mutex_);
@@ -65,11 +69,13 @@ void Client::onChannelCallback(const std::string &audio_track_id, const float *d
   connection_service_.broadcast(audio_track_id, data, frame_count);
 }
 void Client::onPlaybackCallback(float *data[], std::size_t num_output_channels, std::size_t frame_count) {
-  for (int frame = 0; frame < frame_count; frame++) {
-    for (const auto &item: channels_) {
+  for (const auto &item: channels_) {
+    auto gain = audio_mixer_.getGain(item.first);
+    for (int frame = 0; frame < frame_count; frame++) {
       float f = item.second->get();
-      //TODO: Use item.first as auto_track_id and mix the values here down
-
+      if (gain) {
+        f *= gain->second ? 0 : gain->first;
+      }
       for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
         // Just mixdown to mono for now. TODO: Replace with logic (l,r when num_output_channels % 2 == 0, otherwise l/mono for all)
         data[output_channel][frame] = f;

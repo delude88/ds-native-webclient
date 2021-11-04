@@ -2,12 +2,13 @@
 // Created by Tobias Hegemann on 26.10.21.
 //
 
-#ifndef CLIENT_SRC_CLIENT_H_
-#define CLIENT_SRC_CLIENT_H_
+#pragma once
 
 #include <DigitalStage/Api/Client.h>
 #include "webrtc/ConnectionService.h"
 #include "audio/MiniAudioIO.h"
+#include "audio/AudioMixer.h"
+#include "audio/AudioRenderer.h"
 #include "utils/ringbuffer.h"
 #include <mutex>
 #include <shared_mutex>
@@ -24,9 +25,9 @@ class Client : public MiniAudioIO {
 
  private:
   std::atomic<unsigned int> output_buffer_;
-  std::map<std::string, std::shared_ptr<RingBuffer2<float>>> channels_;
+  std::map<std::string, std::shared_ptr<RingBuffer<float>>> channels_;
   std::shared_mutex channels_mutex_;
+  AudioMixer<float> audio_mixer_;
+  AudioRenderer<float> audio_renderer_;
   ConnectionService connection_service_;
 };
-
-#endif //CLIENT_SRC_CLIENT_H_

@@ -1,15 +1,13 @@
-#ifndef RINGBUFFER_CLASS
-#define RINGBUFFER_CLASS
+#pragma once
 
 #include <cstdio>
-
 #include <memory>
 #include <mutex>
 
 template<class T>
-class RingBuffer2 {
+class RingBuffer {
  public:
-  explicit RingBuffer2(size_t size) : buf_(std::unique_ptr<T[]>(new T[size])), max_size_(size) {
+  explicit RingBuffer(size_t size) : buf_(std::unique_ptr<T[]>(new T[size])), max_size_(size) {
   }
 
   inline void put(T item) {
@@ -83,5 +81,3 @@ class RingBuffer2 {
   const size_t max_size_;
   bool full_ = false;
 };
-
-#endif

@@ -16,3 +16,6 @@
 [submodule "include/rtaudio"]
 	path = include/rtaudio
 	url = https://github.com/thestk/rtaudio.git
+[submodule "include/3dti_AudioToolkit"]
+	path = include/3dti_AudioToolkit
+	url = https://github.com/3DTune-In/3dti_AudioToolkit.git
