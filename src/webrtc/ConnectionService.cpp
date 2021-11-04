@@ -64,16 +64,14 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     if (!peer_connections_.count(offer.from)) {
       createPeerConnection(offer.from, offer.to, client);
     }
-    assert(peer_connections_.at(offer.from));
-    peer_connections_.at(offer.from)->setRemoteSessionDescription(offer.offer);
+    peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   });
   client.p2pAnswer.connect([this](const P2PAnswer &answer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
     if (peer_connections_.count(answer.from)) {
-      assert(peer_connections_.at(answer.from));
-      peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
+      peer_connections_[answer.from]->setRemoteSessionDescription(answer.answer);
     }
   });
   client.iceCandidate.connect([this](const IceCandidate &ice, const DigitalStage::Api::Store *store) {
@@ -81,7 +79,6 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
     if (ice.iceCandidate && peer_connections_.count(ice.from)) {
-      assert(peer_connections_.at(ice.from));
       peer_connections_[ice.from]->addRemoteIceCandidate(*ice.iceCandidate);
     }
   });
@@ -125,7 +122,7 @@ void ConnectionService::createPeerConnection(const std::string &stage_device_id,
                                              DigitalStage::Api::Client &client) {
   std::unique_lock<std::mutex> lock(peer_connections_mutex_);
   // And (double) check if the connection has not been created by a thread we had to probably wait for
-  if (peer_connections_.at(stage_device_id)) {
+  if (peer_connections_.count(stage_device_id)) {
     return;
   }
   bool polite = local_stage_device_id.compare(stage_device_id) > 0;
