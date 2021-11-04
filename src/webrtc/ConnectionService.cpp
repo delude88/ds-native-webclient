@@ -64,14 +64,14 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     if (!peer_connections_.count(offer.from)) {
       createPeerConnection(offer.from, offer.to, client);
     }
-    peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
+    peer_connections_.at(offer.from)->setRemoteSessionDescription(offer.offer);
   });
   client.p2pAnswer.connect([this](const P2PAnswer &answer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
     if (peer_connections_.count(answer.from)) {
-      peer_connections_[answer.from]->setRemoteSessionDescription(answer.answer);
+      peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
     }
   });
   client.iceCandidate.connect([this](const IceCandidate &ice, const DigitalStage::Api::Store *store) {
@@ -79,7 +79,7 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
     if (ice.iceCandidate && peer_connections_.count(ice.from)) {
-      peer_connections_[ice.from]->addRemoteIceCandidate(*ice.iceCandidate);
+      peer_connections_.at(ice.from)->addRemoteIceCandidate(*ice.iceCandidate);
     }
   });
 }
