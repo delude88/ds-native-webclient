@@ -30,6 +30,7 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       if (device.active) {
+        std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // WRITE
         auto local_stage_device_id = store->getStageDeviceId();
         createPeerConnection(device._id, *local_stage_device_id, client);
       }
@@ -42,6 +43,7 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
       auto local_stage_device_id = store->getStageDeviceId();
       if (_id != *local_stage_device_id) {
         if (update.contains("active")) {
+          std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
           bool is_active = update["active"];
           auto item = peer_connections_[_id];
           if (is_active) {
@@ -61,15 +63,18 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(offer.to == *local_stage_device_id);
     assert(offer.from != *local_stage_device_id);
+    std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
     if (!peer_connections_.count(offer.from)) {
       createPeerConnection(offer.from, offer.to, client);
     }
-    peer_connections_.at(offer.from)->setRemoteSessionDescription(offer.offer);
+    assert(peer_connections_[offer.from]);
+    peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   });
   client.p2pAnswer.connect([this](const P2PAnswer &answer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
+    std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
     if (peer_connections_.count(answer.from)) {
       peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
     }
@@ -78,6 +83,7 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
+    std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
     if (ice.iceCandidate && peer_connections_.count(ice.from)) {
       peer_connections_.at(ice.from)->addRemoteIceCandidate(*ice.iceCandidate);
     }
@@ -98,6 +104,7 @@ void ConnectionService::onStageChanged(DigitalStage::Api::Client &client) {
         auto stage_devices = store->stageDevices.getAll();
         for (const auto &item: stage_devices) {
           if (item._id != *local_stage_device_id) {
+            std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
             if (item.active) {
               // Active
               if (peer_connections_.count(item._id) == 0) {
@@ -120,7 +127,6 @@ void ConnectionService::onStageChanged(DigitalStage::Api::Client &client) {
 void ConnectionService::createPeerConnection(const std::string &stage_device_id,
                                              const std::string &local_stage_device_id,
                                              DigitalStage::Api::Client &client) {
-  std::unique_lock<std::mutex> lock(peer_connections_mutex_);
   // And (double) check if the connection has not been created by a thread we had to probably wait for
   if (peer_connections_.count(stage_device_id)) {
     return;
@@ -157,10 +163,10 @@ void ConnectionService::createPeerConnection(const std::string &stage_device_id,
   };
 }
 void ConnectionService::closePeerConnection(const std::string &stage_device_id) {
-  std::unique_lock<std::mutex> lock(peer_connections_mutex_);
   peer_connections_.erase(stage_device_id);
 }
 void ConnectionService::broadcast(const std::string &audio_track_id, const std::byte *data, const std::size_t size) {
+  std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_);
   for (const auto &item: peer_connections_) {
     if (item.second) {
       item.second->send(audio_track_id, data, size);
