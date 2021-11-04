@@ -1,0 +1,19 @@
+commit 6fe6db8a9df7fc58b7e77b3e4c84a4cb0eebdf9f
+Author: Tobias Hegemann <tobias.hegemann@googlemail.com>
+Date:   Fri Oct 22 13:42:35 2021 +0200
+
+    Omitted dllexport check
+
+diff --git a/rtc_base/system/rtc_export_template.h b/rtc_base/system/rtc_export_template.h
+index 4ac7043835..5fe950f678 100644
+--- a/rtc_base/system/rtc_export_template.h
++++ b/rtc_base/system/rtc_export_template.h
+@@ -185,7 +185,7 @@
+ 
+ RTC_EXPORT_TEMPLATE_TEST(DEFAULT, );  // NOLINT
+ RTC_EXPORT_TEMPLATE_TEST(DEFAULT, __attribute__((visibility("default"))));
+-RTC_EXPORT_TEMPLATE_TEST(MSVC_HACK, __declspec(dllexport));
++//RTC_EXPORT_TEMPLATE_TEST(MSVC_HACK, __declspec(dllexport));
+ RTC_EXPORT_TEMPLATE_TEST(DEFAULT, __declspec(dllimport));
+ 
+ #undef RTC_EXPORT_TEMPLATE_TEST

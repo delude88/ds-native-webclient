@@ -1,0 +1,18 @@
+[submodule "include/libds"]
+	path = include/libds
+	url = https://github.com/digital-stage/libds.git
+[submodule "include/miniaudio"]
+	path = include/miniaudio
+	url = https://github.com/mackron/miniaudio.git
+[submodule "include/libmediasoupclient"]
+	path = include/libmediasoupclient
+	url = https://github.com/versatica/libmediasoupclient.git
+[submodule "include/libdatachannel"]
+	path = include/libdatachannel
+	url = https://github.com/paullouisageneau/libdatachannel.git
+[submodule "include/libdeviceid"]
+	path = include/libdeviceid
+	url = https://github.com/delude88/libdeviceid.git
+[submodule "include/rtaudio"]
+	path = include/rtaudio
+	url = https://github.com/thestk/rtaudio.git
