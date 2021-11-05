@@ -15,9 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
-#include <HRTF/HRTFFactory.h>
 #include <HRTF/HRTFCereal.h>
-#include <BRIR/BRIRFactory.h>
 #include <BRIR/BRIRCereal.h>
 #include <BinauralSpatializer/3DTI_BinauralSpatializer.h>
 

@@ -8,26 +8,39 @@ template<typename T>
 AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client) : initialized_(false) {
   ERRORHANDLER3DTI.SetVerbosityMode(VERBOSITYMODE_ERRORSANDWARNINGS);
   ERRORHANDLER3DTI.SetErrorLogStream(&std::cout, true);
-  attachHandlers(client);
+  //attachHandlers(client);
 }
 
 template<typename T>
 void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
-  client.ready.connect([this](const DigitalStage::Api::Store *store) {
+  client.stageJoined.connect([this](const ID_TYPE &, const ID_TYPE &,
+                                    const DigitalStage::Api::Store *store) {
     auto output_sound_card = store->getOutputSoundCard();
-    init(output_sound_card->sampleRate, *store);
+    if (output_sound_card && store->getStageDeviceId()) {
+      init(output_sound_card->sampleRate, *store);
+    }
+  });
+  client.ready.connect([this](const DigitalStage::Api::Store *store) {
+    if (store->getStageDeviceId()) {
+      auto output_sound_card = store->getOutputSoundCard();
+      if (output_sound_card) {
+        init(output_sound_card->sampleRate, *store);
+      }
+    }
   });
   client.outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
                                                const DigitalStage::Api::Store *store) {
-    if (update.contains("sampleRate")) {
+    if (update.contains("sampleRate") && store->getStageDeviceId()) {
       auto output_sound_card = store->getOutputSoundCard();
       init(output_sound_card->sampleRate, *store);
     }
   });
   client.outputSoundCardSelected.connect([this](const std::optional<std::string> &,
                                                 const DigitalStage::Api::Store *store) {
-    auto output_sound_card = store->getOutputSoundCard();
-    init(output_sound_card->sampleRate, *store);
+    if (store->getStageDeviceId()) {
+      auto output_sound_card = store->getOutputSoundCard();
+      init(output_sound_card->sampleRate, *store);
+    }
   });
 }
 
@@ -38,10 +51,17 @@ void AudioRenderer<T>::init(int sample_rate, const DigitalStage::Api::Store &sto
   audioState.sampleRate = sample_rate;
   //TODO: audioState.bufferSize = buffer_size;
   core_.SetAudioState(audioState);
+
+  // Listener
   listener_ = core_.CreateListener();
+  listener_->DisableCustomizedITD();
   auto local_stage_device = store.getStageDevice();
   assert(local_stage_device);
   setListenerPosition(calculatePosition(*local_stage_device, store));
+  //TODO: The path is only valid for MacOS
+  HRTF::CreateFrom3dti("./../Resources/hrtf.3dti-hrtf", listener_);
+
+  // Other remote audio tracks
   for (const auto &audio_track: store.audioTracks.getAll()) {
     audio_tracks_[audio_track._id] = core_.CreateSingleSourceDSP();
     setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, store));

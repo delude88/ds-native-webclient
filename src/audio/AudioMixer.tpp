@@ -224,6 +224,7 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
   assert(stage_member);
   auto custom_stage_member_volume =
       store.getCustomStageMemberVolumeByStageMemberAndDevice(stage_member->_id, *local_device_id);
+
   // Get related group
   auto group = store.groups.get(stage_member->groupId);
   assert(group);
@@ -231,21 +232,16 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
 
   // Calculate volumes
   double volume = custom_audio_track_volume ? custom_audio_track_volume->volume : audio_track.volume;
-  std::cout << "audiotrack: " << volume << " using " << (custom_audio_track_volume ? "custom" : "default") << std::endl;
   volume *= custom_stage_device_volume ? custom_stage_device_volume->volume : stage_device->volume;
-  std::cout << "stage device: " <<  volume << " using " << (custom_stage_device_volume ? "custom" : "default") << std::endl;
   volume *= custom_stage_member_volume ? custom_stage_member_volume->volume : stage_member->volume;
-  std::cout << "stage member: "  << volume << " using " << (custom_stage_member_volume ? "custom" : "default") << std::endl;
   volume *= custom_group_volume ? custom_group_volume->volume : group->volume;
-  std::cout << "group: " << volume << " using " << (custom_group_volume ? "custom" : "default") << std::endl;
 
   bool muted = (custom_group_volume ? custom_group_volume->muted : group->muted) ||
       (custom_stage_member_volume ? custom_stage_member_volume->muted : stage_member->muted) ||
       (custom_stage_device_volume ? custom_stage_device_volume->muted : stage_device->muted) ||
       (custom_audio_track_volume ? custom_audio_track_volume->muted : audio_track.muted);
 
-  std::cout << "Got new volume for " << audio_track._id << ": " << volume << " " << (muted ? "(muted)" : "(unmuted)")
-            << std::endl;
+  PLOGD << "Got new volume for " << audio_track._id << ": " << volume << " " << (muted ? "(muted)" : "(unmuted)");
 
   std::pair<T, bool> pair = {volume, muted};
   onGainChanged(audio_track._id, pair);

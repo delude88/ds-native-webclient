@@ -58,9 +58,8 @@ if (NOT TARGET plog)
 endif ()
 #  - udp-discovery-cpp
 add_subdirectory(include/udp-discovery-cpp)
-#  - cereal (for hrtf lib)
-#add_subdirectory(include/cereal)
-include("3dtiAudioToolkit.cmake")
+#  - HRTF Engine
+add_subdirectory(include/3dti_AudioToolkit)
 
 # Configure artifact
 if (APPLE)
@@ -92,6 +91,8 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.cpp
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf
         )
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -159,16 +160,22 @@ if (APPLE)
             ${CORE_VIDEO}
             ${CORE_SERVICES}
             )
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-            BUNDLE True
-            MACOSX_BUNDLE_GUI_IDENTIFIER org.digital-stage.libds.Client
-            MACOSX_BUNDLE_BUNDLE_NAME Client
-            MACOSX_BUNDLE_COPYRIGHT MIT
-            MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
-            MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
-            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
-            )
 endif (APPLE)
+
+
+set(RESOURCE_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        BUNDLE True
+        MACOSX_BUNDLE_GUI_IDENTIFIER org.digital-stage.libds.Client
+        MACOSX_BUNDLE_BUNDLE_NAME Client
+        MACOSX_BUNDLE_COPYRIGHT MIT
+        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
+        RESOURCE "${RESOURCE_FILES}"
+        )
 
 #[[
 #  - libwebrtc

@@ -53,8 +53,8 @@ int main(int, char *[]) {
   // Use service discovery
   auto discovery = std::make_unique<ServiceDiscovery>(device_id, true);
 
-  auto auth_service = std::make_unique<RemoteAuthService>();
-  auth_service->start();
+  //auto auth_service = std::make_unique<RemoteAuthService>();
+  //auth_service->start();
 
   // Usually authenticate the user first
   auto token = authenticate_user(); //TODO: Remove

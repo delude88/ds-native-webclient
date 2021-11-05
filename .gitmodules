@@ -16,12 +16,6 @@
 [submodule "include/rtaudio"]
 	path = include/rtaudio
 	url = https://github.com/thestk/rtaudio.git
-[submodule "include/cereal"]
-	path = include/cereal
-	url = https://github.com/USCiLab/cereal.git
-[submodule "include/libsofa"]
-	path = include/libsofa
-	url = https://github.com/hoene/libsofa.git
 [submodule "include/udp-discovery-cpp"]
 	path = include/udp-discovery-cpp
 	url = https://github.com/truvorskameikin/udp-discovery-cpp

@@ -11,6 +11,7 @@
 #include <optional>
 #include <utility>
 #include <sigslot/signal.hpp>
+#include <plog/Log.h>
 
 template<class T>
 class AudioMixer {
