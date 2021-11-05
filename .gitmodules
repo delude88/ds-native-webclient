@@ -22,9 +22,6 @@
 [submodule "include/libsofa"]
 	path = include/libsofa
 	url = https://github.com/hoene/libsofa.git
-[submodule "include/3dti_AudioToolkit"]
-	path = include/3dti_AudioToolkit
-	url = https://github.com/delude88/3dti_AudioToolkit.git
 [submodule "include/udp-discovery-cpp"]
 	path = include/udp-discovery-cpp
 	url = https://github.com/truvorskameikin/udp-discovery-cpp
