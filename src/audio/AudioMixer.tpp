@@ -212,7 +212,6 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
   // Get this device ID
   auto local_device_id = store.getLocalDeviceId();
   assert(local_device_id);
-  std::cout << "Using device " << *local_device_id << std::endl;
   auto custom_audio_track_volume =
       store.getCustomAudioTrackVolumeByAudioTrackAndDevice(audio_track._id, *local_device_id);
   // Get related stage device
@@ -223,7 +222,6 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
   // Get related stage member
   auto stage_member = store.stageMembers.get(audio_track.stageMemberId);
   assert(stage_member);
-  std::cout << "stage member ID: " << stage_member->_id << " deviceID: " << *local_device_id << std::endl;
   auto custom_stage_member_volume =
       store.getCustomStageMemberVolumeByStageMemberAndDevice(stage_member->_id, *local_device_id);
   // Get related group

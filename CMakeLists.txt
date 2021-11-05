@@ -3,13 +3,20 @@ cmake_minimum_required(VERSION 3.8)
 project(client LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+if (NOT WIN32)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+endif ()
 set(CMAKE_PROJECT_VERSION "1.0.0")
+
+
+option(WITH_GUI "Build with graphical user interface" OFF)
 
 # Environment configuration
 add_compile_definitions(SIGNUP_URL="https://beta.digital-stage.org/account/signup")
 add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
+
 
 include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
@@ -20,6 +27,7 @@ else ()
     add_compile_definitions(LITTLE_ENDIAN)
     message(STATUS "LITTLE_ENDIAN")
 endif ()
+
 
 # Special macOS routines
 if (APPLE)
@@ -48,6 +56,10 @@ if (NOT TARGET plog)
     )
     FetchContent_MakeAvailable(plog)
 endif ()
+#  - udp-discovery-cpp
+add_subdirectory(include/udp-discovery-cpp)
+#  - cereal (for hrtf lib)
+add_subdirectory(include/cereal)
 
 
 # Configure artifact
@@ -58,14 +70,15 @@ else ()
 endif ()
 target_sources(${PROJECT_NAME}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Client.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/auth_cli.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthIO.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/conversion.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ringbuffer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/thread.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ServiceDiscovery.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
@@ -74,6 +87,7 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.tpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.tpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RingBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.h
@@ -82,6 +96,10 @@ target_sources(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
         PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/udp-discovery-cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/3dti_AudioToolkit/3dti_ResourceManager"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/3dti_AudioToolkit/3dti_ResourceManager/third_party_libraries"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/3dti_AudioToolkit/3dti_Toolkit"
         )
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
@@ -90,12 +108,30 @@ target_link_libraries(${PROJECT_NAME}
         LibDataChannel::LibDataChannel
         DeviceId::DeviceId
         plog
-        #Ringbuffer::Ringbuffer
         Threads::Threads
+        udp-discovery
+        cereal
         )
-if (NOT WIN32)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -mavx2 -msse2")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+if (WITH_GUI)
+    message(STATUS "Building with GUI")
+    find_package(wxWidgets REQUIRED COMPONENTS core base)
+    include(${wxWidgets_USE_FILE})
+    target_compile_definitions(${PROJECT_NAME}
+            PRIVATE
+            WITH_GUI)
+    target_sources(${PROJECT_NAME}
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
+            )
+    target_link_libraries(${PROJECT_NAME}
+            PRIVATE
+            ${wxWidgets_LIBRARIES})
+else ()
+    message(STATUS "Building headless")
+    target_sources(${PROJECT_NAME}
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/main_headless.cpp
+            )
 endif ()
 
 # Additions for macOS

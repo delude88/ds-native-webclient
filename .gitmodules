@@ -19,3 +19,9 @@
 [submodule "include/3dti_AudioToolkit"]
 	path = include/3dti_AudioToolkit
 	url = https://github.com/3DTune-In/3dti_AudioToolkit.git
+[submodule "include/libtins"]
+	path = include/libtins
+	url = https://github.com/mfontanini/libtins.git
+[submodule "include/cereal"]
+	path = include/cereal
+	url = https://github.com/USCiLab/cereal.git

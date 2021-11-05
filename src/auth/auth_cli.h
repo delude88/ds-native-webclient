@@ -1,30 +1,14 @@
 //
 // Created by Tobias Hegemann on 18.10.21.
 //
+#pragma once
+
 #include <iostream>
 #include <optional>
 #include <DigitalStage/Auth/AuthService.h>
+#include "AuthIO.h"
 
-static std::string read_token() {
-  std::ifstream file;
-  file.open("token");
-  if (file.is_open()) {
-    std::string line;
-    if (getline(file, line)) {
-      return line;
-    }
-  }
-  return "";
-}
-
-static void store_token(const std::string &token) {
-  std::ofstream file;
-  file.open("token");
-  file << token;
-  file.close();
-}
-
-static std::pair<std::string, std::string> sign_in() {
+std::pair<std::string, std::string> sign_in() {
   std::string email, password;
   std::cout << "Please enter your email: ";
   std::cin >> email;
@@ -33,10 +17,10 @@ static std::pair<std::string, std::string> sign_in() {
   return {email, password};
 }
 
-static std::string authenticate_user() {
+std::string authenticate_user() {
   auto service = new DigitalStage::Auth::AuthService(AUTH_URL);
   // Read last token
-  auto token = read_token();
+  auto token = AuthIO::readToken();
   if (!token.empty()) {
     // Validate token
     if (service->verifyTokenSync(token)) {
@@ -48,7 +32,7 @@ static std::string authenticate_user() {
     auto credentials = sign_in();
     auto receivedToken = service->signInSync(credentials.first, credentials.second);
     if (!receivedToken.empty()) {
-      store_token(receivedToken);
+      AuthIO::writeToken(receivedToken);
       return receivedToken;
     }
   } while (true);

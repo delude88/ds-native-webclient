@@ -31,7 +31,6 @@ static int unpackFloatArray(void **buf, float *arr) {
   int buf_index = 0;
   for (auto arr_index = 0; arr_index < arr_size; arr_index++) {
     float f = unpackFloat(&buf[buf_index], &buf_index);
-    std::cout << f << std::endl;
     arr[arr_index] = f;
   }
   return arr_size;
