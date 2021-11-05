@@ -25,4 +25,6 @@
 [submodule "include/udp-discovery-cpp"]
 	path = include/udp-discovery-cpp
 	url = https://github.com/truvorskameikin/udp-discovery-cpp
-
+[submodule "include/3dti_AudioToolkit"]
+	path = include/3dti_AudioToolkit
+	url = https://github.com/delude88/3dti_AudioToolkit.git
