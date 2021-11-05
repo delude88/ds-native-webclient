@@ -59,8 +59,8 @@ endif ()
 #  - udp-discovery-cpp
 add_subdirectory(include/udp-discovery-cpp)
 #  - cereal (for hrtf lib)
-add_subdirectory(include/cereal)
-
+#add_subdirectory(include/cereal)
+include("3dtiAudioToolkit.cmake")
 
 # Configure artifact
 if (APPLE)
@@ -97,9 +97,6 @@ target_include_directories(${PROJECT_NAME}
         PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/udp-discovery-cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/3dti_AudioToolkit/3dti_ResourceManager"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/3dti_AudioToolkit/3dti_ResourceManager/third_party_libraries"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/3dti_AudioToolkit/3dti_Toolkit"
         )
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
@@ -110,7 +107,7 @@ target_link_libraries(${PROJECT_NAME}
         plog
         Threads::Threads
         udp-discovery
-        cereal
+        3dtiAudioToolkit
         )
 if (WITH_GUI)
     message(STATUS "Building with GUI")

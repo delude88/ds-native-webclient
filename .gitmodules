@@ -16,12 +16,16 @@
 [submodule "include/rtaudio"]
 	path = include/rtaudio
 	url = https://github.com/thestk/rtaudio.git
-[submodule "include/3dti_AudioToolkit"]
-	path = include/3dti_AudioToolkit
-	url = https://github.com/3DTune-In/3dti_AudioToolkit.git
-[submodule "include/libtins"]
-	path = include/libtins
-	url = https://github.com/mfontanini/libtins.git
 [submodule "include/cereal"]
 	path = include/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "include/libsofa"]
+	path = include/libsofa
+	url = https://github.com/hoene/libsofa.git
+[submodule "include/3dti_AudioToolkit"]
+	path = include/3dti_AudioToolkit
+	url = https://github.com/delude88/3dti_AudioToolkit.git
+[submodule "include/udp-discovery-cpp"]
+	path = include/udp-discovery-cpp
+	url = https://github.com/truvorskameikin/udp-discovery-cpp
+
