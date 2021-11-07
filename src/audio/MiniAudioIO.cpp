@@ -71,8 +71,8 @@ void MiniAudioIO::setInputSoundCard(const DigitalStage::Types::SoundCard &sound_
             for (int frame = 0; frame < frame_count; frame++) {
               buf[frame] = ((float *) pInput)[frame * channel_count + item.first];
             }
-            context->onChannel(item.second, (float *) buf, frame_count);
-            context->onChannelCallback(item.second, buf, frame_count);
+            context->onCapture(item.second, (float *) buf, frame_count);
+            //context->onCaptureCallback(item.second, buf, frame_count);
           }
           (void) pOutput;
         };
@@ -123,14 +123,13 @@ void MiniAudioIO::setOutputSoundCard(const DigitalStage::Types::SoundCard &sound
           // We know the output channel mapping, so only read from the enabled channels
           auto context = static_cast<MiniAudioIO *>(pDevice->pUserData);
           const ma_uint32 channel_count = pDevice->playback.channels;
-          //float buff[(const unsigned int) context->num_output_channels_][frame_count];
-          //auto **buff = (float**)malloc(context->num_output_channels_ * frame_count * sizeof(float));
+
           auto **buff = (float **) malloc(context->num_output_channels_ * sizeof(float *));
           for (int output_channel = 0; output_channel < context->num_output_channels_; output_channel++) {
             buff[output_channel] = (float *) malloc(frame_count * sizeof(float));
           }
           context->onPlayback(buff, context->num_output_channels_, frame_count);
-          context->onPlaybackCallback(buff, context->num_output_channels_, frame_count);
+          //context->onPlaybackCallback(buff, context->num_output_channels_, frame_count);
 
           unsigned int relative_channel = 0;
           for (ma_uint32 channel = 0; channel < channel_count; channel++) {
@@ -304,11 +303,14 @@ nlohmann::json convert_device_to_sound_card(ma_device_info device_info,
     return {nullptr};
   }
 
-  sound_card["sampleRate"] = device.sampleRate;
+  if(!existing) {
+    sound_card["frameSize"] = 256;
+    sound_card["sampleRate"] = device.sampleRate;
+    sound_card["periodSize"] =
+        is_input ? device.capture.internalPeriodSizeInFrames : device.playback.internalPeriodSizeInFrames;
+    sound_card["numPeriods"] = is_input ? device.capture.internalPeriods : device.playback.internalPeriods;
+  }
   sound_card["sampleRates"] = get_sample_rates(device_info);
-  sound_card["periodSize"] =
-      is_input ? device.capture.internalPeriodSizeInFrames : device.playback.internalPeriodSizeInFrames;
-  sound_card["numPeriods"] = is_input ? device.capture.internalPeriods : device.playback.internalPeriods;
   sound_card["online"] = true;
 
   std::vector<DigitalStage::Types::Channel> channels;

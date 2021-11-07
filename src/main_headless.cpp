@@ -21,6 +21,14 @@
 #include "utils/ServiceDiscovery.h"
 #include "auth/RemoteAuthService.h"
 
+#define USE_RT_AUDIO true
+
+#if USE_RT_AUDIO
+#include "audio/RtAudioIO.h"
+#else
+#include "audio/MiniAudioIO.h"
+#endif
+
 bool isRunning = false;
 
 void sig_handler(int s) {
@@ -61,7 +69,12 @@ int main(int, char *[]) {
 
   // Create an API service
   auto apiClient = std::make_unique<DigitalStage::Api::Client>(API_URL);
-  auto client = std::make_unique<Client>(*apiClient);
+#if USE_RT_AUDIO
+  auto audioIO = std::make_unique<RtAudioIO>(*apiClient);
+#else
+  auto audioIO = std::make_unique<MiniAudioIO>(*apiClient);
+#endif
+  auto client = std::make_unique<Client>(*apiClient, *audioIO);
 
   // Describe this device
   nlohmann::json initialDeviceInformation;

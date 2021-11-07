@@ -8,7 +8,7 @@ if (NOT WIN32)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
 set(CMAKE_PROJECT_VERSION "1.0.0")
-
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
 option(WITH_GUI "Build with graphical user interface" OFF)
 
@@ -60,6 +60,14 @@ endif ()
 add_subdirectory(include/udp-discovery-cpp)
 #  - HRTF Engine
 add_subdirectory(include/3dti_AudioToolkit)
+#  - rtaudio
+if (APPLE)
+    find_package(Jack)
+    set(RTAUDIO_API_JACK OFF)
+    set(RTAUDIO_API_PULSE OFF)  # WHY?!?
+endif ()
+add_subdirectory(include/rtaudio)
+
 
 # Configure artifact
 if (APPLE)
@@ -76,12 +84,15 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/conversion.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/cp1252_to_utf8.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ServiceDiscovery.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.tpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.h
@@ -109,6 +120,7 @@ target_link_libraries(${PROJECT_NAME}
         Threads::Threads
         udp-discovery
         3dtiAudioToolkit
+        rtaudio
         )
 if (WITH_GUI)
     message(STATUS "Building with GUI")

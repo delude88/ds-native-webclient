@@ -14,21 +14,35 @@ class AudioIO {
  public:
   explicit AudioIO(DigitalStage::Api::Client &client);
 
-  Pal::sigslot::signal<std::string /* audio_track_id */, const float * /* data */, std::size_t /* frame_count */>
-      onChannel;
-  Pal::sigslot::signal<float **/* data */, std::size_t /* num_channels */, std::size_t /* frame_count */> onPlayback;
+  Pal::sigslot::signal<
+      /* audio_track_id */ std::string,
+      /* input */ const float *,
+      /* frame_count */ std::size_t>
+      onCapture;
+  Pal::sigslot::signal<
+      /* output */ float **,
+                   std::size_t /* num_output_channels */,
+      /* frame_count */ std::size_t>
+      onPlayback;
+  Pal::sigslot::signal<
+      /* audio_tracks */ const std::unordered_map<std::string /* audio_track_id */, float *> &,
+      /* output */ float **,
+      /* num_output_channels */ std::size_t,
+      /* frame_count */ std::size_t>
+      onDuplex;
  protected:
-  void publishChannel(DigitalStage::Api::Client &client, int channel);
-  void unPublishChannel(DigitalStage::Api::Client &client, int channel);
-  void unPublishAll(DigitalStage::Api::Client &client);
-
-  virtual std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) = 0;
-
-  virtual void onChannelCallback(const std::string &audio_track_id,
+  /*
+  virtual void onCaptureCallback(const std::string &audio_track_id,
                                  const float *data,
                                  std::size_t frame_count) = 0;
-  virtual void onPlaybackCallback(float **data, std::size_t num_channels, std::size_t frame_count) = 0;
+  virtual void onPlaybackCallback(float **output, std::size_t num_output_channels, std::size_t frame_count) = 0;
+  virtual void onDuplexCallback(std::unordered_map<std::string, float *> audio_tracks,
+                                float **output_channels,
+                                std::size_t num_output_channels,
+                                std::size_t frame_count
+  ) = 0;*/
 
+  virtual std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) = 0;
   virtual void setAudioDriver(const std::string &audio_driver) = 0;
   virtual void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card,
                                  bool start,
@@ -39,6 +53,9 @@ class AudioIO {
   virtual void startReceiving() = 0;
   virtual void stopReceiving() = 0;
 
+  void publishChannel(DigitalStage::Api::Client &client, int channel);
+  void unPublishChannel(DigitalStage::Api::Client &client, int channel);
+  void unPublishAll(DigitalStage::Api::Client &client);
  private:
   void attachHandlers(DigitalStage::Api::Client &client);
 

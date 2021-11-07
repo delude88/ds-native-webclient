@@ -14,16 +14,23 @@
 #include <shared_mutex>
 #include <memory>
 
-class Client : public MiniAudioIO {
+class Client {
  public:
-  explicit Client(DigitalStage::Api::Client &client);
+  explicit Client(DigitalStage::Api::Client &client, AudioIO &audio_io);
   ~Client();
 
  protected:
-  void onChannelCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count) override;
-  void onPlaybackCallback(float **data, std::size_t num_channels, std::size_t frame_count) override;
+  void onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count);
+  void onPlaybackCallback(float **data, std::size_t num_channels, std::size_t frame_count);
+  void onDuplexCallback(const std::unordered_map<std::string, float *>&,
+                        float **data,
+                        std::size_t num_channels,
+                        std::size_t frame_count);
 
  private:
+  void attachHandlers(DigitalStage::Api::Client &client);
+  void attachAudioHandlers(AudioIO &audio_io);
+
   std::atomic<unsigned int> output_buffer_;
   std::map<std::string, std::shared_ptr<RingBuffer<float>>> channels_;
   std::shared_mutex channels_mutex_;

@@ -22,16 +22,15 @@ class MiniAudioIO : public AudioIO {
   void stopSending() override;
   void startReceiving() override;
   void stopReceiving() override;
- public:
 
  private:
-  std::atomic<bool> initialized_;
-  std::atomic<unsigned int> num_output_channels_;
-  std::array<bool, 64> output_channels_;
+  std::atomic<bool> initialized_{};
+  std::atomic<unsigned int> num_output_channels_{};
+  std::array<bool, 64> output_channels_{};
   ma_backend backend_;
-  ma_context context_;
-  ma_device input_device_;
-  ma_device output_device_;
+  ma_context context_{};
+  ma_device input_device_{};
+  ma_device output_device_{};
 };
 
 nlohmann::json convert_device_to_sound_card(ma_device_info,

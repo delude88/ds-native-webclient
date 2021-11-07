@@ -22,8 +22,8 @@ void AudioIO::attachHandlers(DigitalStage::Api::Client &client) {
       // https://github.com/digital-stage/api-types/blob/main/src/ClientDeviceEvents.ts
       // https://github.com/digital-stage/api-types/blob/main/src/ClientDevicePayloads.ts
       for (auto &sound_card: sound_cards) {
-        PLOGD << "Label:" << sound_card["label"].dump();
-        PLOGD << "SC:" << sound_card.dump();
+//PLOGD << "Label:" << sound_card["label"].dump();
+//        PLOGD << "SC:" << sound_card.dump();
         client.send(DigitalStage::Api::SendEvents::SET_SOUND_CARD, sound_card);
       }
 
