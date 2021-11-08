@@ -5,6 +5,8 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
+#include <cmrc/cmrc.hpp>
+
 #ifdef MA_POSIX
 #include <csignal>
 #endif

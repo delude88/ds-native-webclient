@@ -284,6 +284,7 @@ nlohmann::json convert_device_to_sound_card(ma_device_info device_info,
   nlohmann::json sound_card;
   sound_card["uuid"] = convert_device_id(context->backend, device_info.id);
   sound_card["label"] = device_info.name;
+  sound_card["audioEngine"] = "miniaudio";
   sound_card["audioDriver"] = driver;
   sound_card["type"] = type;
   sound_card["isDefault"] = device_info.isDefault == 1;
@@ -303,7 +304,7 @@ nlohmann::json convert_device_to_sound_card(ma_device_info device_info,
     return {nullptr};
   }
 
-  if(!existing) {
+  if (!existing) {
     sound_card["frameSize"] = 256;
     sound_card["sampleRate"] = device.sampleRate;
     sound_card["periodSize"] =

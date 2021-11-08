@@ -18,6 +18,7 @@
 #include <HRTF/HRTFCereal.h>
 #include <BRIR/BRIRCereal.h>
 #include <BinauralSpatializer/3DTI_BinauralSpatializer.h>
+#include <plog/Log.h>
 
 template<typename T>
 class AudioRenderer {
@@ -32,6 +33,9 @@ class AudioRenderer {
                                                                     const DigitalStage::Api::Store &store);
   DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                     const DigitalStage::Api::Store &store);
+
+
+
   void init(int sample_rate, int buffer_size, const DigitalStage::Api::Store &store);
   void setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position);
   void setAudioTrackPosition(const std::string &audio_track_id,

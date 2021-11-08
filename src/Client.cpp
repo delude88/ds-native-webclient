@@ -11,7 +11,7 @@ Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
     audio_mixer_(client),
     audio_renderer_(client),
     output_buffer_(5000) {
-  connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
+    connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
       channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(output_buffer_);

@@ -22,3 +22,6 @@
 [submodule "include/3dti_AudioToolkit"]
 	path = include/3dti_AudioToolkit
 	url = https://github.com/delude88/3dti_AudioToolkit.git
+[submodule "include/cmrc"]
+	path = include/cmrc
+	url = https://github.com/vector-of-bool/cmrc.git

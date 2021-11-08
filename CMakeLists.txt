@@ -10,14 +10,17 @@ endif ()
 set(CMAKE_PROJECT_VERSION "1.0.0")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
-option(WITH_GUI "Build with graphical user interface" OFF)
 
-# Environment configuration
+#################################################
+#
+#   Environment configuration
+#
+#################################################
 add_compile_definitions(SIGNUP_URL="https://beta.digital-stage.org/account/signup")
 add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
-
-
+option(WITH_GUI "Build with graphical user interface" OFF)
+option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
@@ -28,18 +31,22 @@ else ()
     message(STATUS "LITTLE_ENDIAN")
 endif ()
 
-
-# Special macOS routines
+#################################################
+#
+#   Dependencies
+#
+#################################################
+#   - openssl (for libds, here only fixing macOS paths)
 if (APPLE)
     if (EXISTS "/usr/local/opt/openssl/")
         set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl/")
     else ()
         include("${PROJECT_SOURCE_DIR}/cmake/BrewResolver.cmake")
     endif ()
-    set(MACOSX_DEPLOYMENT_TARGET "10.11")
 endif (APPLE)
-
-# Dependencies
+#  - resource compiling
+include(include/cmrc/CMakeRC.cmake)
+#  - posix or win32 threads
 find_package(Threads REQUIRED)
 #  - libds
 add_subdirectory(include/libds)
@@ -69,7 +76,11 @@ endif ()
 add_subdirectory(include/rtaudio)
 
 
-# Configure artifact
+#################################################
+#
+#   Configure artifact
+#
+#################################################
 if (APPLE)
     add_executable(${PROJECT_NAME} MACOSX_BUNDLE)
 else ()
@@ -83,6 +94,7 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/CMRCFileBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/conversion.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/cp1252_to_utf8.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
@@ -102,10 +114,33 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.cpp
-
-        ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf
-        ${CMAKE_CURRENT_SOURCE_DIR}/3DTI_BRIR_large_48000Hz.3dti-brir
         )
+if (USE_RT_AUDIO)
+    target_compile_definitions(${PROJECT_NAME}
+            PRIVATE
+            USE_RT_AUDIO)
+endif ()
+
+
+#################################################
+#
+#   Resource managment
+#
+#################################################
+set(RESOURCE_FILES
+        hrtf.3dti-hrtf
+        3DTI_BRIR_large_48000Hz.3dti-brir)
+cmrc_add_resource_library(${PROJECT_NAME}-resources
+        NAMESPACE clientres
+        ${RESOURCE_FILES}
+        )
+
+
+#################################################
+#
+#   Inclusions & Linking
+#
+#################################################
 target_include_directories(${PROJECT_NAME}
         PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
@@ -122,6 +157,7 @@ target_link_libraries(${PROJECT_NAME}
         udp-discovery
         3dtiAudioToolkit
         rtaudio
+        ${PROJECT_NAME}-resources
         )
 if (WITH_GUI)
     message(STATUS "Building with GUI")
@@ -144,7 +180,6 @@ else ()
             ${CMAKE_CURRENT_SOURCE_DIR}/src/main_headless.cpp
             )
 endif ()
-
 # Additions for macOS
 if (APPLE)
     find_library(APPLICATION_SERVICES ApplicationServices)
@@ -176,10 +211,11 @@ if (APPLE)
 endif (APPLE)
 
 
-set(RESOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf
-        ${CMAKE_CURRENT_SOURCE_DIR}/3DTI_BRIR_large_48000Hz.3dti-brir)
-
+#################################################
+#
+#   Bundling
+#
+#################################################
 set_target_properties(${PROJECT_NAME} PROPERTIES
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER org.digital-stage.libds.Client
@@ -190,44 +226,3 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
         RESOURCE "${RESOURCE_FILES}"
         )
-
-#[[
-#  - libwebrtc
-set(PREFER_LOCAL_WEBRTC ON CACHE BOOL "Prefer local webrtc build instead of fetching prebuilt")
-if (PREFER_LOCAL_WEBRTC AND EXISTS "${PROJECT_SOURCE_DIR}/include/libwebrtc/src/out/Default")
-    set(LIBWEBRTC_IS_LOCAL TRUE)
-    message(STATUS "Using local built libwebrtc")
-    set(LIBWEBRTC_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/include/libwebrtc/src")
-    set(LIBWEBRTC_BINARY_PATH "${PROJECT_SOURCE_DIR}/include/libwebrtc/src/out/Default/obj")
-else ()
-    set(LIBWEBRTC_IS_LOCAL FALSE)
-    message(STATUS "Using pre-built libwebrtc")
-    include("${PROJECT_SOURCE_DIR}/cmake/FetchWebRTC.cmake")
-endif ()
-message(STATUS "libwebrtc headers: ${LIBWEBRTC_INCLUDE_PATH}")
-message(STATUS "libwebrtc binaries: ${LIBWEBRTC_BINARY_PATH}")
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        "${LIBWEBRTC_INCLUDE_PATH}"
-        "${LIBWEBRTC_INCLUDE_PATH}/third_party/abseil-cpp"
-        )
-if (LIBWEBRTC_IS_LOCAL)
-    target_link_libraries(${PROJECT_NAME}
-            PRIVATE
-            "${LIBWEBRTC_BINARY_PATH}/libwebrtc${CMAKE_STATIC_LIBRARY_SUFFIX}"
-            )
-else ()
-    target_link_libraries(${PROJECT_NAME}
-            PRIVATE
-            "${LIBWEBRTC_BINARY_PATH}/libwebrtc_full${CMAKE_STATIC_LIBRARY_SUFFIX}"
-            )
-endif ()
-# Compile definitions for libwebrtc.
-target_compile_definitions(${PROJECT_NAME} PUBLIC
-        $<$<NOT:$<PLATFORM_ID:Windows>>:WEBRTC_POSIX>
-        $<$<PLATFORM_ID:Windows>:WEBRTC_WIN>
-        $<$<PLATFORM_ID:Darwin>:WEBRTC_MAC>
-        _TURN_OFF_PLATFORM_STRING
-        _NO_ASYNCRTIMP
-        )
-]]

@@ -5,6 +5,7 @@
 
 #include <RtAudio.h>
 #include "AudioIO.h"
+#include <optional>
 
 #define COPY_BUFFERS false
 
@@ -25,6 +26,8 @@ class RtAudioIO :
   void stopReceiving() override;
 
  private:
+  unsigned int getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters, std::optional<RtAudio::StreamParameters> outputParameters, unsigned int sample_rate);
+
   void initAudio( DigitalStage::Api::Client &client);
   static std::vector<nlohmann::json> enumerateRtDevices(RtAudio::Api rt_api, const DigitalStage::Api::Store &store);
   static nlohmann::json getDevice(const std::string &id,

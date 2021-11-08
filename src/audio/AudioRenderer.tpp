@@ -3,20 +3,36 @@
 //
 
 #include "AudioRenderer.h"
+#include <cmrc/cmrc.hpp>
+#include "../utils/CMRCFileBuffer.h"
+CMRC_DECLARE(clientres);
 
 template<typename T>
 AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client) : initialized_(false) {
   ERRORHANDLER3DTI.SetVerbosityMode(VERBOSITYMODE_ERRORSANDWARNINGS);
   ERRORHANDLER3DTI.SetErrorLogStream(&std::cout, true);
 
+  auto fs = cmrc::clientres::get_filesystem();
+
+  assert(fs.is_file("3DTI_BRIR_large_48000Hz.3dti-brir"));
+  assert(fs.is_file("hrtf.3dti-hrtf"));
+  auto brirFile = fs.open("3DTI_BRIR_large_48000Hz.3dti-brir");
+  CMRCFileBuffer brirFileBuffer(brirFile);
+  std::istream brirFileStream(&brirFileBuffer);
+  auto hrtfFile = fs.open("hrtf.3dti-hrtf");
+  CMRCFileBuffer hrtfFileBuffer(hrtfFile);
+  std::istream hrtfFleStream(&hrtfFileBuffer);
+
   environment_ = core_.CreateEnvironment();
   environment_->SetReverberationOrder(TReverberationOrder::BIDIMENSIONAL);
-  BRIR::CreateFrom3dti("./../Resources/3DTI_BRIR_large_48000Hz.3dti-brir", environment_);
+  BRIR::CreateFrom3dtiStream(brirFileStream, environment_);
+  //BRIR::CreateFrom3dti("./../Resources/3DTI_BRIR_large_48000Hz.3dti-brir", environment_);
 
   listener_ = core_.CreateListener();
   listener_->DisableCustomizedITD();
-  //TODO: The path is only valid for MacOS
-  HRTF::CreateFrom3dti("./../Resources/hrtf.3dti-hrtf", listener_);
+
+  //HRTF::CreateFrom3dti("./../Resources/hrtf.3dti-hrtf", listener_);
+  HRTF::CreateFrom3dtiStream(hrtfFleStream, listener_);
 
   attachHandlers(client);
 }
@@ -62,6 +78,10 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
     if (store->isReady()) {
       PLOGD << "AudioRenderer::attachHandlers::audioTrackAdded";
       audio_tracks_[audio_track._id] = core_.CreateSingleSourceDSP();
+      audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
+      audio_tracks_[audio_track._id]->DisableNearFieldEffect();
+      audio_tracks_[audio_track._id]->EnableAnechoicProcess();
+      audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
       setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
     }
   });
@@ -111,10 +131,6 @@ void AudioRenderer<T>::setAudioTrackPosition(const string &audio_track_id,
     transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
     //TODO: transform.SetOrientation(...)
     audio_tracks_[audio_track_id]->SetSourceTransform(transform);
-    audio_tracks_[audio_track_id]->SetSpatializationMode(Binaural::TSpatializationMode::HighPerformance);
-    audio_tracks_[audio_track_id]->DisableNearFieldEffect();
-    audio_tracks_[audio_track_id]->EnableAnechoicProcess();
-    audio_tracks_[audio_track_id]->EnableDistanceAttenuationAnechoic();
   }
 }
 template<typename T>
@@ -194,31 +210,48 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outLeft,
                               T *outRight,
                               std::size_t frame_size) {
+  if (!core_.GetListener()->GetHRTF()->IsHRTFLoaded()) {
+    PLOGW << "Still loading HRTF ... ";
+    for (int f = 0; f < frame_size; f++) {
+      // Just mixing
+      outLeft[f] = in[f];
+      outRight[f] = in[f];
+    }
+    return;
+  }
+
   if (audio_tracks_.count(audio_track_id)) {
-    PLOGD << "AudioRenderer::renderA";
+    // Compare frame size
+    if (frame_size != core_.GetAudioState().bufferSize) {
+      //TODO: Optimize this by comparing member variable instead of calling GetAudioState() twice each time
+      auto audio_state = core_.GetAudioState();
+      audio_state.bufferSize = frame_size;
+      core_.SetAudioState(audio_state);
+    }
 
     CMonoBuffer<float> inputBuffer(frame_size);
     inputBuffer.Feed(in, frame_size, 1);
 
     Common::CEarPair<CMonoBuffer<float>> bufferProcessed;
 
-    PLOGD << "inputBuffer" << frame_size << " " << inputBuffer.size() << " " << core_.GetAudioState().bufferSize;
-
-    PLOGD << "AudioRenderer::renderB";
-    audio_tracks_[audio_track_id]->ProcessAnechoic(inputBuffer,bufferProcessed.left, bufferProcessed.right);
-    PLOGD << "AudioRenderer::renderB2";
+    audio_tracks_[audio_track_id]->ProcessAnechoic(inputBuffer, bufferProcessed.left, bufferProcessed.right);
 
     Common::CEarPair<CMonoBuffer<float>> bufferReverb;
 
-    PLOGD << "AudioRenderer::renderC";
     //environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
 
-    PLOGD << "AudioRenderer::renderD";
     for (int f = 0; f < frame_size; f++) {
       //float l = (bufferProcessed.left[f] + bufferReverb.left[f]);
       //float r = (bufferProcessed.right[f] + bufferReverb.right[f]);
       outLeft[f] += bufferProcessed.left[f];
       outRight[f] += bufferProcessed.right[f];
+    }
+  } else {
+    PLOGW << "No position found for audio track " << audio_track_id;
+    for (int f = 0; f < frame_size; f++) {
+      // Just mixing
+      outLeft[f] = in[f];
+      outRight[f] = in[f];
     }
   }
 }

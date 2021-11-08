@@ -1,43 +1,57 @@
+// Miniaudio
 #ifdef __APPLE__
-#include "utils/macos.h"
 #define MA_NO_RUNTIME_LINKING
 #endif
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
-#ifdef MA_POSIX
-#include <csignal>
-#endif
-
+// Std lib
 #include <memory>
 #include <string>
-#include <deviceid/id.h>
+
+// Libds
 #include <DigitalStage/Api/Client.h>
-#include <plog/Init.h>
-#include <plog/Formatters/TxtFormatter.h>
-#include <plog/Appenders/ConsoleAppender.h>
+
+// Device identification
+#include <deviceid/id.h>
+
+// Local
 #include "auth/auth_cli.h"
 #include "Client.h"
 #include "utils/ServiceDiscovery.h"
 #include "auth/RemoteAuthService.h"
 
-#define USE_RT_AUDIO true
+// Logger
+#include <plog/Init.h>
+#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Appenders/ConsoleAppender.h>
 
-#if USE_RT_AUDIO
+// Signal handling (posix-only)
+#ifdef MA_POSIX
+#include <csignal>
+#endif
+
+// Special macOS routine (get microphone access rights)
+#ifdef __APPLE__
+#include "utils/macos.h"
+#endif
+
+// AudioIO engine
+#ifdef USE_RT_AUDIO
 #include "audio/RtAudioIO.h"
 #else
 #include "audio/MiniAudioIO.h"
 #endif
+
+// Resource management
+#include <cmrc/cmrc.hpp>
+CMRC_DECLARE(clientres);
 
 bool isRunning = false;
 
 void sig_handler(int s) {
   printf("Caught signal %d\n", s);
   isRunning = false;
-}
-
-void onLogin() {
-
 }
 
 int main(int, char *[]) {
@@ -75,6 +89,27 @@ int main(int, char *[]) {
   auto audioIO = std::make_unique<MiniAudioIO>(*apiClient);
 #endif
   auto client = std::make_unique<Client>(*apiClient, *audioIO);
+
+  apiClient->ready.connect([&apiClient](const DigitalStage::Api::Store *) {
+    nlohmann::json payload;
+    payload["stageId"] = "61238174fd4e098ef8160c92";
+    payload["groupId"] = "61238180fd4e098ef8160c93";
+    apiClient->send("encode-invite", payload, [](const std::vector<nlohmann::json> &result) {
+      std::cout << "ANSWER" << std::endl;
+      for (const auto &item: result) {
+        std::cout << item.dump() << std::endl;
+      }
+    });
+
+    /*
+    // Now with function
+    auto future = apiClient->encodeInvitationCode("61238174fd4e098ef8160c92", "61238180fd4e098ef8160c93");
+    try {
+      std::cout << "CODE:" << future.get() << std::endl;
+    } catch (const std::exception &e) {
+      std::cerr << e.what() << std::endl;
+    }*/
+  });
 
   // Describe this device
   nlohmann::json initialDeviceInformation;
