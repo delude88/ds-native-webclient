@@ -104,6 +104,7 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf
+        ${CMAKE_CURRENT_SOURCE_DIR}/3DTI_BRIR_large_48000Hz.3dti-brir
         )
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -176,7 +177,8 @@ endif (APPLE)
 
 
 set(RESOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf)
+        ${CMAKE_CURRENT_SOURCE_DIR}/hrtf.3dti-hrtf
+        ${CMAKE_CURRENT_SOURCE_DIR}/3DTI_BRIR_large_48000Hz.3dti-brir)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         BUNDLE True

@@ -77,17 +77,14 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
     for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
       if (output_channel % 2 == 0) {
         out[output_channel] = &left[0];
-        //memcpy(out[output_channel], &left, frame_count * sizeof(float));
       } else {
         out[output_channel] = &right[0];
-        //memcpy(out[output_channel], &right, frame_count * sizeof(float));
       }
     }
   } else {
     // Use mono for all
     for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
       out[output_channel] = &left[0];
-      //memcpy(out[output_channel], &left, frame_count * sizeof(float));
     }
   }
 }
@@ -126,20 +123,22 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
     // Send to webRTC
     connection_service_.broadcast(item.first, item.second, frame_count);
 
+    audio_renderer_.render(item.first, item.second, left, right, frame_count);
+
     // Apply gain
+    /*
     auto gain = audio_mixer_.getGain(item.first);
     for (int frame = 0; frame < frame_count; frame++) {
       float f = item.second[frame];
 
-      /*if (gain) {
+      if (gain) {
         f *= gain->second ? 0 : gain->first;
-      }*/
-
-      //TODO: Render audio to L / R
+      }
 
       left[frame] += f;
       right[frame] += f;
-    }
+    }*/
+
   }
 
   if (num_output_channels % 2 == 0) {

@@ -135,7 +135,8 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       }
 
       RtAudio::StreamOptions options;
-      options.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_NONINTERLEAVED;
+      //options.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_NONINTERLEAVED | RTAUDIO_SCHEDULE_REALTIME;
+      options.flags = RTAUDIO_NONINTERLEAVED | RTAUDIO_SCHEDULE_REALTIME;
       options.priority = 1;
       try {
         auto callback = [](void *output,
@@ -147,6 +148,8 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
           auto context = static_cast<RtAudioIO *>(userData);
           auto *outputBuffer = (float *) output;
           auto *inputBuffer = (float *) input;
+
+          std::cout << bufferSize << std::endl;
 
           if (status) { PLOGE << "stream over/underflow detected"; }
 

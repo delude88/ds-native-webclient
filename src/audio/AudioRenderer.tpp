@@ -8,58 +8,83 @@ template<typename T>
 AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client) : initialized_(false) {
   ERRORHANDLER3DTI.SetVerbosityMode(VERBOSITYMODE_ERRORSANDWARNINGS);
   ERRORHANDLER3DTI.SetErrorLogStream(&std::cout, true);
-  //attachHandlers(client);
+
+  environment_ = core_.CreateEnvironment();
+  environment_->SetReverberationOrder(TReverberationOrder::BIDIMENSIONAL);
+  BRIR::CreateFrom3dti("./../Resources/3DTI_BRIR_large_48000Hz.3dti-brir", environment_);
+
+  listener_ = core_.CreateListener();
+  listener_->DisableCustomizedITD();
+  //TODO: The path is only valid for MacOS
+  HRTF::CreateFrom3dti("./../Resources/hrtf.3dti-hrtf", listener_);
+
+  attachHandlers(client);
 }
 
 template<typename T>
 void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   client.stageJoined.connect([this](const ID_TYPE &, const ID_TYPE &,
                                     const DigitalStage::Api::Store *store) {
-    auto output_sound_card = store->getOutputSoundCard();
-    if (output_sound_card && store->getStageDeviceId()) {
-      init(output_sound_card->sampleRate, *store);
+    if (store->isReady()) {
+      auto output_sound_card = store->getOutputSoundCard();
+      if (output_sound_card && store->getStageDeviceId()) {
+        PLOGD << "AudioRenderer::attachHandlers::stageJoined";
+        init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
+      }
     }
   });
   client.ready.connect([this](const DigitalStage::Api::Store *store) {
     if (store->getStageDeviceId()) {
+      PLOGD << "AudioRenderer::attachHandlers::ready";
       auto output_sound_card = store->getOutputSoundCard();
       if (output_sound_card) {
-        init(output_sound_card->sampleRate, *store);
+        init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
       }
     }
   });
   client.outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
                                                const DigitalStage::Api::Store *store) {
-    if (update.contains("sampleRate") && store->getStageDeviceId()) {
+    if (store->isReady() && update.contains("sampleRate") && store->getStageDeviceId()) {
+      PLOGD << "AudioRenderer::attachHandlers::outputSoundCardChanged";
       auto output_sound_card = store->getOutputSoundCard();
-      init(output_sound_card->sampleRate, *store);
+      init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
     }
   });
   client.outputSoundCardSelected.connect([this](const std::optional<std::string> &,
                                                 const DigitalStage::Api::Store *store) {
-    if (store->getStageDeviceId()) {
+    if (store->isReady() && store->getStageDeviceId()) {
+      PLOGD << "AudioRenderer::attachHandlers::outputSoundCardSelected";
       auto output_sound_card = store->getOutputSoundCard();
-      init(output_sound_card->sampleRate, *store);
+      init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
+    }
+  });
+  client.audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      PLOGD << "AudioRenderer::attachHandlers::audioTrackAdded";
+      audio_tracks_[audio_track._id] = core_.CreateSingleSourceDSP();
+      setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+    }
+  });
+  client.audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      PLOGD << "AudioRenderer::attachHandlers::audioTrackRemoved";
+      audio_tracks_.erase(audio_track._id);
     }
   });
 }
-
 template<typename T>
-void AudioRenderer<T>::init(int sample_rate, const DigitalStage::Api::Store &store) {
+void AudioRenderer<T>::init(int sample_rate, int buffer_size, const DigitalStage::Api::Store &store) {
+  PLOGD << "AudioRenderer::init - " << sample_rate;
   audio_tracks_.clear();
   Common::TAudioStateStruct audioState;
   audioState.sampleRate = sample_rate;
-  //TODO: audioState.bufferSize = buffer_size;
+  audioState.bufferSize = buffer_size;
   core_.SetAudioState(audioState);
 
   // Listener
-  listener_ = core_.CreateListener();
-  listener_->DisableCustomizedITD();
   auto local_stage_device = store.getStageDevice();
   assert(local_stage_device);
   setListenerPosition(calculatePosition(*local_stage_device, store));
-  //TODO: The path is only valid for MacOS
-  HRTF::CreateFrom3dti("./../Resources/hrtf.3dti-hrtf", listener_);
 
   // Other remote audio tracks
   for (const auto &audio_track: store.audioTracks.getAll()) {
@@ -70,14 +95,8 @@ void AudioRenderer<T>::init(int sample_rate, const DigitalStage::Api::Store &sto
 }
 
 template<typename T>
-std::optional<std::pair<T, T>> AudioRenderer<T>::getRenderValue(const std::string &audio_track_id) const {
-  if (render_map_.count(audio_track_id)) {
-    return render_map_[audio_track_id];
-  }
-  return std::nullopt;
-}
-template<typename T>
 void AudioRenderer<T>::setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position) {
+  PLOGD << "AudioRenderer::setListenerPosition";
   Common::CTransform transform = Common::CTransform();
   transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
   //TODO: transform.SetOrientation(...)
@@ -87,15 +106,21 @@ template<typename T>
 void AudioRenderer<T>::setAudioTrackPosition(const string &audio_track_id,
                                              const DigitalStage::Types::ThreeDimensionalProperties &position) {
   if (audio_tracks_.count(audio_track_id)) {
+    PLOGD << "AudioRenderer::setAudioTrackPosition";
     Common::CTransform transform = Common::CTransform();
     transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
     //TODO: transform.SetOrientation(...)
     audio_tracks_[audio_track_id]->SetSourceTransform(transform);
+    audio_tracks_[audio_track_id]->SetSpatializationMode(Binaural::TSpatializationMode::HighPerformance);
+    audio_tracks_[audio_track_id]->DisableNearFieldEffect();
+    audio_tracks_[audio_track_id]->EnableAnechoicProcess();
+    audio_tracks_[audio_track_id]->EnableDistanceAttenuationAnechoic();
   }
 }
 template<typename T>
 DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
                                                                                     const DigitalStage::Api::Store &store) {
+  PLOGD << "AudioRenderer::calculatePosition(stageDevice)";
   // Get this device ID
   auto local_device_id = store.getLocalDeviceId();
   assert(local_device_id);
@@ -134,8 +159,9 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
   return {"cardoid", x, y, z, rX, rY, rZ};
 }
 template<typename T>
-DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(DigitalStage::Types::AudioTrack audio_track,
+DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                                     const DigitalStage::Api::Store &store) {
+  PLOGD << "AudioRenderer::calculatePosition(audioTrack)";
   // Get this device ID
   auto local_device_id = store.getLocalDeviceId();
   assert(local_device_id);
@@ -161,4 +187,38 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
   rZ += stage_device_position.rZ;
 
   return {"cardoid", x, y, z, rX, rY, rZ};
+}
+template<typename T>
+void AudioRenderer<T>::render(const std::string &audio_track_id,
+                              T *in,
+                              T *outLeft,
+                              T *outRight,
+                              std::size_t frame_size) {
+  if (audio_tracks_.count(audio_track_id)) {
+    PLOGD << "AudioRenderer::renderA";
+
+    CMonoBuffer<float> inputBuffer(frame_size);
+    inputBuffer.Feed(in, frame_size, 1);
+
+    Common::CEarPair<CMonoBuffer<float>> bufferProcessed;
+
+    PLOGD << "inputBuffer" << frame_size << " " << inputBuffer.size() << " " << core_.GetAudioState().bufferSize;
+
+    PLOGD << "AudioRenderer::renderB";
+    audio_tracks_[audio_track_id]->ProcessAnechoic(inputBuffer,bufferProcessed.left, bufferProcessed.right);
+    PLOGD << "AudioRenderer::renderB2";
+
+    Common::CEarPair<CMonoBuffer<float>> bufferReverb;
+
+    PLOGD << "AudioRenderer::renderC";
+    //environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
+
+    PLOGD << "AudioRenderer::renderD";
+    for (int f = 0; f < frame_size; f++) {
+      //float l = (bufferProcessed.left[f] + bufferReverb.left[f]);
+      //float r = (bufferProcessed.right[f] + bufferReverb.right[f]);
+      outLeft[f] += bufferProcessed.left[f];
+      outRight[f] += bufferProcessed.right[f];
+    }
+  }
 }
