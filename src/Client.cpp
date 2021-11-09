@@ -162,7 +162,7 @@ void Client::attachAudioHandlers(AudioIO &audio_io) {
 }
 void Client::changeReceiverSize(unsigned int receiver_buffer) {
   PLOGD << "changeReceiverSize to" << receiver_buffer;
-  if (receiver_buffer_ != receiver_buffer) {
+  if (receiver_buffer > 0 && receiver_buffer_ != receiver_buffer) {
     std::unique_lock lock(channels_mutex_);
     receiver_buffer_ = receiver_buffer;
     // Recreate buffers with
