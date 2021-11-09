@@ -10,11 +10,11 @@ Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
     connection_service_(client),
     audio_mixer_(client),
     audio_renderer_(client),
-    output_buffer_(RECEIVER_BUFFER) {
+    receiver_buffer_(RECEIVER_BUFFER) {
   connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
-      channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(output_buffer_);
+      channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(receiver_buffer_);
       lock.unlock();
     }
     auto values_size = data.size() / 4;
@@ -38,7 +38,7 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
   // Write to channels
   if (channels_.count(audio_track_id) == 0) {
     std::unique_lock lock(channels_mutex_);
-    channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(output_buffer_);
+    channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(receiver_buffer_);
     lock.unlock();
   }
   std::shared_lock lock(channels_mutex_);
@@ -90,28 +90,15 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
 }
 void Client::attachHandlers(DigitalStage::Api::Client &client) {
   client.ready.connect([this](const DigitalStage::Api::Store *store) {
-    auto input_sound_card = store->getInputSoundCard();
-    if (input_sound_card) {
-      output_buffer_ = input_sound_card->outputBuffer * 1000;
+    auto local_device = store->getLocalDevice();
+    if (local_device) {
+      changeReceiverSize(local_device->buffer);
     }
   });
-  client.inputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
-                                              const DigitalStage::Api::Store *) {
-    if (update.contains("outputBuffer")) {
-      output_buffer_ = update["outputBuffer"].get<unsigned int>() * 1000;
-    }
-  });
-  client.inputSoundCardSelected.connect([this](const std::optional<std::string> &,
-                                               const DigitalStage::Api::Store *store) {
-    auto input_sound_card = store->getInputSoundCard();
-    if (input_sound_card) {
-      output_buffer_ = input_sound_card->outputBuffer * 1000;
-    }
-  });
-  client.localDeviceChanged.connect([this](const std::string &, nlohmann::json update,
-                                           const DigitalStage::Api::Store *store){
-    if(update.contains("")) {
-
+  client.localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
+                                           const DigitalStage::Api::Store *store) {
+    if (update.contains("buffer")) {
+      changeReceiverSize(update["buffer"]);
     }
   });
 }
@@ -140,8 +127,8 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   // Forward remote streams
   for (const auto &item: channels_) {
     if (item.second) {
-      auto buf = (float*) malloc(frame_count * sizeof(float));
-      for(int f = 0; f < frame_count; f++) {
+      auto buf = (float *) malloc(frame_count * sizeof(float));
+      for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->get();
       }
       audio_renderer_.render(item.first, buf, left, right, frame_count);
@@ -172,4 +159,15 @@ void Client::attachAudioHandlers(AudioIO &audio_io) {
   audio_io.onPlayback.connect(&Client::onPlaybackCallback, this);
   audio_io.onCapture.connect(&Client::onCaptureCallback, this);
   audio_io.onDuplex.connect(&Client::onDuplexCallback, this);
+}
+void Client::changeReceiverSize(unsigned int receiver_buffer) {
+  if (receiver_buffer_ != receiver_buffer) {
+    std::unique_lock lock(channels_mutex_);
+    receiver_buffer_ = receiver_buffer;
+    // Recreate buffers with
+    for (auto &item: channels_) {
+      item.second = std::make_shared<RingBuffer<float>>(receiver_buffer_);
+    }
+    lock.unlock();
+  }
 }
