@@ -10,7 +10,7 @@ Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
     connection_service_(client),
     audio_mixer_(client),
     audio_renderer_(client),
-    output_buffer_(5000) {
+    output_buffer_(RECEIVER_BUFFER) {
   connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
@@ -106,6 +106,12 @@ void Client::attachHandlers(DigitalStage::Api::Client &client) {
     auto input_sound_card = store->getInputSoundCard();
     if (input_sound_card) {
       output_buffer_ = input_sound_card->outputBuffer * 1000;
+    }
+  });
+  client.localDeviceChanged.connect([this](const std::string &, nlohmann::json update,
+                                           const DigitalStage::Api::Store *store){
+    if(update.contains("")) {
+
     }
   });
 }

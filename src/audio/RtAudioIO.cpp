@@ -186,7 +186,14 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
           auto *outputBuffer = (float *) output;
           auto *inputBuffer = (float *) input;
 
-          if (status) { PLOGW << "stream over/underflow detected"; }
+          if (status) {
+            if (status & RTAUDIO_INPUT_OVERFLOW) {
+              PLOGW << "Input data was discarded because of an overflow condition at the driver";
+            }
+            if (status & RTAUDIO_OUTPUT_UNDERFLOW) {
+              PLOGW << "The output buffer ran low, likely causing a gap in the output sound";
+            }
+          }
 
           if (inputBuffer && outputBuffer) {
             // Duplex

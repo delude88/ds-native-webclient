@@ -14,6 +14,8 @@
 #include <shared_mutex>
 #include <memory>
 
+#define RECEIVER_BUFFER 2000
+
 class Client {
  public:
   explicit Client(DigitalStage::Api::Client &client, AudioIO &audio_io);
@@ -31,7 +33,9 @@ class Client {
   void attachHandlers(DigitalStage::Api::Client &client);
   void attachAudioHandlers(AudioIO &audio_io);
 
-  std::atomic<unsigned int> output_buffer_;
+  void changeReceiverSize(unsigned int receiver_buffer);
+
+  std::atomic<unsigned int> receiver_buffer_;
   std::map<std::string, std::shared_ptr<RingBuffer<float>>> channels_;
   std::shared_mutex channels_mutex_;
   AudioMixer<float> audio_mixer_;
