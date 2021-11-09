@@ -119,6 +119,7 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   memset(left, 0, frame_count * sizeof(float));
   memset(right, 0, frame_count * sizeof(float));
 
+  // Forward local capture stream
   for (const auto &item: audio_tracks) {
     if (item.second) {
       // Send to webRTC
@@ -126,24 +127,22 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
 
       audio_renderer_.render(item.first, item.second, left, right, frame_count);
     } else {
-      std::cerr << "Item is null" << std::endl;
+      std::cerr << "Audio track item is null" << std::endl;
     }
-    assert(item.second);
+  }
 
-    // Apply gain
-    /*
-    auto gain = audio_mixer_.getGain(item.first);
-    for (int frame = 0; frame < frame_count; frame++) {
-      float f = item.second[frame];
-
-      if (gain) {
-        f *= gain->second ? 0 : gain->first;
+  // Forward remote streams
+  for (const auto &item: channels_) {
+    if (item.second) {
+      auto buf = (float*) malloc(frame_count * sizeof(float));
+      for(int f = 0; f < frame_count; f++) {
+        buf[f] = item.second->get();
       }
-
-      left[frame] += f;
-      right[frame] += f;
-    }*/
-
+      audio_renderer_.render(item.first, buf, left, right, frame_count);
+      free(buf);
+    } else {
+      std::cerr << "Channel item is null" << std::endl;
+    }
   }
 
   if (num_output_channels % 2 == 0) {
