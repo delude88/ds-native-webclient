@@ -181,7 +181,6 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
                          double streamTime,
                          RtAudioStreamStatus status,
                          void *userData) {
-        PLOGD << "RtAudioIO start";
         auto context = static_cast<RtAudioIO *>(userData);
         if (context->mutex_.try_lock()) {
           auto *outputBuffer = (float *) output;
@@ -232,10 +231,9 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
             }
             free(out);
           }
-          PLOGD << "RtAudioIO end";
           context->mutex_.unlock();
         } else {
-          PLOGD << "RtAudioIO not owning lock";
+          PLOGW << "RtAudioIO not owning lock";
         }
         return 0;
       };

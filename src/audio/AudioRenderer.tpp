@@ -224,7 +224,6 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outLeft,
                               T *outRight,
                               std::size_t frame_size) {
-  std::cout << "AudioRenderer start" << std::endl;
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (audio_tracks_.count(audio_track_id) != 0 && listener_->GetHRTF()->IsHRTFLoaded()) {
     // Compare frame size
@@ -253,21 +252,17 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
     }
 
     auto track = audio_tracks_[audio_track_id];
-    assert(track);
-    std::cout << "AudioRenderer render" << std::endl;
     //track->ProcessAnechoic(inputBuffer, leftBuffer, rightBuffer);
-    std::cout << "AudioRenderer render done" << std::endl;
 
-    inputBuffer.clear();
-    leftBuffer.clear();
-    rightBuffer.clear();
+    //inputBuffer.clear();
+    //leftBuffer.clear();
+    //rightBuffer.clear();
 
     for (int f = 0; f < frame_size; f++) {
       // Just mixing
       outLeft[f] += in[f];
       outRight[f] += in[f];
     }
-    std::cout << "AudioRenderer end" << std::endl;
     /*
     bufferProcessed.left.Fill(frame_size, 0);
     bufferProcessed.right.Fill(frame_size, 0);
