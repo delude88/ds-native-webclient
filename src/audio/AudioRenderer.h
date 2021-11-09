@@ -28,9 +28,9 @@ class AudioRenderer {
 
  private:
   void attachHandlers(DigitalStage::Api::Client &client);
-  DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
+  static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
                                                                     const DigitalStage::Api::Store &store);
-  DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
+  static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                     const DigitalStage::Api::Store &store);
 
 
@@ -44,7 +44,7 @@ class AudioRenderer {
   std::shared_ptr<Binaural::CListener> listener_;
   std::shared_ptr<Binaural::CEnvironment> environment_;
   std::unordered_map<std::string, std::shared_ptr<Binaural::CSingleSourceDSP>> audio_tracks_;
-  std::recursive_mutex mutex_;
+  std::mutex mutex_;
 };
 
 #include "AudioRenderer.tpp"

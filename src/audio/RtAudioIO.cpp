@@ -246,6 +246,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       };
 
       try {
+        unsigned int buffSize = 128;
         PLOGD << "RtAudioIO::init() -> open stream";
         rt_audio_->openStream(
             outputParameters ? &(*outputParameters) : nullptr,
@@ -253,7 +254,8 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
             RTAUDIO_FLOAT32,
             // Always prefer the output sound card settings
             sampleRate,
-            &bufferSize,
+            //&bufferSize,
+            &buffSize,
             callback,
             this,
             &options

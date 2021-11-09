@@ -66,7 +66,7 @@ endif ()
 #  - udp-discovery-cpp
 add_subdirectory(include/udp-discovery-cpp)
 #  - HRTF Engine
-add_compile_definitions(USE_UPC_WITHOUT_MEMORY)
+#add_compile_definitions(USE_UPC_WITHOUT_MEMORY)
 add_subdirectory(include/3dti_AudioToolkit)
 #  - rtaudio
 if (APPLE)

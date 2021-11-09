@@ -78,7 +78,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      std::lock_guard<std::recursive_mutex> lock(mutex_);
+      mutex_.lock();
       PLOGD << "audioTrackAdded";
       if (!audio_tracks_.count(audio_track._id)) {
         audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
@@ -88,19 +88,21 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
         audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
       }
       setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+      mutex_.unlock();
     }
   });
   client.audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      std::lock_guard<std::recursive_mutex> lock(mutex_);
+      mutex_.lock();
       PLOGD << "audioTrackRemoved";
       audio_tracks_.erase(audio_track._id);
+      mutex_.unlock();
     }
   });
 }
 template<typename T>
 void AudioRenderer<T>::init(int sample_rate, int buffer_size, const DigitalStage::Api::Store &store) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  mutex_.lock();
   PLOGD << "nit - " << sample_rate;
   audio_tracks_.clear();
   Common::TAudioStateStruct audioState;
@@ -124,12 +126,12 @@ void AudioRenderer<T>::init(int sample_rate, int buffer_size, const DigitalStage
     }
     setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, store));
   }
+  mutex_.unlock();
 }
 
 template<typename T>
 void AudioRenderer<T>::setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position) {
   PLOGD << "setListenerPosition";
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
   Common::CTransform transform = Common::CTransform();
   transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
   //TODO: transform.SetOrientation(...)
@@ -139,7 +141,6 @@ template<typename T>
 void AudioRenderer<T>::setAudioTrackPosition(const string &audio_track_id,
                                              const DigitalStage::Types::ThreeDimensionalProperties &position) {
   PLOGD << "setAudioTrackPosition";
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (audio_tracks_.count(audio_track_id)) {
     Common::CTransform transform = Common::CTransform();
     transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
@@ -224,66 +225,62 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outLeft,
                               T *outRight,
                               std::size_t frame_size) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (audio_tracks_.count(audio_track_id) != 0 && listener_->GetHRTF()->IsHRTFLoaded()) {
-    // Compare frame size
-    if (frame_size != core_->GetAudioState().bufferSize) {
-      PLOGD << "Correcting buffer size of audio renderer from " << core_->GetAudioState().bufferSize << " to " << frame_size;
-      //TODO: Optimize this by comparing member variable instead of calling GetAudioState() twice each time
-      auto audio_state = core_->GetAudioState();
-      audio_state.bufferSize = frame_size;
-      core_->SetAudioState(audio_state);
+  if(mutex_.try_lock()) {
+    if (audio_tracks_.count(audio_track_id) != 0 && listener_->GetHRTF()->IsHRTFLoaded()) {
+      // Compare frame size
+      try {
+        if (frame_size != core_->GetAudioState().bufferSize) {
+          PLOGD << "Correcting buffer size of audio renderer from " << core_->GetAudioState().bufferSize << " to " << frame_size;
+          //TODO: Optimize this by comparing member variable instead of calling GetAudioState() twice each time
+          auto audio_state = core_->GetAudioState();
+          audio_state.bufferSize = frame_size;
+          core_->SetAudioState(audio_state);
+        }
+
+        CMonoBuffer<float> inputBuffer(frame_size);
+        inputBuffer.Feed(in, frame_size, 1);
+
+        CMonoBuffer<float> leftBuffer(frame_size);
+        CMonoBuffer<float> rightBuffer(frame_size);
+        leftBuffer.Fill(frame_size, 0);
+        rightBuffer.Fill(frame_size, 0);
+
+        auto track = audio_tracks_[audio_track_id];
+        track->ProcessAnechoic(inputBuffer, leftBuffer, rightBuffer);
+
+        for (int f = 0; f < frame_size; f++) {
+          outLeft[f] += (leftBuffer[f]);// + bufferReverb.left[f]);
+          outRight[f] += (rightBuffer[f]);// + bufferReverb.right[f]);
+        }
+      }catch(std::exception &err) {
+        PLOGE << err.what();
+      }
+
+      /*
+      bufferProcessed.left.Fill(frame_size, 0);
+      bufferProcessed.right.Fill(frame_size, 0);
+
+      auto track = audio_tracks_[audio_track_id];
+      assert(track);
+      track->ProcessAnechoic(inputBuffer, bufferProcessed.left, bufferProcessed.right);
+
+      Common::CEarPair<CMonoBuffer<float>> bufferReverb;
+      bufferProcessed.left.Fill(frame_size, 0);
+      bufferProcessed.right.Fill(frame_size, 0);
+
+      //environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
+
+      for (int f = 0; f < frame_size; f++) {
+        outLeft[f] += (bufferProcessed.left[f]);// + bufferReverb.left[f]);
+        outRight[f] += (bufferProcessed.right[f]);// + bufferReverb.right[f]);
+      }*/
+    } else {
+      for (int f = 0; f < frame_size; f++) {
+        // Just mixing
+        outLeft[f] += in[f];
+        outRight[f] += in[f];
+      }
     }
-
-    CMonoBuffer<float> inputBuffer(frame_size);
-    inputBuffer.Feed(in, frame_size, 1);
-
-    CMonoBuffer<float> leftBuffer(frame_size);
-    CMonoBuffer<float> rightBuffer(frame_size);
-    leftBuffer.Fill(frame_size, 0);
-    rightBuffer.Fill(frame_size, 0);
-
-    if(inputBuffer.size() != core_->GetAudioState().bufferSize) {
-      PLOGE << "Not matching";
-    }
-    if(leftBuffer.size() != core_->GetAudioState().bufferSize) {
-      PLOGE << "Not matching";
-    }
-    if(rightBuffer.size() != core_->GetAudioState().bufferSize) {
-      PLOGE << "Not matching";
-    }
-
-    auto track = audio_tracks_[audio_track_id];
-    //track->ProcessAnechoic(inputBuffer, leftBuffer, rightBuffer);
-
-    for (int f = 0; f < frame_size; f++) {
-      // Just mixing
-      outLeft[f] += in[f];
-      outRight[f] += in[f];
-    }
-    /*
-    bufferProcessed.left.Fill(frame_size, 0);
-    bufferProcessed.right.Fill(frame_size, 0);
-
-    auto track = audio_tracks_[audio_track_id];
-    assert(track);
-    track->ProcessAnechoic(inputBuffer, bufferProcessed.left, bufferProcessed.right);
-
-    Common::CEarPair<CMonoBuffer<float>> bufferReverb;
-    bufferProcessed.left.Fill(frame_size, 0);
-    bufferProcessed.right.Fill(frame_size, 0);
-
-    //environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
-
-    for (int f = 0; f < frame_size; f++) {
-      outLeft[f] += (bufferProcessed.left[f]);// + bufferReverb.left[f]);
-      outRight[f] += (bufferProcessed.right[f]);// + bufferReverb.right[f]);
-    }*/
-  } else {
-    for (int f = 0; f < frame_size; f++) {
-      // Just mixing
-      outLeft[f] += in[f];
-      outRight[f] += in[f];
-    }
+    mutex_.unlock();
   }
 }
