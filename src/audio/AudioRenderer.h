@@ -22,9 +22,11 @@
 template<typename T>
 class AudioRenderer {
  public:
-  AudioRenderer(DigitalStage::Api::Client &client);
+  explicit AudioRenderer(DigitalStage::Api::Client &client);
 
   void render(const std::string &audio_track_id, T *in, T *outLeft, T *outRight, std::size_t frame_size);
+
+  void renderReverb(T *outLeft, T*outRight, std::size_t frame_size);
 
  private:
   void attachHandlers(DigitalStage::Api::Client &client);

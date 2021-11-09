@@ -138,6 +138,9 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
     }
   }
 
+  // Finally apply reverb
+  audio_renderer_.renderReverb(left, right, frame_count);
+
   if (num_output_channels % 2 == 0) {
     // Use stereo for all
     for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {

@@ -90,27 +90,6 @@ int main(int, char *[]) {
 #endif
   auto client = std::make_unique<Client>(*apiClient, *audioIO);
 
-  apiClient->ready.connect([&apiClient](const DigitalStage::Api::Store *) {
-    nlohmann::json payload;
-    payload["stageId"] = "61238174fd4e098ef8160c92";
-    payload["groupId"] = "61238180fd4e098ef8160c93";
-    apiClient->send("encode-invite", payload, [](const std::vector<nlohmann::json> &result) {
-      std::cout << "ANSWER" << std::endl;
-      for (const auto &item: result) {
-        std::cout << item.dump() << std::endl;
-      }
-    });
-
-    /*
-    // Now with function
-    auto future = apiClient->encodeInvitationCode("61238174fd4e098ef8160c92", "61238180fd4e098ef8160c93");
-    try {
-      std::cout << "CODE:" << future.get() << std::endl;
-    } catch (const std::exception &e) {
-      std::cerr << e.what() << std::endl;
-    }*/
-  });
-
   // Describe this device
   nlohmann::json initialDeviceInformation;
   // - always use an UUID when you want Digital Stage to remember this device and its settings

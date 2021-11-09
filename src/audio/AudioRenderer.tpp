@@ -2,9 +2,10 @@
 // Created by Tobias Hegemann on 04.11.21.
 //
 
-#include "AudioRenderer.h"
 #include <cmrc/cmrc.hpp>
 #include "../utils/CMRCFileBuffer.h"
+#include "AudioRenderer.h"
+
 CMRC_DECLARE(clientres);
 
 template<typename T>
@@ -78,8 +79,8 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      mutex_.lock();
       PLOGD << "audioTrackAdded";
+      mutex_.lock();
       if (!audio_tracks_.count(audio_track._id)) {
         audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
         audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
@@ -91,12 +92,378 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
       mutex_.unlock();
     }
   });
+  client.audioTrackChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                          const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      PLOGD << "audioTrackChanged";
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        auto audio_track = store->audioTracks.get(id);
+        mutex_.lock();
+        setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+        mutex_.unlock();
+      }
+    }
+  });
   client.audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       mutex_.lock();
       PLOGD << "audioTrackRemoved";
       audio_tracks_.erase(audio_track._id);
       mutex_.unlock();
+    }
+  });
+  client.customAudioTrackPositionAdded.connect([this](const CustomAudioTrackPosition &position,
+                                                      const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_track = store->audioTracks.get(position.audioTrackId);
+      assert(audio_track);
+      mutex_.lock();
+      setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+      mutex_.unlock();
+    }
+  });
+  client.customAudioTrackPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                                        const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        auto position = store->customAudioTrackPositions.get(id);
+        assert(position);
+        auto audio_track = store->audioTracks.get(position->audioTrackId);
+        assert(audio_track);
+        mutex_.lock();
+        setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+        mutex_.unlock();
+      }
+    }
+  });
+  client.customAudioTrackPositionRemoved.connect([this](const CustomAudioTrackPosition &position,
+                                                        const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_track = store->audioTracks.get(position.audioTrackId);
+      assert(audio_track);
+      mutex_.lock();
+      setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+      mutex_.unlock();
+    }
+  });
+  client.stageDeviceChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                           const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        // Did the local stage device and so this listener change?
+        auto stage_device = store->stageDevices.get(id);
+        auto local_stage_device_id = store->getStageDeviceId();
+        if (id == *local_stage_device_id) {
+          // This listener changed
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          // Recalculate audio track position
+          auto audio_tracks = store->getAudioTracksByStageDevice(id);
+          for (const auto &audio_track: audio_tracks) {
+            mutex_.lock();
+            setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+            mutex_.unlock();
+          }
+        }
+      }
+    }
+  });
+  client.customStageDevicePositionAdded.connect([this](const CustomStageDevicePosition &position,
+                                                       const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_tracks = store->getAudioTracksByStageDevice(position.stageDeviceId);
+      for (const auto &audio_track: audio_tracks) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+        mutex_.unlock();
+      }
+      // Is this listener assigned to this stageDevice?
+      auto stageDevice_id = store->getStageDeviceId();
+      if (stageDevice_id && *stageDevice_id == position.stageDeviceId) {
+        // Also update this listener
+        auto stage_device = store->getStageDevice();
+        if (stage_device) {
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          PLOGE << "Stage device not found";
+        }
+      }
+    }
+  });
+  client.customStageDevicePositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                                         const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        auto custom_position = store->customStageDevicePositions.get(id);
+        if (custom_position) {
+          return;
+        }
+        assert(custom_position);
+        auto audio_tracks = store->getAudioTracksByStageDevice(custom_position->stageDeviceId);
+        for (const auto &audio_track: audio_tracks) {
+          mutex_.lock();
+          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+          mutex_.unlock();
+        }
+        // Is this listener assigned to this stageDevice?
+        auto stageDevice_id = store->getStageDeviceId();
+        if (stageDevice_id && *stageDevice_id == custom_position->stageDeviceId) {
+          // Also update this listener
+          auto stage_device = store->getStageDevice();
+          if (stage_device) {
+            mutex_.lock();
+            setListenerPosition(calculatePosition(*stage_device, *store));
+            mutex_.unlock();
+          } else {
+            PLOGE << "Stage device not found";
+          }
+        }
+      }
+    }
+  });
+  client.customStageDevicePositionRemoved.connect([this](const CustomStageDevicePosition &position,
+                                                         const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_tracks = store->getAudioTracksByStageDevice(position.stageDeviceId);
+      for (const auto &audio_track: audio_tracks) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+        mutex_.unlock();
+      }
+      // Is this listener assigned to this stageDevice?
+      auto stageDevice_id = store->getStageDeviceId();
+      if (stageDevice_id && *stageDevice_id == position.stageDeviceId) {
+        // Also update this listener
+        auto stage_device = store->getStageDevice();
+        if (stage_device) {
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          PLOGE << "Stage device not found";
+        }
+      }
+    }
+  });
+  client.stageMemberChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                           const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        // Update all related audio tracks
+        auto audio_tracks = store->getAudioTracksByStageMember(id);
+        for (const auto &audio_track: audio_tracks) {
+          mutex_.lock();
+          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+          mutex_.unlock();
+        }
+        // Is this listener assigned to the stage member?
+        auto stage_member_id = store->getStageMemberId();
+        if (stage_member_id && *stage_member_id == id) {
+          // Also update this listener
+          auto stage_device = store->getStageDevice();
+          if (stage_device) {
+            mutex_.lock();
+            setListenerPosition(calculatePosition(*stage_device, *store));
+            mutex_.unlock();
+          } else {
+            PLOGE << "Stage device not found";
+          }
+        }
+      }
+    }
+  });
+  client.customStageMemberPositionAdded.connect([this](const CustomStageMemberPosition &position,
+                                                       const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_tracks = store->getAudioTracksByStageMember(position.stageMemberId);
+      for (const auto &audio_track: audio_tracks) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+        mutex_.unlock();
+      }
+      // Is this listener assigned to this stageMember?
+      auto stageMember_id = store->getStageMemberId();
+      if (stageMember_id && *stageMember_id == position.stageMemberId) {
+        // Also update this listener
+        auto stage_device = store->getStageDevice();
+        if (stage_device) {
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          PLOGE << "Stage device not found";
+        }
+      }
+    }
+  });
+  client.customStageMemberPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                                         const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        auto custom_position = store->customStageMemberPositions.get(id);
+        if (!custom_position) {
+          PLOGE << "Custom position not found";
+          return;
+        }
+        auto audio_tracks = store->getAudioTracksByStageMember(custom_position->stageMemberId);
+        for (const auto &audio_track: audio_tracks) {
+          mutex_.lock();
+          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+          mutex_.unlock();
+        }
+        // Is this listener assigned to this stageMember?
+        auto stageMember_id = store->getStageMemberId();
+        if (stageMember_id && *stageMember_id == custom_position->stageMemberId) {
+          // Also update this listener
+          auto stage_device = store->getStageDevice();
+          if (stage_device) {
+            mutex_.lock();
+            setListenerPosition(calculatePosition(*stage_device, *store));
+            mutex_.unlock();
+          } else {
+            PLOGE << "Stage device not found";
+          }
+        }
+      }
+    }
+  });
+  client.customStageMemberPositionRemoved.connect([this](const CustomStageMemberPosition &position,
+                                                         const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_tracks = store->getAudioTracksByStageMember(position.stageMemberId);
+      for (const auto &audio_track: audio_tracks) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+        mutex_.unlock();
+      }
+      // Is this listener assigned to this stageMember?
+      auto stageMember_id = store->getStageMemberId();
+      if (stageMember_id && *stageMember_id == position.stageMemberId) {
+        // Also update this listener
+        auto stage_device = store->getStageDevice();
+        if (stage_device) {
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          PLOGE << "Stage device not found";
+        }
+      }
+    }
+  });
+  client.groupChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                     const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        // Update all related audio tracks
+        auto audio_tracks = store->getAudioTracksByGroup(id);
+        for (const auto &audio_track: audio_tracks) {
+          mutex_.lock();
+          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+          mutex_.unlock();
+        }
+        // Is this the group of this listener?
+        auto group_id = store->getGroupId();
+        if (group_id && *group_id == id) {
+          // Also update this listener
+          auto stage_device = store->getStageDevice();
+          if (stage_device) {
+            mutex_.lock();
+            setListenerPosition(calculatePosition(*stage_device, *store));
+            mutex_.unlock();
+          } else {
+            PLOGE << "Stage device not found";
+          }
+        }
+      }
+    }
+  });
+  client.customGroupPositionAdded.connect([this](const CustomGroupPosition &position,
+                                                 const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_tracks = store->getAudioTracksByGroup(position.groupId);
+      for (const auto &audio_track: audio_tracks) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+        mutex_.unlock();
+      }
+      // Is this listener assigned to this group?
+      auto group_id = store->getGroupId();
+      if (group_id && *group_id == position.groupId) {
+        // Also update this listener
+        auto stage_device = store->getStageDevice();
+        if (stage_device) {
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          PLOGE << "Stage device not found";
+        }
+      }
+    }
+  });
+  client.customGroupPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
+                                                   const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
+          || update.contains("rY") || update.contains("rZ")) {
+        auto custom_position = store->customGroupPositions.get(id);
+        assert(custom_position);
+        auto audio_tracks = store->getAudioTracksByGroup(custom_position->groupId);
+        for (const auto &audio_track: audio_tracks) {
+          mutex_.lock();
+          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+          mutex_.unlock();
+        }
+        // Is this listener assigned to this group?
+        auto group_id = store->getGroupId();
+        if (group_id && *group_id == custom_position->groupId) {
+          // Also update this listener
+          auto stage_device = store->getStageDevice();
+          if (stage_device) {
+            mutex_.lock();
+            setListenerPosition(calculatePosition(*stage_device, *store));
+            mutex_.unlock();
+          } else {
+            PLOGE << "Stage device not found";
+          }
+        }
+      }
+    }
+  });
+  client.customGroupPositionRemoved.connect([this](const CustomGroupPosition &position,
+                                                   const DigitalStage::Api::Store *store) {
+    if (store->isReady()) {
+      auto audio_tracks = store->getAudioTracksByGroup(position.groupId);
+      for (const auto &audio_track: audio_tracks) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+        mutex_.unlock();
+      }
+      // Is this listener assigned to this group?
+      auto group_id = store->getGroupId();
+      if (group_id && *group_id == position.groupId) {
+        // Also update this listener
+        auto stage_device = store->getStageDevice();
+        if (stage_device) {
+          mutex_.lock();
+          setListenerPosition(calculatePosition(*stage_device, *store));
+          mutex_.unlock();
+        } else {
+          PLOGE << "Stage device not found";
+        }
+      }
     }
   });
 }
@@ -225,55 +592,36 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outLeft,
                               T *outRight,
                               std::size_t frame_size) {
-  if(mutex_.try_lock()) {
+  if (mutex_.try_lock()) {
     if (audio_tracks_.count(audio_track_id) != 0 && listener_->GetHRTF()->IsHRTFLoaded()) {
       // Compare frame size
       try {
         if (frame_size != core_->GetAudioState().bufferSize) {
-          PLOGD << "Correcting buffer size of audio renderer from " << core_->GetAudioState().bufferSize << " to " << frame_size;
+          PLOGD << "Correcting buffer size of audio renderer from " << core_->GetAudioState().bufferSize << " to "
+                << frame_size;
           //TODO: Optimize this by comparing member variable instead of calling GetAudioState() twice each time
           auto audio_state = core_->GetAudioState();
           audio_state.bufferSize = frame_size;
           core_->SetAudioState(audio_state);
+          environment_->ResetReverbBuffers();
         }
 
         CMonoBuffer<float> inputBuffer(frame_size);
         inputBuffer.Feed(in, frame_size, 1);
 
-        CMonoBuffer<float> leftBuffer(frame_size);
-        CMonoBuffer<float> rightBuffer(frame_size);
-        leftBuffer.Fill(frame_size, 0);
-        rightBuffer.Fill(frame_size, 0);
+        Common::CEarPair<CMonoBuffer<float>> bufferProcessed;
 
-        auto track = audio_tracks_[audio_track_id];
-        track->ProcessAnechoic(inputBuffer, leftBuffer, rightBuffer);
+        audio_tracks_[audio_track_id]->SetBuffer(inputBuffer);
+        audio_tracks_[audio_track_id]->ProcessAnechoic(bufferProcessed.left, bufferProcessed.right);
+
 
         for (int f = 0; f < frame_size; f++) {
-          outLeft[f] += (leftBuffer[f]);// + bufferReverb.left[f]);
-          outRight[f] += (rightBuffer[f]);// + bufferReverb.right[f]);
+          outLeft[f] += bufferProcessed.left[f];
+          outRight[f] += bufferProcessed.right[f];
         }
-      }catch(std::exception &err) {
+      } catch (std::exception &err) {
         PLOGE << err.what();
       }
-
-      /*
-      bufferProcessed.left.Fill(frame_size, 0);
-      bufferProcessed.right.Fill(frame_size, 0);
-
-      auto track = audio_tracks_[audio_track_id];
-      assert(track);
-      track->ProcessAnechoic(inputBuffer, bufferProcessed.left, bufferProcessed.right);
-
-      Common::CEarPair<CMonoBuffer<float>> bufferReverb;
-      bufferProcessed.left.Fill(frame_size, 0);
-      bufferProcessed.right.Fill(frame_size, 0);
-
-      //environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
-
-      for (int f = 0; f < frame_size; f++) {
-        outLeft[f] += (bufferProcessed.left[f]);// + bufferReverb.left[f]);
-        outRight[f] += (bufferProcessed.right[f]);// + bufferReverb.right[f]);
-      }*/
     } else {
       for (int f = 0; f < frame_size; f++) {
         // Just mixing
@@ -283,4 +631,19 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
     }
     mutex_.unlock();
   }
+}
+template<typename T>
+void AudioRenderer<T>::renderReverb(T *outLeft, T *outRight, std::size_t frame_size) {
+  mutex_.lock();
+  Common::CEarPair<CMonoBuffer<float>> bufferReverb;
+  environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
+
+  PLOGD << "bufferReverb.left.size = " << bufferReverb.left.size();
+  PLOGD << "bufferReverb.right.size = " << bufferReverb.right.size();
+  for (int f = 0; f < frame_size; f++) {
+    std::cout << outLeft[f] << " += " << bufferReverb.left[f];
+    outLeft[f] += bufferReverb.left[f];
+    outRight[f] += bufferReverb.right[f];
+  }
+  mutex_.unlock();
 }
