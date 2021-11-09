@@ -42,9 +42,9 @@ class AudioRenderer {
    * @param HRTF resampling step, in degrees, default is 5
    */
   void start(unsigned int sample_rate,
-            unsigned int buffer_size,
-            AudioRenderer::RoomSize room_size = AudioRenderer::RoomSize::MEDIUM,
-            int hrtf_resampling_steps = 5);
+             unsigned int buffer_size,
+             AudioRenderer::RoomSize room_size = AudioRenderer::RoomSize::MEDIUM,
+             int hrtf_resampling_steps = 5);
 
   void stop();
 
@@ -53,7 +53,11 @@ class AudioRenderer {
   void renderReverb(T *outLeft, T *outRight, std::size_t frame_size);
 
  private:
+  static std::string to_string(AudioRenderer::RoomSize room_size);
+
   bool isValid(unsigned int sample_rate, unsigned int buffer_size);
+
+  void autoInit(const DigitalStage::Types::Stage &stage, const DigitalStage::Types::SoundCard &sound_card);
 
   void attachHandlers(DigitalStage::Api::Client &client, bool init_automatically);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
@@ -61,11 +65,9 @@ class AudioRenderer {
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                            const DigitalStage::Api::Store &store);
 
-  void init2(int sample_rate, int buffer_size, const DigitalStage::Api::Store &store);
   void setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position);
   void setAudioTrackPosition(const std::string &audio_track_id,
                              const DigitalStage::Types::ThreeDimensionalProperties &position);
-
 
   const DigitalStage::Api::Store &store_;
   std::atomic<bool> initialized_;

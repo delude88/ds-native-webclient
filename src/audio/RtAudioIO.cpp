@@ -54,7 +54,8 @@ nlohmann::json RtAudioIO::getDevice(const std::string &id,
   ) : std::nullopt;
 
   if (!existing) {
-    sound_card["frameSize"] = 256;
+    sound_card["sampleRate"] = info.preferredSampleRate;
+    sound_card["bufferSize"] = 512;
   }
 
   std::vector<DigitalStage::Types::Channel> channels;
@@ -112,6 +113,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     auto input_sound_card = store->getInputSoundCard();
     auto output_sound_card = store->getOutputSoundCard();
     unsigned int sampleRate = 48000;
+    unsigned int bufferSize = 512;
 
     /**
      * Audio driver handling
@@ -129,6 +131,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && local_device->sendAudio) {
       PLOGD << "Got input sound card";
       sampleRate = input_sound_card->sampleRate;
+      bufferSize = input_sound_card->bufferSize;
       inputParameters = RtAudio::StreamParameters();
       inputParameters->deviceId = std::stoi(input_sound_card->uuid);
       inputParameters->nChannels = input_sound_card->channels.size();
@@ -153,6 +156,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     if (output_sound_card && output_sound_card->audioEngine == "rtaudio" && local_device->receiveAudio) {
       PLOGD << "Got output sound card";
       sampleRate = output_sound_card->sampleRate;
+      bufferSize = output_sound_card->bufferSize;
       outputParameters = RtAudio::StreamParameters();
       outputParameters->deviceId = std::stoi(output_sound_card->uuid);
       outputParameters->nChannels = output_sound_card->channels.size();
@@ -167,10 +171,6 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     }
 
     if (inputParameters || outputParameters) {
-      PLOGD << "Got at least one sound card";
-      auto bufferSize = getLowestBufferSize(inputParameters, outputParameters, sampleRate);
-      PLOGD << "The lowest buffer size is " << bufferSize;
-
       RtAudio::StreamOptions options;
       options.flags = RTAUDIO_NONINTERLEAVED | RTAUDIO_SCHEDULE_REALTIME;
       options.priority = 1;
@@ -246,7 +246,6 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       };
 
       try {
-        unsigned int buffSize = 128;
         PLOGD << "RtAudioIO::init() -> open stream";
         rt_audio_->openStream(
             outputParameters ? &(*outputParameters) : nullptr,
@@ -254,8 +253,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
             RTAUDIO_FLOAT32,
             // Always prefer the output sound card settings
             sampleRate,
-            //&bufferSize,
-            &buffSize,
+            &bufferSize,
             callback,
             this,
             &options

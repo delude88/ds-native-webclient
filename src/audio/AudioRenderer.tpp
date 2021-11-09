@@ -3,15 +3,8 @@
 //
 
 #include "../utils/CMRCFileBuffer.h"
-#include "AudioRenderer.h"
 
-const char *roomEnum2Str[] = {
-    "SMALL",
-    "MEDIUM",
-    "LARGE"
-};
-
-template<typename T>
+template<class T>
 AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client, bool autostart)
     : fs_(cmrc::clientres::get_filesystem()), initialized_(false), store_(*client.getStore()) {
   PLOGD << "AudioRenderer";
@@ -22,6 +15,15 @@ AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client, bool autostar
 }
 
 template<class T>
+std::string AudioRenderer<T>::to_string(AudioRenderer::RoomSize room_size) {
+  switch (room_size) {
+    case AudioRenderer::RoomSize::SMALL:return "small";
+    case AudioRenderer::RoomSize::LARGE:return "large";
+    default:return "medium;";
+  }
+}
+
+template<class T>
 bool AudioRenderer<T>::isValid(unsigned int sample_rate, unsigned int buffer_size) {
   std::string brirPath("3DTI_BRIR_small_" + std::to_string(sample_rate) + "Hz.3dti-brir");
   std::string hrtfPath
@@ -29,7 +31,7 @@ bool AudioRenderer<T>::isValid(unsigned int sample_rate, unsigned int buffer_siz
   return fs_.is_file(brirPath) && fs_.is_file(hrtfPath);
 }
 
-template<typename T>
+template<class T>
 void AudioRenderer<T>::start(unsigned int sample_rate,
                              unsigned int buffer_size,
                              AudioRenderer::RoomSize room_size,
@@ -39,10 +41,10 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
     throw std::invalid_argument(
         "Invalid sample rate and/or buffer size. Hint: use sample rates of 41000, 48000 or 96000 and buffer sizes of 128, 256, 512 or 1024");
   }
-  std::string brirPath("3DTI_BRIR_" + roomEnum2Str(room_size) + "_" + std::to_string(sample_rate) + "Hz.3dti-brir");
+  std::string brirPath("3DTI_BRIR_" + to_string(room_size) + "_" + std::to_string(sample_rate) + "Hz.3dti-brir");
   if (!fs_.is_file(brirPath)) {
     throw std::filesystem::filesystem_error(
-        "BRIR for room size " + roomEnum2Str(room_size) + " not available. Check your build settings. Was looking for "
+        "BRIR for room size " + to_string(room_size) + " not available. Check your build settings. Was looking for "
             + brirPath);
   }
   auto brirFile = fs_.open(brirPath);
@@ -101,26 +103,28 @@ void AudioRenderer<T>::stop() {
   initialized_ = false;
 }
 
-template<typename T>
+template<class T>
+void AudioRenderer<T>::autoInit(const DigitalStage::Types::Stage &stage,
+                                const DigitalStage::Types::SoundCard &sound_card) {
+  if (isValid(sound_card.sampleRate, sound_card.bufferSize)) {
+    // Get room size
+    auto room_volume = stage.width * stage.length * stage.height;
+    auto room_size = AudioRenderer::RoomSize::SMALL;
+    if (room_volume > 1000) {
+      room_size = AudioRenderer::RoomSize::LARGE;
+    } else if (room_volume > 100) {
+      room_size = AudioRenderer::RoomSize::MEDIUM;
+    }
+    start(sound_card.sampleRate, sound_card.bufferSize, room_size);
+  } else {
+    PLOGW << "Current values of output sound card are not supported by 3D audio engine";
+  }
+}
+
+template<class T>
 void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool autostart) {
   // Automatically init means listening to the selected sound card and init each time the sampleRate and bufferSize seems valid
   if (autostart) {
-    auto automaticInitialization =
-        [this](const DigitalStage::Types::Stage &stage, const DigitalStage::Types::SoundCard &sound_card) {
-          if (isValid(sound_card.sampleRate, sound_card.bufferSize)) {
-            // Get room size
-            auto room_volume = stage.width * stage.length * stage.height;
-            auto room_size = AudioRenderer::RoomSize::Small;
-            if (room_volume > 1000) {
-              room_size = AudioRenderer::RoomSize::Large;
-            } else if (room_volume > 100) {
-              room_size = AudioRenderer::RoomSize::Medium;
-            }
-            start(sound_card.sampleRate, sound_card.bufferSize, room_size);
-          } else {
-            PLOGW << "Current values of output sound card are not supported by 3D audio engine";
-          }
-        };
     client.ready.connect([this](const DigitalStage::Api::Store *store) {
       auto stageId = store->getStageId();
       if (stageId) {
@@ -128,23 +132,22 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
         auto stage = store->stages.get(*stageId);
         auto output_sound_card = store->getOutputSoundCard();
         if (stage && output_sound_card) {
-          automaticInitialization(stage, output_sound_card);
+          autoInit(*stage, *output_sound_card);
         }
       }
     });
-    client.stageJoined.connect([automaticInitialization](const ID_TYPE &stage_id, const ID_TYPE &,
-                                                         const DigitalStage::Api::Store *store) {
+    client.stageJoined.connect([this](const ID_TYPE &stage_id, const ID_TYPE &,
+                                      const DigitalStage::Api::Store *store) {
       if (store->isReady()) {
         PLOGD << "stageJoined";
         auto stage = store->stages.get(stage_id);
         auto output_sound_card = store->getOutputSoundCard();
         if (stage && output_sound_card) {
-          automaticInitialization(stage, output_sound_card);
+          autoInit(*stage, *output_sound_card);
         }
       }
     });
-    client.stageLeft.connect([this](const ID_TYPE &, const ID_TYPE &,
-                                    const DigitalStage::Api::Store *store) {
+    client.stageLeft.connect([this](const DigitalStage::Api::Store *store) {
       stop();
     });
     client.outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
@@ -156,7 +159,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
           auto stage = store->stages.get(*stageId);
           auto output_sound_card = store->getOutputSoundCard();
           if (stage && output_sound_card) {
-            automaticInitialization(stage, output_sound_card);
+            autoInit(*stage, *output_sound_card);
           }
         }
       }
@@ -169,7 +172,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
           auto stage = store->stages.get(*stageId);
           auto output_sound_card = store->getOutputSoundCard();
           if (stage && output_sound_card) {
-            automaticInitialization(stage, output_sound_card);
+            autoInit(*stage, *output_sound_card);
           }
         }
       }
@@ -216,10 +219,13 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
                                                       const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_track = store->audioTracks.get(position.audioTrackId);
-      assert(audio_track);
-      mutex_.lock();
-      setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
-      mutex_.unlock();
+      if (audio_track) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+        mutex_.unlock();
+      } else {
+        PLOGE << "Audio track not found";
+      }
     }
   });
   client.customAudioTrackPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
@@ -228,12 +234,18 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto position = store->customAudioTrackPositions.get(id);
-        assert(position);
-        auto audio_track = store->audioTracks.get(position->audioTrackId);
-        assert(audio_track);
-        mutex_.lock();
-        setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
-        mutex_.unlock();
+        if (position) {
+          auto audio_track = store->audioTracks.get(position->audioTrackId);
+          if (audio_track) {
+            mutex_.lock();
+            setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+            mutex_.unlock();
+          } else {
+            PLOGE << "Audio track not found";
+          }
+        } else {
+          PLOGE << "Custom audio track position not found";
+        }
       }
     }
   });
@@ -241,10 +253,13 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
                                                         const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_track = store->audioTracks.get(position.audioTrackId);
-      assert(audio_track);
-      mutex_.lock();
-      setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
-      mutex_.unlock();
+      if (audio_track) {
+        mutex_.lock();
+        setAudioTrackPosition(audio_track->_id, calculatePosition(*audio_track, *store));
+        mutex_.unlock();
+      } else {
+        PLOGE << "Audio track not found";
+      }
     }
   });
   client.stageDeviceChanged.connect([this](const std::string &id, const nlohmann::json &update,
@@ -302,28 +317,29 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto custom_position = store->customStageDevicePositions.get(id);
+
         if (custom_position) {
-          return;
-        }
-        assert(custom_position);
-        auto audio_tracks = store->getAudioTracksByStageDevice(custom_position->stageDeviceId);
-        for (const auto &audio_track: audio_tracks) {
-          mutex_.lock();
-          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
-          mutex_.unlock();
-        }
-        // Is this listener assigned to this stageDevice?
-        auto stageDevice_id = store->getStageDeviceId();
-        if (stageDevice_id && *stageDevice_id == custom_position->stageDeviceId) {
-          // Also update this listener
-          auto stage_device = store->getStageDevice();
-          if (stage_device) {
+          auto audio_tracks = store->getAudioTracksByStageDevice(custom_position->stageDeviceId);
+          for (const auto &audio_track: audio_tracks) {
             mutex_.lock();
-            setListenerPosition(calculatePosition(*stage_device, *store));
+            setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
             mutex_.unlock();
-          } else {
-            PLOGE << "Stage device not found";
           }
+          // Is this listener assigned to this stageDevice?
+          auto stageDevice_id = store->getStageDeviceId();
+          if (stageDevice_id && *stageDevice_id == custom_position->stageDeviceId) {
+            // Also update this listener
+            auto stage_device = store->getStageDevice();
+            if (stage_device) {
+              mutex_.lock();
+              setListenerPosition(calculatePosition(*stage_device, *store));
+              mutex_.unlock();
+            } else {
+              PLOGE << "Stage device not found";
+            }
+          }
+        } else {
+          PLOGE << "Custom stage device position not found";
         }
       }
     }
@@ -518,25 +534,28 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto custom_position = store->customGroupPositions.get(id);
-        assert(custom_position);
-        auto audio_tracks = store->getAudioTracksByGroup(custom_position->groupId);
-        for (const auto &audio_track: audio_tracks) {
-          mutex_.lock();
-          setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
-          mutex_.unlock();
-        }
-        // Is this listener assigned to this group?
-        auto group_id = store->getGroupId();
-        if (group_id && *group_id == custom_position->groupId) {
-          // Also update this listener
-          auto stage_device = store->getStageDevice();
-          if (stage_device) {
+        if (custom_position) {
+          auto audio_tracks = store->getAudioTracksByGroup(custom_position->groupId);
+          for (const auto &audio_track: audio_tracks) {
             mutex_.lock();
-            setListenerPosition(calculatePosition(*stage_device, *store));
+            setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
             mutex_.unlock();
-          } else {
-            PLOGE << "Stage device not found";
           }
+          // Is this listener assigned to this group?
+          auto group_id = store->getGroupId();
+          if (group_id && *group_id == custom_position->groupId) {
+            // Also update this listener
+            auto stage_device = store->getStageDevice();
+            if (stage_device) {
+              mutex_.lock();
+              setListenerPosition(calculatePosition(*stage_device, *store));
+              mutex_.unlock();
+            } else {
+              PLOGE << "Stage device not found";
+            }
+          }
+        } else {
+          PLOGE << "Custom group position not found";
         }
       }
     }
@@ -567,42 +586,55 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool au
   });
 }
 
-template<typename T>
+template<class T>
 void AudioRenderer<T>::setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position) {
   PLOGD << "setListenerPosition";
   Common::CTransform transform = Common::CTransform();
-  transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
+  transform.SetPosition(Common::CVector3(static_cast<float>(position.x),
+                                         static_cast<float>(position.y),
+                                         static_cast<float>(position.z)));
   //TODO: transform.SetOrientation(...)
   listener_->SetListenerTransform(transform);
 }
-template<typename T>
+template<class T>
 void AudioRenderer<T>::setAudioTrackPosition(const string &audio_track_id,
                                              const DigitalStage::Types::ThreeDimensionalProperties &position) {
   PLOGD << "setAudioTrackPosition";
   if (audio_tracks_.count(audio_track_id)) {
     Common::CTransform transform = Common::CTransform();
-    transform.SetPosition(Common::CVector3(position.x, position.y, position.z));
+    transform.SetPosition(Common::CVector3(static_cast<float>(position.x),
+                                           static_cast<float>(position.y),
+                                           static_cast<float>(position.z)));
     //TODO: transform.SetOrientation(...)
     audio_tracks_[audio_track_id]->SetSourceTransform(transform);
   }
 }
-template<typename T>
+template<class T>
 DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
                                                                                     const DigitalStage::Api::Store &store) {
   PLOGD << "calculatePosition of StageDevice";
   // Get this device ID
   auto local_device_id = store.getLocalDeviceId();
-  assert(local_device_id);
+  if (!local_device_id) {
+    PLOGE << "Local device ID not set";
+    return {"cardoid", 0, 0, 0, 0, 0, 0};
+  }
   auto custom_stage_device_position =
       store.getCustomStageDevicePositionByStageDeviceAndDevice(stage_device._id, *local_device_id);
   // Get related stage member
   auto stage_member = store.stageMembers.get(stage_device.stageMemberId);
-  assert(stage_member);
+  if (!local_device_id) {
+    PLOGE << "Stage member not found";
+    return {"cardoid", 0, 0, 0, 0, 0, 0};
+  }
   auto custom_stage_member_position =
       store.getCustomStageMemberPositionByStageMemberAndDevice(stage_member->_id, *local_device_id);
   // Get related group
   auto group = store.groups.get(stage_member->groupId);
-  assert(group);
+  if (!group) {
+    PLOGE << "Group not found";
+    return {"cardoid", 0, 0, 0, 0, 0, 0};
+  }
   auto custom_group_position = store.getCustomGroupPositionByGroupAndDevice(group->_id, *local_device_id);
 
   // Calculate coordinates
@@ -627,17 +659,23 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
 
   return {"cardoid", x, y, z, rX, rY, rZ};
 }
-template<typename T>
+template<class T>
 DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                                     const DigitalStage::Api::Store &store) {
   PLOGD << "calculatePosition of AudioTrack";
   // Get this device ID
   auto local_device_id = store.getLocalDeviceId();
-  assert(local_device_id);
+  if (!local_device_id) {
+    PLOGE << "Local device ID not set";
+    return {"cardoid", 0, 0, 0, 0, 0, 0};
+  }
   auto custom_audio_track_position =
       store.getCustomAudioTrackPositionByAudioTrackAndDevice(audio_track._id, *local_device_id);
   auto stage_device = store.stageDevices.get(audio_track.stageDeviceId);
-  assert(stage_device);
+  if (!stage_device) {
+    PLOGE << "Stage device not available";
+    return {"cardoid", 0, 0, 0, 0, 0, 0};
+  }
 
   auto stage_device_position = calculatePosition(*stage_device, store);
 
@@ -657,7 +695,7 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
 
   return {"cardoid", x, y, z, rX, rY, rZ};
 }
-template<typename T>
+template<class T>
 void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *in,
                               T *outLeft,
@@ -700,7 +738,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
     }
   }
 }
-template<typename T>
+template<class T>
 void AudioRenderer<T>::renderReverb(T *outLeft, T *outRight, std::size_t frame_size) {
   if (initialized_) {
     if (mutex_.try_lock()) {
