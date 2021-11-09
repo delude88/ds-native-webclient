@@ -9,7 +9,7 @@ Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
     :
     connection_service_(client),
     audio_mixer_(client),
-    audio_renderer_(client),
+    audio_renderer_(client, true),
     receiver_buffer_(RECEIVER_BUFFER) {
   connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
@@ -57,20 +57,17 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   memset(right, 0, frame_count * sizeof(float));
 
   for (const auto &item: channels_) {
-    auto gain = audio_mixer_.getGain(item.first);
-    for (int frame = 0; frame < frame_count; frame++) {
-      // Read next float from channel
-      float f = item.second->get();
-      // And apply gain
-      if (gain) {
-        f *= gain->second ? 0 : gain->first;
+    if (item.second) {
+      auto buf = (float *) malloc(frame_count * sizeof(float));
+      for (int f = 0; f < frame_count; f++) {
+        buf[f] = item.second->get();
       }
-
-      // Now mix with existing
-      left[frame] += f;
-      right[frame] += f;
+      audio_renderer_.render(item.first, buf, left, right, frame_count);
+      free(buf);
     }
   }
+
+  audio_renderer_.renderReverb(left, right, frame_count);
 
   if (num_output_channels % 2 == 0) {
     // Use stereo for all
@@ -138,7 +135,6 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
     }
   }
 
-  // Finally apply reverb
   audio_renderer_.renderReverb(left, right, frame_count);
 
   if (num_output_channels % 2 == 0) {

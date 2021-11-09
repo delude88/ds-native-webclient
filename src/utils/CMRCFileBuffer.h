@@ -8,7 +8,7 @@ class CMRCFileBuffer : public std::streambuf {
   const char *current_;
   cmrc::file file_;
  public:
-  explicit CMRCFileBuffer(const cmrc::file &file) : file_(file), current_(file.begin()) {
+  explicit CMRCFileBuffer(cmrc::file file) : file_(file), current_(file.begin()) {
   }
   inline int_type underflow() {
     if (current_ == file_.end()) {

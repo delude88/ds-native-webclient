@@ -44,6 +44,7 @@ nlohmann::json RtAudioIO::getDevice(const std::string &id,
   sound_card["label"] = CP1252_to_UTF8(info.name);
   sound_card["isDefault"] = type == "input" ? info.isDefaultInput : info.isDefaultOutput;
   sound_card["sampleRates"] = info.sampleRates;
+  sound_card["online"] = true;
 
   const auto localDeviceId = store.getLocalDeviceId();
   const auto existing = localDeviceId ? store.getSoundCardByDeviceAndDriverAndTypeAndLabel(
@@ -128,7 +129,8 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
      * Input sound card handling
      */
     std::optional<RtAudio::StreamParameters> inputParameters;
-    if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && local_device->sendAudio) {
+    if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && input_sound_card->online
+        && local_device->sendAudio) {
       PLOGD << "Got input sound card";
       sampleRate = input_sound_card->sampleRate;
       bufferSize = input_sound_card->bufferSize;
@@ -153,7 +155,8 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     num_total_output_channels_ = 0;
     output_channels_.fill(false);
     std::optional<RtAudio::StreamParameters> outputParameters;
-    if (output_sound_card && output_sound_card->audioEngine == "rtaudio" && local_device->receiveAudio) {
+    if (output_sound_card && output_sound_card->audioEngine == "rtaudio" && output_sound_card->online
+        && local_device->receiveAudio) {
       PLOGD << "Got output sound card";
       sampleRate = output_sound_card->sampleRate;
       bufferSize = output_sound_card->bufferSize;
