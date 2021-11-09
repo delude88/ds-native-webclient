@@ -90,6 +90,7 @@ std::vector<json> RtAudioIO::enumerateDevices(const DigitalStage::Api::Store &st
 }
 
 void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
+  mutex_.lock();
   // Capture all dependencies
   auto store = client.getStore();
   auto local_device = store->getLocalDevice();
@@ -124,8 +125,6 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     /**
      * Input sound card handling
      */
-    // Un-publish all (if any)
-    unPublishAll(client);
     std::optional<RtAudio::StreamParameters> inputParameters;
     if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && local_device->sendAudio) {
       PLOGD << "Got input sound card";
@@ -133,12 +132,16 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       inputParameters = RtAudio::StreamParameters();
       inputParameters->deviceId = std::stoi(input_sound_card->uuid);
       inputParameters->nChannels = input_sound_card->channels.size();
-      // Publish enabled channels
+      // Sync enabled channels
       for (int channel = 0; channel < input_sound_card->channels.size(); channel++) {
         if (input_sound_card->channels[channel].active) {
           publishChannel(client, channel);
+        } else if (input_channel_mapping_.count(channel)) {
+          unPublishChannel(client, channel);
         }
       }
+    } else {
+      unPublishAll(client);
     }
 
     /**
@@ -178,33 +181,62 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
                          double streamTime,
                          RtAudioStreamStatus status,
                          void *userData) {
+        PLOGD << "RtAudioIO start";
         auto context = static_cast<RtAudioIO *>(userData);
-        auto *outputBuffer = (float *) output;
-        auto *inputBuffer = (float *) input;
+        if (context->mutex_.try_lock()) {
+          auto *outputBuffer = (float *) output;
+          auto *inputBuffer = (float *) input;
 
-        if (status) { PLOGE << "stream over/underflow detected"; }
+          if (status) { PLOGW << "stream over/underflow detected"; }
 
-        std::unordered_map<std::string, float *> input_channels;
-        for (const auto &item: context->input_channel_mapping_) {
-          // Just assign pointer reference
-          input_channels[item.second] = &inputBuffer[item.first * bufferSize];
-        }
+          if (inputBuffer && outputBuffer) {
+            // Duplex
+            std::unordered_map<std::string, float *> input_channels;
+            for (const auto &item: context->input_channel_mapping_) {
+              input_channels[item.second] = &inputBuffer[item.first * bufferSize];
+            }
 
-        // Create empty output buffer
-        auto **out = (float **) malloc(bufferSize * context->num_output_channels_ * sizeof(float *));
+            auto **out = (float **) malloc(bufferSize * context->num_output_channels_ * sizeof(float *));
+            for (int output_channel = 0; output_channel < context->num_output_channels_; output_channel++) {
+              out[output_channel] = (float *) malloc(bufferSize * sizeof(float));
+            }
 
-        // Now let the listeners use the input channels and fill the output buffers
-        context->onDuplex(input_channels, out, context->num_output_channels_, bufferSize);
+            context->onDuplex(input_channels, out, context->num_output_channels_, bufferSize);
 
-        unsigned int relative_channel = 0;
-        for (int channel = 0; channel < context->num_total_output_channels_; channel++) {
-          if (context->output_channels_[channel]) {
-            memcpy(&outputBuffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
-            relative_channel++;
+            unsigned int relative_channel = 0;
+            for (int channel = 0; channel < context->num_total_output_channels_; channel++) {
+              if (context->output_channels_[channel]) {
+                memcpy(&outputBuffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
+                relative_channel++;
+              }
+            }
+            free(out);
+          } else if (inputBuffer) {
+            // Capture only
+            for (const auto &item: context->input_channel_mapping_) {
+              context->onCapture(item.second, &inputBuffer[item.first * bufferSize], bufferSize);
+            }
+          } else if (outputBuffer) {
+            // Playback only
+            auto **out = (float **) malloc(bufferSize * context->num_output_channels_ * sizeof(float *));
+            for (int output_channel = 0; output_channel < context->num_output_channels_; output_channel++) {
+              out[output_channel] = (float *) malloc(bufferSize * sizeof(float));
+            }
+            context->onPlayback(out, context->num_output_channels_, bufferSize);
+            unsigned int relative_channel = 0;
+            for (int channel = 0; channel < context->num_total_output_channels_; channel++) {
+              if (context->output_channels_[channel]) {
+                memcpy(&outputBuffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
+                relative_channel++;
+              }
+            }
+            free(out);
           }
+          PLOGD << "RtAudioIO end";
+          context->mutex_.unlock();
+        } else {
+          PLOGD << "RtAudioIO not owning lock";
         }
-        free(out);
-
         return 0;
       };
 
@@ -234,6 +266,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
   } else {
     PLOGD << "RtAudioIO::init() -> Got invalid local_device or audio driver is missing";
   }
+  mutex_.unlock();
 }
 
 void RtAudioIO::setAudioDriver(const std::string &audio_driver) {
@@ -268,56 +301,35 @@ void RtAudioIO::stopReceiving() {
 unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
                                             std::optional<RtAudio::StreamParameters> outputParameters,
                                             unsigned int sample_rate) {
-  auto promise = std::make_shared<std::promise<unsigned int>>();
+  PLOGD << "RtAudioIO::getLowestBufferSize";
+  unsigned int buffer_size = 256; // = default
   if (inputParameters || outputParameters) {
     RtAudio::StreamOptions options;
     options.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
     options.priority = 1;
     try {
-      unsigned int ignored_buffer_size = 64;
       rt_audio_->openStream(
           outputParameters ? &(*outputParameters) : nullptr,
           inputParameters ? &(*inputParameters) : nullptr,
           RTAUDIO_FLOAT32,
           // Always prefer the output sound card settings
           sample_rate,
-          &ignored_buffer_size,  // Will be ignored, since RTAUDIO_SCHEDULE_REALTIME is set
-          [](void *output,
-             void *input,
-             unsigned int bufferSize,
-             double streamTime,
-             RtAudioStreamStatus status,
-             void *userData) {
-            auto promise = static_cast<std::promise<unsigned int> *>(userData);
-            promise->set_value(bufferSize);
-            return 0;
-          },
-          &(*promise),
+          &buffer_size,  // Will be ignored, since RTAUDIO_SCHEDULE_REALTIME is set
+          nullptr,
+          nullptr,
           &options
       );
-      rt_audio_->startStream();
+      rt_audio_->closeStream();
     } catch (RtAudioError &e) {
       PLOGE << "Error occurred while opening stream to determine lowest buffer size" << e.getMessage();
-      promise->set_exception(std::make_exception_ptr(e));
     }
-    try {
-      unsigned int buffer_size = promise->get_future().get();
-      if (rt_audio_->isStreamRunning())
-        rt_audio_->stopStream();
-      if (rt_audio_->isStreamOpen())
-        rt_audio_->closeStream();
-      // Now the buffer_size should be power of 2...
-      buffer_size--;
-      buffer_size |= buffer_size >> 1;
-      buffer_size |= buffer_size >> 2;
-      buffer_size |= buffer_size >> 4;
-      buffer_size |= buffer_size >> 8;
-      buffer_size |= buffer_size >> 16;
-      buffer_size++;
-      return buffer_size;
-    } catch (RtAudioError &err) {
-      PLOGE << "Error occurred while closing stream after determining lowest buffer size" << err.getMessage();
-    }
+    buffer_size--;
+    buffer_size |= buffer_size >> 1;
+    buffer_size |= buffer_size >> 2;
+    buffer_size |= buffer_size >> 4;
+    buffer_size |= buffer_size >> 8;
+    buffer_size |= buffer_size >> 16;
+    buffer_size++;
   }
-  return 256; // = default
+  return buffer_size;
 }

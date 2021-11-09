@@ -145,10 +145,12 @@ void AudioIO::attachHandlers(DigitalStage::Api::Client &client) {
       auto inputSoundCard = store->getInputSoundCard();
       if (localDeviceId && audio_track.deviceId == *localDeviceId && audio_track.sourceChannel) {
         // This is a local track, so map the channels to this track
+        mutex_.lock();
         if (!input_channel_mapping_.count(*audio_track.sourceChannel)) {
           input_channel_mapping_[*audio_track.sourceChannel] = audio_track._id;
           PLOGD << "Added local track for channel " << *audio_track.sourceChannel;
         }
+        mutex_.unlock();
       }
     }
   });
@@ -157,12 +159,12 @@ void AudioIO::attachHandlers(DigitalStage::Api::Client &client) {
       PLOGD << "AudioIO::handle::audioTrackRemoved";
       auto localDeviceId = store->getLocalDeviceId();
       if (localDeviceId && audio_track.deviceId == *localDeviceId && audio_track.sourceChannel) {
-        // This is a local track, so map the channels to this track
-        //std::unique_lock lock(channels_mapping_mutex_);
+        mutex_.lock();
         if (input_channel_mapping_.count(*audio_track.sourceChannel)) {
           input_channel_mapping_.erase(*audio_track.sourceChannel);
           PLOGD << "Removed local track for channel " << *audio_track.sourceChannel;
         }
+        mutex_.unlock();
       }
     }
   });
@@ -170,6 +172,7 @@ void AudioIO::attachHandlers(DigitalStage::Api::Client &client) {
 
 void AudioIO::publishChannel(DigitalStage::Api::Client &client, int channel) {
   if (!input_channel_mapping_.count(channel)) {
+    PLOGD << "AudioIO::publishChannel";
     auto store = client.getStore();
     auto stageId = store->getStageId();
     nlohmann::json payload;
@@ -189,6 +192,7 @@ void AudioIO::unPublishChannel(DigitalStage::Api::Client &client, int channel) {
 
 void AudioIO::unPublishAll(DigitalStage::Api::Client &client) {
   for (const auto &item: input_channel_mapping_) {
+    PLOGD << "AudioIO::unPublishAll";
     client.send(DigitalStage::Api::SendEvents::REMOVE_AUDIO_TRACK, item.second);
   }
 }

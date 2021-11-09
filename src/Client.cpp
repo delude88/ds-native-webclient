@@ -11,7 +11,7 @@ Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
     audio_mixer_(client),
     audio_renderer_(client),
     output_buffer_(5000) {
-    connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
+  connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
       channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(output_buffer_);
@@ -120,10 +120,15 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   memset(right, 0, frame_count * sizeof(float));
 
   for (const auto &item: audio_tracks) {
-    // Send to webRTC
-    connection_service_.broadcast(item.first, item.second, frame_count);
+    if (item.second) {
+      // Send to webRTC
+      connection_service_.broadcast(item.first, item.second, frame_count);
 
-    audio_renderer_.render(item.first, item.second, left, right, frame_count);
+      audio_renderer_.render(item.first, item.second, left, right, frame_count);
+    } else {
+      std::cerr << "Item is null" << std::endl;
+    }
+    assert(item.second);
 
     // Apply gain
     /*
@@ -154,7 +159,7 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   } else {
     // Use mono for all
     for (int output_channel = 0; output_channel < num_output_channels; output_channel++) {
-      memcpy(out[output_channel], &left, frame_count * sizeof(float));
+      out[output_channel] = &left[0];
     }
   }
 }

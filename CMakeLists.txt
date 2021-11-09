@@ -66,6 +66,7 @@ endif ()
 #  - udp-discovery-cpp
 add_subdirectory(include/udp-discovery-cpp)
 #  - HRTF Engine
+add_compile_definitions(USE_UPC_WITHOUT_MEMORY)
 add_subdirectory(include/3dti_AudioToolkit)
 #  - rtaudio
 if (APPLE)
@@ -129,6 +130,7 @@ endif ()
 #################################################
 set(RESOURCE_FILES
         hrtf.3dti-hrtf
+        3DTI_HRTF_IRC1008_128s_48000Hz.3dti-hrtf
         3DTI_BRIR_large_48000Hz.3dti-brir)
 cmrc_add_resource_library(${PROJECT_NAME}-resources
         NAMESPACE clientres

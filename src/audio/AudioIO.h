@@ -7,6 +7,7 @@
 #include <sigslot/signal.hpp>
 #include <unordered_map>
 #include <string>
+#include <mutex>
 
 typedef std::unordered_map<unsigned int, std::string> ChannelMap;
 
@@ -60,6 +61,7 @@ class AudioIO {
   void attachHandlers(DigitalStage::Api::Client &client);
 
  protected:
+  std::mutex mutex_;
   /**
    * Mapping of input channels.
    * Source channel <-> audio_track_id (online)

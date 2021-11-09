@@ -14,7 +14,6 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
-#include <shared_mutex>
 #include <HRTF/HRTFCereal.h>
 #include <BRIR/BRIRCereal.h>
 #include <BinauralSpatializer/3DTI_BinauralSpatializer.h>
@@ -41,12 +40,11 @@ class AudioRenderer {
   void setAudioTrackPosition(const std::string &audio_track_id,
                              const DigitalStage::Types::ThreeDimensionalProperties &position);
 
-  bool initialized_;
-  Binaural::CCore core_;
+  std::shared_ptr<Binaural::CCore> core_;
   std::shared_ptr<Binaural::CListener> listener_;
   std::shared_ptr<Binaural::CEnvironment> environment_;
   std::unordered_map<std::string, std::shared_ptr<Binaural::CSingleSourceDSP>> audio_tracks_;
-  std::unordered_map<std::string, std::pair<T, T>> render_map_;
+  std::recursive_mutex mutex_;
 };
 
 #include "AudioRenderer.tpp"

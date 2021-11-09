@@ -157,6 +157,8 @@ void PeerConnection::handleLocalSessionDescription(const rtc::Description &descr
 }
 void PeerConnection::send(const std::string &audio_track_id, const std::byte *data, const size_t size) {
   std::unique_lock<std::mutex> lock(senders_mutex_);
+//  4   client                        	       0x104df79d4 PeerConnection::send(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, std::byte const*, unsigned long) + 56 (PeerConnection.cpp:159)
+
   if (senders_.count(audio_track_id) == 0) {
     PLOGD << "Creating send data channel";
     senders_[audio_track_id] = peer_connection_->createDataChannel(audio_track_id);
