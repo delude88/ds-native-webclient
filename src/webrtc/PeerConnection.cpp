@@ -10,10 +10,10 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
     making_offer_(false),
     ignore_offer_(false),
     srd_answer_pending_(false) {
-  PLOGD << "PeerConnection::PeerConnection";
+  PLOGD << "PeerConnection";
 
   peer_connection_->onLocalCandidate([this](const rtc::Candidate &candidate) {
-    PLOGD << "PeerConnection::onLocalCandidate";
+    PLOGD << "onLocalCandidate";
     // Just forward it to the other remote peer
     DigitalStage::Types::IceCandidateInit ice_candidate_init;
     ice_candidate_init.sdpMid = candidate.mid();
@@ -22,21 +22,21 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
   });
 
   peer_connection_->onLocalDescription([this](const rtc::Description &description) {
-    PLOGD << "PeerConnection::onLocalDescription";
+    PLOGD << "onLocalDescription";
     handleLocalSessionDescription(description);
   });
 
   peer_connection_->onStateChange([](rtc::PeerConnection::State state) {
     switch (state) {
-      case rtc::PeerConnection::State::Connecting:PLOGD << "PeerConnection::onStateChange -> Connecting";
+      case rtc::PeerConnection::State::Connecting:PLOGD << "onStateChange -> Connecting";
         break;
-      case rtc::PeerConnection::State::Connected:PLOGD << "PeerConnection::onStateChange -> Connected";
+      case rtc::PeerConnection::State::Connected:PLOGD << "onStateChange -> Connected";
         break;
-      case rtc::PeerConnection::State::Disconnected:PLOGD << "PeerConnection::onStateChange -> Disconnected";
+      case rtc::PeerConnection::State::Disconnected:PLOGD << "onStateChange -> Disconnected";
         break;
-      case rtc::PeerConnection::State::Closed:PLOGD << "PeerConnection::onStateChange -> Closed";
+      case rtc::PeerConnection::State::Closed:PLOGD << "onStateChange -> Closed";
         break;
-      case rtc::PeerConnection::State::Failed:PLOGD << "PeerConnection::onStateChange -> Failed";
+      case rtc::PeerConnection::State::Failed:PLOGD << "onStateChange -> Failed";
         break;
       default:break;
     }
@@ -58,7 +58,7 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
 }
 
 PeerConnection::~PeerConnection() {
-  PLOGD << "PeerConnection::~PeerConnection";
+  PLOGD << "~PeerConnection";
   peer_connection_->close();
 }
 
@@ -88,19 +88,19 @@ void PeerConnection::makeOffer() {
 }*/
 
 void PeerConnection::addRemoteIceCandidate(const DigitalStage::Types::IceCandidateInit &ice_candidate_init) {
-  PLOGD << "PeerConnection::addRemoteIceCandidate";
+  PLOGD << "addRemoteIceCandidate";
   try {
     peer_connection_->addRemoteCandidate(rtc::Candidate(ice_candidate_init.candidate, ice_candidate_init.sdpMid));
   } catch (const std::logic_error &logic_error) {
     if (!ignore_offer_) {
-      PLOGE << logic_error.what();
+      PLOGE << "Could not add remote ICE candidate: " << logic_error.what();
     } else {
       PLOGD << "Ignoring ice error - for sure!";
     }
   }
 }
 void PeerConnection::setRemoteSessionDescription(const DigitalStage::Types::SessionDescriptionInit &session_description_init) {
-  PLOGD << "PeerConnection::setRemoteSessionDescription";
+  PLOGD << "setRemoteSessionDescription";
   rtc::Description description(session_description_init.sdp, session_description_init.type);
 
   bool is_stable = peer_connection_->signalingState() == rtc::PeerConnection::SignalingState::Stable ||
@@ -108,7 +108,7 @@ void PeerConnection::setRemoteSessionDescription(const DigitalStage::Types::Sess
           && srd_answer_pending_);
   ignore_offer_ = description.type() == rtc::Description::Type::Offer && !polite_ && (making_offer_ || !is_stable);
   if (ignore_offer_) {
-    PLOGD << "PeerConnection: glare - ignoring offer";
+    PLOGD << "glare - ignoring offer";
     return;
   }
   srd_answer_pending_ = description.type() == rtc::Description::Type::Answer;
@@ -120,7 +120,7 @@ void PeerConnection::setRemoteSessionDescription(const DigitalStage::Types::Sess
 }
 
 void PeerConnection::handleLocalSessionDescription(const rtc::Description &description) {
-  PLOGD << "PeerConnection::handleLocalSessionDescription";
+  PLOGD << "handleLocalSessionDescription";
   if (description.type() == rtc::Description::Type::Offer) {
     try {
       // Always send offers, but make some checks first
@@ -135,7 +135,7 @@ void PeerConnection::handleLocalSessionDescription(const rtc::Description &descr
       session_description_init.sdp = std::string(description);
       onLocalSessionDescription(session_description_init);
     } catch (std::runtime_error &error) {
-      PLOGE << "PeerConnection: Could not send offer, reason: " << error.what();
+      PLOGE << "Could not send offer, reason: " << error.what();
     }
     making_offer_ = false;
   } else if (description.type() == rtc::Description::Type::Answer) {
@@ -151,20 +151,22 @@ void PeerConnection::handleLocalSessionDescription(const rtc::Description &descr
       session_description_init.sdp = std::string(description);
       onLocalSessionDescription(session_description_init);
     } catch (std::runtime_error &error) {
-      PLOGE << "PeerConnection: Could not send answer, reason: " << error.what();
+      PLOGE << "Could not send answer, reason: " << error.what();
     }
   }
 }
 void PeerConnection::send(const std::string &audio_track_id, const std::byte *data, const size_t size) {
   std::unique_lock<std::mutex> lock(senders_mutex_);
-//  4   client                        	       0x104df79d4 PeerConnection::send(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, std::byte const*, unsigned long) + 56 (PeerConnection.cpp:159)
-
-  if (senders_.count(audio_track_id) == 0) {
-    PLOGD << "Creating send data channel";
-    senders_[audio_track_id] = peer_connection_->createDataChannel(audio_track_id);
-  }
-  // fire and forget
-  if (senders_[audio_track_id]->isOpen()) {
-    senders_[audio_track_id]->send(data, size);
+  try {
+    if (senders_.count(audio_track_id) == 0) {
+      PLOGD << "Creating send data channel";
+      senders_[audio_track_id] = peer_connection_->createDataChannel(audio_track_id);
+    }
+    // fire and forget
+    if (senders_[audio_track_id]->isOpen()) {
+      senders_[audio_track_id]->send(data, size);
+    }
+  } catch(std::exception &err) {
+    PLOGW << "Could not send: " << err.what();
   }
 }
