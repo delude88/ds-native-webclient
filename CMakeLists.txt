@@ -128,12 +128,13 @@ endif ()
 #   Resource managment
 #
 #################################################
-set(RESOURCE_FILES
-        hrtf.3dti-hrtf
-        3DTI_HRTF_IRC1008_128s_48000Hz.3dti-hrtf
-        3DTI_BRIR_large_48000Hz.3dti-brir)
+file(GLOB RESOURCE_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/*.3dti-brir
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/*.3dti-hrtf
+        )
 cmrc_add_resource_library(${PROJECT_NAME}-resources
         NAMESPACE clientres
+        WHENCE resources
         ${RESOURCE_FILES}
         )
 

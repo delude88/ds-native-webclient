@@ -2,28 +2,66 @@
 // Created by Tobias Hegemann on 04.11.21.
 //
 
-#include <cmrc/cmrc.hpp>
 #include "../utils/CMRCFileBuffer.h"
 #include "AudioRenderer.h"
 
-CMRC_DECLARE(clientres);
+const char *roomEnum2Str[] = {
+    "SMALL",
+    "MEDIUM",
+    "LARGE"
+};
 
 template<typename T>
-AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client)
-    : core_(std::make_shared<Binaural::CCore>(Common::TAudioStateStruct{48000, 256}, 5)) {
+AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client, bool autostart)
+    : fs_(cmrc::clientres::get_filesystem()), initialized_(false), store_(*client.getStore()) {
   PLOGD << "AudioRenderer";
   ERRORHANDLER3DTI.SetVerbosityMode(VERBOSITYMODE_ERRORSANDWARNINGS);
   ERRORHANDLER3DTI.SetErrorLogStream(&std::cerr, true);
 
-  auto fs = cmrc::clientres::get_filesystem();
+  attachHandlers(client, autostart);
+}
 
-  auto brirFile = fs.open("3DTI_BRIR_large_48000Hz.3dti-brir");
+template<class T>
+bool AudioRenderer<T>::isValid(unsigned int sample_rate, unsigned int buffer_size) {
+  std::string brirPath("3DTI_BRIR_small_" + std::to_string(sample_rate) + "Hz.3dti-brir");
+  std::string hrtfPath
+      ("3DTI_HRTF_IRC1008_" + std::to_string(buffer_size) + "s_" + std::to_string(sample_rate) + "Hz.3dti-hrtf");
+  return fs_.is_file(brirPath) && fs_.is_file(hrtfPath);
+}
+
+template<typename T>
+void AudioRenderer<T>::start(unsigned int sample_rate,
+                             unsigned int buffer_size,
+                             AudioRenderer::RoomSize room_size,
+                             int hrtf_resampling_steps) {
+  // Load HRTF and BRIR from compiled resources
+  if (!isValid(sample_rate, buffer_size)) {
+    throw std::invalid_argument(
+        "Invalid sample rate and/or buffer size. Hint: use sample rates of 41000, 48000 or 96000 and buffer sizes of 128, 256, 512 or 1024");
+  }
+  std::string brirPath("3DTI_BRIR_" + roomEnum2Str(room_size) + "_" + std::to_string(sample_rate) + "Hz.3dti-brir");
+  if (!fs_.is_file(brirPath)) {
+    throw std::filesystem::filesystem_error(
+        "BRIR for room size " + roomEnum2Str(room_size) + " not available. Check your build settings. Was looking for "
+            + brirPath);
+  }
+  auto brirFile = fs_.open(brirPath);
   CMRCFileBuffer brirFileBuffer(brirFile);
   std::istream brirFileStream(&brirFileBuffer);
-  auto hrtfFile = fs.open("3DTI_HRTF_IRC1008_128s_48000Hz.3dti-hrtf");
+  std::string hrtfPath
+      ("3DTI_HRTF_IRC1008_" + std::to_string(buffer_size) + "s_" + std::to_string(sample_rate) + "Hz.3dti-hrtf");
+  auto hrtfFile = fs_.open(hrtfPath);
   CMRCFileBuffer hrtfFileBuffer(hrtfFile);
   std::istream hrtfFileStream(&hrtfFileBuffer);
 
+  const std::lock_guard<std::mutex> lock(mutex_);
+  initialized_ = false;
+  audio_tracks_.clear();
+  // Init core
+  core_ = std::make_shared<Binaural::CCore>(Common::TAudioStateStruct{static_cast<int>(sample_rate),
+                                                                      static_cast<int>(buffer_size)},
+                                            hrtf_resampling_steps);
+  // Init environment (used for reverb)
   environment_ = core_->CreateEnvironment();
   environment_->SetReverberationOrder(TReverberationOrder::BIDIMENSIONAL);
   BRIR::CreateFrom3dtiStream(brirFileStream, environment_);
@@ -37,48 +75,109 @@ AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client)
   assert(listener_->GetHRTF()->IsHRTFLoaded());
   PLOGD << "Loaded HRTF";
 
-  attachHandlers(client);
+  // Listener
+  auto local_stage_device = store_.getStageDevice();
+  assert(local_stage_device);
+  setListenerPosition(calculatePosition(*local_stage_device, store_));
+
+  // Other remote audio tracks
+  for (const auto &audio_track: store_.audioTracks.getAll()) {
+    if (!audio_tracks_.count(audio_track._id)) {
+      audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
+      audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
+      audio_tracks_[audio_track._id]->DisableNearFieldEffect();
+      audio_tracks_[audio_track._id]->EnableAnechoicProcess();
+      audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
+    }
+    setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, store_));
+  }
+
+  initialized_ = true;
+}
+
+template<class T>
+void AudioRenderer<T>::stop() {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  initialized_ = false;
 }
 
 template<typename T>
-void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
-  client.stageJoined.connect([this](const ID_TYPE &, const ID_TYPE &,
-                                    const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
-      auto output_sound_card = store->getOutputSoundCard();
-      if (output_sound_card && store->getStageDeviceId()) {
+void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client, bool autostart) {
+  // Automatically init means listening to the selected sound card and init each time the sampleRate and bufferSize seems valid
+  if (autostart) {
+    auto automaticInitialization =
+        [this](const DigitalStage::Types::Stage &stage, const DigitalStage::Types::SoundCard &sound_card) {
+          if (isValid(sound_card.sampleRate, sound_card.bufferSize)) {
+            // Get room size
+            auto room_volume = stage.width * stage.length * stage.height;
+            auto room_size = AudioRenderer::RoomSize::Small;
+            if (room_volume > 1000) {
+              room_size = AudioRenderer::RoomSize::Large;
+            } else if (room_volume > 100) {
+              room_size = AudioRenderer::RoomSize::Medium;
+            }
+            start(sound_card.sampleRate, sound_card.bufferSize, room_size);
+          } else {
+            PLOGW << "Current values of output sound card are not supported by 3D audio engine";
+          }
+        };
+    client.ready.connect([this](const DigitalStage::Api::Store *store) {
+      auto stageId = store->getStageId();
+      if (stageId) {
+        PLOGD << "ready";
+        auto stage = store->stages.get(*stageId);
+        auto output_sound_card = store->getOutputSoundCard();
+        if (stage && output_sound_card) {
+          automaticInitialization(stage, output_sound_card);
+        }
+      }
+    });
+    client.stageJoined.connect([automaticInitialization](const ID_TYPE &stage_id, const ID_TYPE &,
+                                                         const DigitalStage::Api::Store *store) {
+      if (store->isReady()) {
         PLOGD << "stageJoined";
-        init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
+        auto stage = store->stages.get(stage_id);
+        auto output_sound_card = store->getOutputSoundCard();
+        if (stage && output_sound_card) {
+          automaticInitialization(stage, output_sound_card);
+        }
       }
-    }
-  });
-  client.ready.connect([this](const DigitalStage::Api::Store *store) {
-    if (store->getStageDeviceId()) {
-      PLOGD << "ready";
-      auto output_sound_card = store->getOutputSoundCard();
-      if (output_sound_card) {
-        init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
+    });
+    client.stageLeft.connect([this](const ID_TYPE &, const ID_TYPE &,
+                                    const DigitalStage::Api::Store *store) {
+      stop();
+    });
+    client.outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
+                                                 const DigitalStage::Api::Store *store) {
+      if (store->isReady() &&
+          (update.contains("sampleRate") || update.contains("bufferSize"))) {
+        auto stageId = store->getStageId();
+        if (stageId) {
+          auto stage = store->stages.get(*stageId);
+          auto output_sound_card = store->getOutputSoundCard();
+          if (stage && output_sound_card) {
+            automaticInitialization(stage, output_sound_card);
+          }
+        }
       }
-    }
-  });
-  client.outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
-                                               const DigitalStage::Api::Store *store) {
-    if (store->isReady() && update.contains("sampleRate") && store->getStageDeviceId()) {
-      PLOGD << "outputSoundCardChanged";
-      auto output_sound_card = store->getOutputSoundCard();
-      init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
-    }
-  });
-  client.outputSoundCardSelected.connect([this](const std::optional<std::string> &,
-                                                const DigitalStage::Api::Store *store) {
-    if (store->isReady() && store->getStageDeviceId()) {
-      PLOGD << "outputSoundCardSelected";
-      auto output_sound_card = store->getOutputSoundCard();
-      init(output_sound_card->sampleRate, output_sound_card->frameSize, *store);
-    }
-  });
+    });
+    client.outputSoundCardSelected.connect([this](const std::optional<std::string> &,
+                                                  const DigitalStage::Api::Store *store) {
+      if (store->isReady()) {
+        auto stageId = store->getStageId();
+        if (stageId) {
+          auto stage = store->stages.get(*stageId);
+          auto output_sound_card = store->getOutputSoundCard();
+          if (stage && output_sound_card) {
+            automaticInitialization(stage, output_sound_card);
+          }
+        }
+      }
+    });
+  }
+
   client.audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       PLOGD << "audioTrackAdded";
       mutex_.lock();
       if (!audio_tracks_.count(audio_track._id)) {
@@ -94,7 +193,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.audioTrackChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                           const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       PLOGD << "audioTrackChanged";
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
@@ -106,7 +205,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
     }
   });
   client.audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       mutex_.lock();
       PLOGD << "audioTrackRemoved";
       audio_tracks_.erase(audio_track._id);
@@ -115,7 +214,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customAudioTrackPositionAdded.connect([this](const CustomAudioTrackPosition &position,
                                                       const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_track = store->audioTracks.get(position.audioTrackId);
       assert(audio_track);
       mutex_.lock();
@@ -125,7 +224,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customAudioTrackPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                                         const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto position = store->customAudioTrackPositions.get(id);
@@ -140,7 +239,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customAudioTrackPositionRemoved.connect([this](const CustomAudioTrackPosition &position,
                                                         const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_track = store->audioTracks.get(position.audioTrackId);
       assert(audio_track);
       mutex_.lock();
@@ -150,7 +249,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.stageDeviceChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                            const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         // Did the local stage device and so this listener change?
@@ -175,7 +274,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customStageDevicePositionAdded.connect([this](const CustomStageDevicePosition &position,
                                                        const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageDevice(position.stageDeviceId);
       for (const auto &audio_track: audio_tracks) {
         mutex_.lock();
@@ -199,7 +298,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customStageDevicePositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                                          const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto custom_position = store->customStageDevicePositions.get(id);
@@ -231,7 +330,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customStageDevicePositionRemoved.connect([this](const CustomStageDevicePosition &position,
                                                          const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageDevice(position.stageDeviceId);
       for (const auto &audio_track: audio_tracks) {
         mutex_.lock();
@@ -255,7 +354,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.stageMemberChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                            const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         // Update all related audio tracks
@@ -283,7 +382,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customStageMemberPositionAdded.connect([this](const CustomStageMemberPosition &position,
                                                        const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageMember(position.stageMemberId);
       for (const auto &audio_track: audio_tracks) {
         mutex_.lock();
@@ -307,7 +406,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customStageMemberPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                                          const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto custom_position = store->customStageMemberPositions.get(id);
@@ -339,7 +438,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customStageMemberPositionRemoved.connect([this](const CustomStageMemberPosition &position,
                                                          const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageMember(position.stageMemberId);
       for (const auto &audio_track: audio_tracks) {
         mutex_.lock();
@@ -363,7 +462,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.groupChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                      const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         // Update all related audio tracks
@@ -391,7 +490,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customGroupPositionAdded.connect([this](const CustomGroupPosition &position,
                                                  const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByGroup(position.groupId);
       for (const auto &audio_track: audio_tracks) {
         mutex_.lock();
@@ -415,7 +514,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customGroupPositionChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                                    const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       if (update.contains("x") || update.contains("y") || update.contains("z") || update.contains("rX")
           || update.contains("rY") || update.contains("rZ")) {
         auto custom_position = store->customGroupPositions.get(id);
@@ -444,7 +543,7 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
   });
   client.customGroupPositionRemoved.connect([this](const CustomGroupPosition &position,
                                                    const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByGroup(position.groupId);
       for (const auto &audio_track: audio_tracks) {
         mutex_.lock();
@@ -466,34 +565,6 @@ void AudioRenderer<T>::attachHandlers(DigitalStage::Api::Client &client) {
       }
     }
   });
-}
-template<typename T>
-void AudioRenderer<T>::init(int sample_rate, int buffer_size, const DigitalStage::Api::Store &store) {
-  mutex_.lock();
-  PLOGD << "nit - " << sample_rate;
-  audio_tracks_.clear();
-  Common::TAudioStateStruct audioState;
-  audioState.sampleRate = sample_rate;
-  audioState.bufferSize = buffer_size;
-  core_->SetAudioState(audioState);
-
-  // Listener
-  auto local_stage_device = store.getStageDevice();
-  assert(local_stage_device);
-  setListenerPosition(calculatePosition(*local_stage_device, store));
-
-  // Other remote audio tracks
-  for (const auto &audio_track: store.audioTracks.getAll()) {
-    if (!audio_tracks_.count(audio_track._id)) {
-      audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
-      audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
-      audio_tracks_[audio_track._id]->DisableNearFieldEffect();
-      audio_tracks_[audio_track._id]->EnableAnechoicProcess();
-      audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
-    }
-    setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, store));
-  }
-  mutex_.unlock();
 }
 
 template<typename T>
@@ -592,58 +663,58 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outLeft,
                               T *outRight,
                               std::size_t frame_size) {
-  if (mutex_.try_lock()) {
-    if (audio_tracks_.count(audio_track_id) != 0 && listener_->GetHRTF()->IsHRTFLoaded()) {
-      // Compare frame size
-      try {
-        if (frame_size != core_->GetAudioState().bufferSize) {
-          PLOGD << "Correcting buffer size of audio renderer from " << core_->GetAudioState().bufferSize << " to "
-                << frame_size;
-          //TODO: Optimize this by comparing member variable instead of calling GetAudioState() twice each time
-          auto audio_state = core_->GetAudioState();
-          audio_state.bufferSize = frame_size;
-          core_->SetAudioState(audio_state);
-          environment_->ResetReverbBuffers();
+  if (initialized_) {
+    if (mutex_.try_lock()) {
+      if (audio_tracks_.count(audio_track_id) != 0) {
+        // Compare frame size
+        try {
+          CMonoBuffer<float> inputBuffer(frame_size);
+          inputBuffer.Feed(in, frame_size, 1);
+
+          Common::CEarPair<CMonoBuffer<float>> bufferProcessed;
+
+          audio_tracks_[audio_track_id]->SetBuffer(inputBuffer);
+          audio_tracks_[audio_track_id]->ProcessAnechoic(bufferProcessed.left, bufferProcessed.right);
+
+          for (int f = 0; f < frame_size; f++) {
+            outLeft[f] += bufferProcessed.left[f];
+            outRight[f] += bufferProcessed.right[f];
+          }
+        } catch (std::exception &err) {
+          PLOGE << err.what();
         }
-
-        CMonoBuffer<float> inputBuffer(frame_size);
-        inputBuffer.Feed(in, frame_size, 1);
-
-        Common::CEarPair<CMonoBuffer<float>> bufferProcessed;
-
-        audio_tracks_[audio_track_id]->SetBuffer(inputBuffer);
-        audio_tracks_[audio_track_id]->ProcessAnechoic(bufferProcessed.left, bufferProcessed.right);
-
-
+      } else {
         for (int f = 0; f < frame_size; f++) {
-          outLeft[f] += bufferProcessed.left[f];
-          outRight[f] += bufferProcessed.right[f];
+          // Just mixing
+          outLeft[f] += in[f];
+          outRight[f] += in[f];
         }
-      } catch (std::exception &err) {
-        PLOGE << err.what();
       }
-    } else {
-      for (int f = 0; f < frame_size; f++) {
-        // Just mixing
-        outLeft[f] += in[f];
-        outRight[f] += in[f];
-      }
+      mutex_.unlock();
     }
-    mutex_.unlock();
+  } else {
+    for (int f = 0; f < frame_size; f++) {
+      // Just mixing
+      outLeft[f] += in[f];
+      outRight[f] += in[f];
+    }
   }
 }
 template<typename T>
 void AudioRenderer<T>::renderReverb(T *outLeft, T *outRight, std::size_t frame_size) {
-  mutex_.lock();
-  Common::CEarPair<CMonoBuffer<float>> bufferReverb;
-  environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
+  if (initialized_) {
+    if (mutex_.try_lock()) {
+      Common::CEarPair<CMonoBuffer<float>> bufferReverb;
+      environment_->ProcessVirtualAmbisonicReverb(bufferReverb.left, bufferReverb.right);
 
-  PLOGD << "bufferReverb.left.size = " << bufferReverb.left.size();
-  PLOGD << "bufferReverb.right.size = " << bufferReverb.right.size();
-  for (int f = 0; f < frame_size; f++) {
-    std::cout << outLeft[f] << " += " << bufferReverb.left[f];
-    outLeft[f] += bufferReverb.left[f];
-    outRight[f] += bufferReverb.right[f];
+      PLOGD << "bufferReverb.left.size = " << bufferReverb.left.size();
+      PLOGD << "bufferReverb.right.size = " << bufferReverb.right.size();
+      for (int f = 0; f < frame_size; f++) {
+        std::cout << outLeft[f] << " += " << bufferReverb.left[f];
+        outLeft[f] += bufferReverb.left[f];
+        outRight[f] += bufferReverb.right[f];
+      }
+      mutex_.unlock();
+    }
   }
-  mutex_.unlock();
 }
