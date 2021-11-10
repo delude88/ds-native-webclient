@@ -52,6 +52,7 @@ add_subdirectory(include/libds)
 #  - libdatachannel
 if (UNIX AND NOT APPLE)
     set(USE_SYSTEM_SRTP ON)
+    set(USE_GNUTLS OFF)
 endif ()
 add_subdirectory(include/libdatachannel)
 #  - libdeviceid
