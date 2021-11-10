@@ -117,7 +117,7 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
 
       audio_renderer_.render(item.first, item.second, left, right, frame_count);
     } else {
-      std::cerr << "Audio track item is null" << std::endl;
+      PLOGE << "Audio track item is null";
     }
   }
 
@@ -160,7 +160,7 @@ void Client::attachAudioHandlers(AudioIO &audio_io) {
   audio_io.onDuplex.connect(&Client::onDuplexCallback, this);
 }
 void Client::changeReceiverSize(unsigned int receiver_buffer) {
-  PLOGD << "changeReceiverSize to" << receiver_buffer;
+  PLOGV << "changeReceiverSize to" << receiver_buffer;
   if (receiver_buffer > 0 && receiver_buffer_ != receiver_buffer) {
     std::unique_lock lock(channels_mutex_);
     receiver_buffer_ = receiver_buffer;

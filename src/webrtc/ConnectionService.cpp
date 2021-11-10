@@ -15,7 +15,7 @@ ConnectionService::~ConnectionService() {
 }
 
 void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
-  PLOGD << "attachHandlers()";
+  PLOGV << "attachHandlers()";
   client.ready.connect([this, &client](const DigitalStage::Api::Store *store) {
     onStageChanged(client);
   });
@@ -90,7 +90,7 @@ void ConnectionService::attachHandlers(DigitalStage::Api::Client &client) {
 }
 
 void ConnectionService::onStageChanged(DigitalStage::Api::Client &client) {
-  PLOGD << "handleStageChanged()";
+  PLOGV << "handleStageChanged()";
   auto store = client.getStore();
   if (store->isReady()) {
     auto stage_id = store->getStageId();

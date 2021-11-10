@@ -10,10 +10,10 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
     making_offer_(false),
     ignore_offer_(false),
     srd_answer_pending_(false) {
-  PLOGD << "PeerConnection";
+  PLOGV << "PeerConnection";
 
   peer_connection_->onLocalCandidate([this](const rtc::Candidate &candidate) {
-    PLOGD << "onLocalCandidate";
+    PLOGV << "onLocalCandidate";
     // Just forward it to the other remote peer
     DigitalStage::Types::IceCandidateInit ice_candidate_init;
     ice_candidate_init.sdpMid = candidate.mid();
@@ -22,21 +22,21 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
   });
 
   peer_connection_->onLocalDescription([this](const rtc::Description &description) {
-    PLOGD << "onLocalDescription";
+    PLOGV << "onLocalDescription";
     handleLocalSessionDescription(description);
   });
 
   peer_connection_->onStateChange([](rtc::PeerConnection::State state) {
     switch (state) {
-      case rtc::PeerConnection::State::Connecting:PLOGD << "onStateChange -> Connecting";
+      case rtc::PeerConnection::State::Connecting:PLOGV << "onStateChange -> Connecting";
         break;
-      case rtc::PeerConnection::State::Connected:PLOGD << "onStateChange -> Connected";
+      case rtc::PeerConnection::State::Connected:PLOGV << "onStateChange -> Connected";
         break;
-      case rtc::PeerConnection::State::Disconnected:PLOGD << "onStateChange -> Disconnected";
+      case rtc::PeerConnection::State::Disconnected:PLOGV << "onStateChange -> Disconnected";
         break;
-      case rtc::PeerConnection::State::Closed:PLOGD << "onStateChange -> Closed";
+      case rtc::PeerConnection::State::Closed:PLOGV << "onStateChange -> Closed";
         break;
-      case rtc::PeerConnection::State::Failed:PLOGD << "onStateChange -> Failed";
+      case rtc::PeerConnection::State::Failed:PLOGV << "onStateChange -> Failed";
         break;
       default:break;
     }
@@ -58,13 +58,13 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
 }
 
 PeerConnection::~PeerConnection() {
-  PLOGD << "~PeerConnection";
+  PLOGV << "~PeerConnection";
   peer_connection_->close();
 }
 
 /*
 void PeerConnection::makeOffer() {
-  PLOGD << "PeerConnection::makeOffer" ;
+  PLOGV << "PeerConnection::makeOffer" ;
   try {
     if (peer_connection_->signalingState() != rtc::PeerConnection::SignalingState::Stable) {
       throw std::runtime_error("Was not in stable state. Check your makeOffer calls!");
@@ -80,7 +80,7 @@ void PeerConnection::makeOffer() {
     if (peer_connection_->localDescription()->type() != rtc::Description::Type::Offer) {
       throw std::runtime_error("SLD of offer did not work");
     }
-    PLOGD << "PeerConnection::makeOffer -> made offer?!?" ;
+    PLOGV << "PeerConnection::makeOffer -> made offer?!?" ;
   } catch (std::runtime_error &error) {
     PLOGE << "PeerConnection: Could not create offer, reason: " << error.what() ;
     making_offer_ = false;
@@ -88,19 +88,19 @@ void PeerConnection::makeOffer() {
 }*/
 
 void PeerConnection::addRemoteIceCandidate(const DigitalStage::Types::IceCandidateInit &ice_candidate_init) {
-  PLOGD << "addRemoteIceCandidate";
+  PLOGV << "addRemoteIceCandidate";
   try {
     peer_connection_->addRemoteCandidate(rtc::Candidate(ice_candidate_init.candidate, ice_candidate_init.sdpMid));
   } catch (const std::logic_error &logic_error) {
     if (!ignore_offer_) {
       PLOGE << "Could not add remote ICE candidate: " << logic_error.what();
     } else {
-      PLOGD << "Ignoring ice error - for sure!";
+      PLOGV << "Ignoring ice error - for sure!";
     }
   }
 }
 void PeerConnection::setRemoteSessionDescription(const DigitalStage::Types::SessionDescriptionInit &session_description_init) {
-  PLOGD << "setRemoteSessionDescription";
+  PLOGV << "setRemoteSessionDescription";
   rtc::Description description(session_description_init.sdp, session_description_init.type);
 
   bool is_stable = peer_connection_->signalingState() == rtc::PeerConnection::SignalingState::Stable ||
@@ -108,7 +108,7 @@ void PeerConnection::setRemoteSessionDescription(const DigitalStage::Types::Sess
           && srd_answer_pending_);
   ignore_offer_ = description.type() == rtc::Description::Type::Offer && !polite_ && (making_offer_ || !is_stable);
   if (ignore_offer_) {
-    PLOGD << "glare - ignoring offer";
+    PLOGV << "glare - ignoring offer";
     return;
   }
   srd_answer_pending_ = description.type() == rtc::Description::Type::Answer;
@@ -120,7 +120,7 @@ void PeerConnection::setRemoteSessionDescription(const DigitalStage::Types::Sess
 }
 
 void PeerConnection::handleLocalSessionDescription(const rtc::Description &description) {
-  PLOGD << "handleLocalSessionDescription";
+  PLOGV << "handleLocalSessionDescription";
   if (description.type() == rtc::Description::Type::Offer) {
     try {
       // Always send offers, but make some checks first
@@ -159,7 +159,7 @@ void PeerConnection::send(const std::string &audio_track_id, const std::byte *da
   std::unique_lock<std::mutex> lock(senders_mutex_);
   try {
     if (senders_.count(audio_track_id) == 0) {
-      PLOGD << "Creating send data channel";
+      PLOGV << "Creating send data channel";
       senders_[audio_track_id] = peer_connection_->createDataChannel(audio_track_id);
     }
     // fire and forget

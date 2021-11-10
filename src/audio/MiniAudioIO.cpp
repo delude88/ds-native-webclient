@@ -7,18 +7,18 @@
 #include <plog/Log.h>
 
 MiniAudioIO::MiniAudioIO(DigitalStage::Api::Client &client) : AudioIO(client) {
-  PLOGD << "MiniAudioIO::MiniAudioIO";
+  PLOGV << "MiniAudioIO::MiniAudioIO";
 }
 
 MiniAudioIO::~MiniAudioIO() {
-  PLOGD << "MiniAudioIO::~MiniAudioIO";
+  PLOGV << "MiniAudioIO::~MiniAudioIO";
   ma_device_uninit(&input_device_);
   ma_device_uninit(&output_device_);
   ma_context_uninit(&context_);
 }
 
 void MiniAudioIO::setAudioDriver(const std::string &audio_driver) {
-  PLOGD << "AudioIO::setAudioDriver";
+  PLOGV << "AudioIO::setAudioDriver";
   initialized_ = false;
   ma_device_uninit(&input_device_);
   ma_device_uninit(&output_device_);
@@ -35,7 +35,7 @@ void MiniAudioIO::setInputSoundCard(const DigitalStage::Types::SoundCard &sound_
                                     bool start,
                                     DigitalStage::Api::Client &client) {
   if (initialized_) {
-    PLOGD << "AudioService::setInputSoundCard";
+    PLOGV << "AudioService::setInputSoundCard";
     // Un-init existing output device
     ma_device_uninit(&input_device_);
 
@@ -88,7 +88,7 @@ void MiniAudioIO::setInputSoundCard(const DigitalStage::Types::SoundCard &sound_
 
 void MiniAudioIO::setOutputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) {
   if (initialized_) {
-    PLOGD << "AudioIO::setOutputSoundCard";
+    PLOGV << "AudioIO::setOutputSoundCard";
     // Un-init existing output device
     ma_device_uninit(&output_device_);
 
@@ -154,7 +154,7 @@ void MiniAudioIO::setOutputSoundCard(const DigitalStage::Types::SoundCard &sound
 }
 void MiniAudioIO::startSending() {
   if (initialized_ && !ma_device_is_started(&input_device_)) {
-    PLOGD << "AudioIO::startSending";
+    PLOGV << "AudioIO::startSending";
     ma_result result = ma_device_start(&input_device_);
     if (result != MA_SUCCESS) {
       throw std::runtime_error("Failed to start capture device. Error code " + std::to_string(result));
@@ -163,7 +163,7 @@ void MiniAudioIO::startSending() {
 }
 void MiniAudioIO::stopSending() {
   if (initialized_ && ma_device_is_started(&input_device_)) {
-    PLOGD << "AudioIO::stopSending";
+    PLOGV << "AudioIO::stopSending";
     ma_result result = ma_device_stop(&input_device_);
     if (result != MA_SUCCESS) {
       throw std::runtime_error("Failed to stop capture device. Error code " + std::to_string(result));
@@ -172,7 +172,7 @@ void MiniAudioIO::stopSending() {
 }
 void MiniAudioIO::startReceiving() {
   if (initialized_ && !ma_device_is_started(&output_device_)) {
-    PLOGD << "AudioIO::startReceiving";
+    PLOGV << "AudioIO::startReceiving";
     ma_result result = ma_device_start(&output_device_);
     if (result != MA_SUCCESS) {
       throw std::runtime_error("Failed to start playback device. Error code " + std::to_string(result));
@@ -181,7 +181,7 @@ void MiniAudioIO::startReceiving() {
 }
 void MiniAudioIO::stopReceiving() {
   if (initialized_ && ma_device_is_started(&output_device_)) {
-    PLOGD << "AudioIO::stopReceiving";
+    PLOGV << "AudioIO::stopReceiving";
     ma_result result = ma_device_stop(&output_device_);
     if (result != MA_SUCCESS) {
       throw std::runtime_error("Failed to stop playback device. Error code " + std::to_string(result));

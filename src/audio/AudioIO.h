@@ -14,6 +14,7 @@ typedef std::unordered_map<unsigned int, std::string> ChannelMap;
 class AudioIO {
  public:
   explicit AudioIO(DigitalStage::Api::Client &client);
+  ~AudioIO();
 
   Pal::sigslot::signal<
       /* audio_track_id */ std::string,
@@ -42,7 +43,6 @@ class AudioIO {
                                 std::size_t num_output_channels,
                                 std::size_t frame_count
   ) = 0;*/
-
   virtual std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) = 0;
   virtual void setAudioDriver(const std::string &audio_driver) = 0;
   virtual void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card,
@@ -53,18 +53,24 @@ class AudioIO {
   virtual void stopSending() = 0;
   virtual void startReceiving() = 0;
   virtual void stopReceiving() = 0;
-
   void publishChannel(DigitalStage::Api::Client &client, int channel);
   void unPublishChannel(DigitalStage::Api::Client &client, int channel);
   void unPublishAll(DigitalStage::Api::Client &client);
- private:
-  void attachHandlers(DigitalStage::Api::Client &client);
 
- protected:
   std::mutex mutex_;
   /**
    * Mapping of input channels.
    * Source channel <-> audio_track_id (online)
    */
   ChannelMap input_channel_mapping_;
+  DigitalStage::Api::Client &client_;
+
+ private:
+  void attachHandlers();
+  void watchDeviceUpdates();
+  void stopWatchingDeviceUpdates();
+
+  std::atomic<bool> watching_device_updates_;
+  std::thread device_watcher_;
+  std::atomic<std::size_t> num_devices_;
 };
