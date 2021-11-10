@@ -50,6 +50,9 @@ find_package(Threads REQUIRED)
 #  - libds
 add_subdirectory(include/libds)
 #  - libdatachannel
+if (UNIX AND NOT APPLE)
+    set(USE_SYSTEM_SRTP ON)
+endif ()
 add_subdirectory(include/libdatachannel)
 #  - libdeviceid
 add_subdirectory(include/libdeviceid)
