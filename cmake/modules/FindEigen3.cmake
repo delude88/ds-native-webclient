@@ -6,15 +6,15 @@
 #
 # Once done this will define
 #
-#  EIGEN3_FOUND - system has eigen lib with correct version
+#  Eigen3_FOUND - system has eigen lib with correct version
 #  Eigen3_INCLUDE_DIR - the eigen include directory
 #  Eigen3_VERSION - eigen version
 #
 # This module reads hints about search locations from
 # the following enviroment variables:
 #
-# EIGEN3_ROOT
-# EIGEN3_ROOT_DIR
+# Eigen3_ROOT
+# Eigen3_ROOT_DIR
 
 # Copyright (c) 2006, 2007 Montel Laurent, <montel@kde.org>
 # Copyright (c) 2008, 2009 Gael Guennebaud, <g.gael@free.fr>
@@ -39,11 +39,11 @@ macro(_eigen3_check_version)
     file(READ "${Eigen3_INCLUDE_DIR}/Eigen/src/Core/util/Macros.h" _Eigen3_VERSION_header)
 
     string(REGEX MATCH "define[ \t]+EIGEN_WORLD_VERSION[ \t]+([0-9]+)" _eigen3_world_version_match "${_Eigen3_VERSION_header}")
-    set(EIGEN3_WORLD_VERSION "${CMAKE_MATCH_1}")
+    set(Eigen3_WORLD_VERSION "${CMAKE_MATCH_1}")
     string(REGEX MATCH "define[ \t]+EIGEN_MAJOR_VERSION[ \t]+([0-9]+)" _eigen3_major_version_match "${_Eigen3_VERSION_header}")
-    set(EIGEN3_MAJOR_VERSION "${CMAKE_MATCH_1}")
+    set(Eigen3_MAJOR_VERSION "${CMAKE_MATCH_1}")
     string(REGEX MATCH "define[ \t]+EIGEN_MINOR_VERSION[ \t]+([0-9]+)" _eigen3_minor_version_match "${_Eigen3_VERSION_header}")
-    set(EIGEN3_MINOR_VERSION "${CMAKE_MATCH_1}")
+    set(Eigen3_MINOR_VERSION "${CMAKE_MATCH_1}")
 
     set(Eigen3_VERSION ${Eigen3_WORLD_VERSION}.${Eigen3_MAJOR_VERSION}.${Eigen3_MINOR_VERSION})
     if(${Eigen3_VERSION} VERSION_LESS ${Eigen3_FIND_VERSION})
@@ -63,7 +63,7 @@ if (Eigen3_INCLUDE_DIR)
 
     # in cache already
     _eigen3_check_version()
-    set(EIGEN3_FOUND ${Eigen3_VERSION_OK})
+    set(Eigen3_FOUND ${Eigen3_VERSION_OK})
 
 else (Eigen3_INCLUDE_DIR)
 
@@ -75,8 +75,8 @@ else (Eigen3_INCLUDE_DIR)
     if(NOT Eigen3_INCLUDE_DIR)
         find_path(Eigen3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
                 HINTS
-                ENV EIGEN3_ROOT
-                ENV EIGEN3_ROOT_DIR
+                ENV Eigen3_ROOT
+                ENV Eigen3_ROOT_DIR
                 PATHS
                 ${CMAKE_INSTALL_PREFIX}/include
                 ${KDE4_INCLUDE_DIR}
