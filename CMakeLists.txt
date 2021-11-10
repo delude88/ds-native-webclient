@@ -8,7 +8,7 @@ if (NOT WIN32)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
 set(CMAKE_PROJECT_VERSION "1.0.0")
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
 #################################################
 #
@@ -73,7 +73,7 @@ add_subdirectory(include/udp-discovery-cpp)
 add_subdirectory(include/3dti_AudioToolkit)
 #  - rtaudio
 if (APPLE)
-    find_package(Jack)
+    #find_package(Jack)
     set(RTAUDIO_API_JACK OFF)
     set(RTAUDIO_API_PULSE OFF)  # WHY?!?
 endif ()
