@@ -30,6 +30,7 @@ else ()
     message(STATUS "LITTLE_ENDIAN")
 endif ()
 
+
 #################################################
 #
 #   Dependencies
@@ -82,16 +83,13 @@ add_subdirectory(include/rtaudio)
 
 #################################################
 #
-#   Configure artifact
+#   Configure artifact - common lib
 #
 #################################################
-if (APPLE)
-    add_executable(${PROJECT_NAME} MACOSX_BUNDLE)
-else ()
-    add_executable(${PROJECT_NAME})
-endif ()
+add_library(${PROJECT_NAME} STATIC)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
-        PRIVATE
+        PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Client.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Client.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/auth_cli.h
@@ -101,14 +99,9 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/CMRCFileBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/conversion.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/cp1252_to_utf8.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ServiceDiscovery.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.tpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.h
@@ -120,15 +113,36 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.cpp
         )
 if (USE_RT_AUDIO)
+    message(STATUS "Using RtAudio as audio engine")
+    target_sources(${PROJECT_NAME}
+            PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.cpp
+            )
     target_compile_definitions(${PROJECT_NAME}
-            PRIVATE
+            PUBLIC
             USE_RT_AUDIO)
+    target_link_libraries(${PROJECT_NAME}
+            PUBLIC
+            rtaudio
+            )
+else ()
+    message(STATUS "Using MiniAudio as audio engine")
+    target_sources(${PROJECT_NAME}
+            PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.cpp
+            )
+    target_include_directories(${PROJECT_NAME}
+            PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
+            )
 endif ()
-
 
 #################################################
 #
-#   Resource managment
+#   Resource management
 #
 #################################################
 file(GLOB RESOURCE_FILES
@@ -149,11 +163,10 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 #################################################
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/udp-discovery-cpp"
         )
 target_link_libraries(${PROJECT_NAME}
-        PRIVATE
+        PUBLIC
         DigitalStage::Api
         DigitalStage::Auth
         LibDataChannel::LibDataChannel
@@ -162,30 +175,9 @@ target_link_libraries(${PROJECT_NAME}
         Threads::Threads
         udp-discovery
         3dtiAudioToolkit
-        rtaudio
         ${PROJECT_NAME}-resources
         )
-if (WITH_GUI)
-    message(STATUS "Building with GUI")
-    find_package(wxWidgets REQUIRED COMPONENTS core base)
-    include(${wxWidgets_USE_FILE})
-    target_compile_definitions(${PROJECT_NAME}
-            PRIVATE
-            WITH_GUI)
-    target_sources(${PROJECT_NAME}
-            PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
-            )
-    target_link_libraries(${PROJECT_NAME}
-            PRIVATE
-            ${wxWidgets_LIBRARIES})
-else ()
-    message(STATUS "Building headless")
-    target_sources(${PROJECT_NAME}
-            PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/main_headless.cpp
-            )
-endif ()
+
 # Additions for macOS
 if (APPLE)
     find_library(APPLICATION_SERVICES ApplicationServices)
@@ -199,12 +191,13 @@ if (APPLE)
 
     enable_language(OBJC)
     target_sources(${PROJECT_NAME}
-            PRIVATE
+            PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.mm
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.h
             )
-    target_link_libraries(${PROJECT_NAME} PUBLIC
+    target_link_libraries(${PROJECT_NAME}
+            PUBLIC
             ${APPLICATION_SERVICES}
             ${AUDIO_TOOLBOX}
             ${AV_FOUNDATION}
@@ -219,16 +212,64 @@ endif (APPLE)
 
 #################################################
 #
+#   Configure artifact - GUI Application
+#
+#################################################
+if (APPLE)
+    add_executable(${PROJECT_NAME}-app MACOSX_BUNDLE)
+else ()
+    add_executable(${PROJECT_NAME}-app)
+endif ()
+find_package(wxWidgets REQUIRED COMPONENTS core base)
+include(${wxWidgets_USE_FILE})
+target_compile_definitions(${PROJECT_NAME}-app
+        PRIVATE
+        WITH_GUI)
+target_sources(${PROJECT_NAME}-app
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
+        )
+target_link_libraries(${PROJECT_NAME}-app
+        PUBLIC
+        ${PROJECT_NAME}::${PROJECT_NAME}
+        ${wxWidgets_LIBRARIES}
+        )
+
+#################################################
+#
+#   Configure artifact - CLI Application
+#
+#################################################
+add_executable(${PROJECT_NAME}-cli)
+target_sources(${PROJECT_NAME}-cli
+        PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
+        )
+target_link_libraries(${PROJECT_NAME}-cli
+        PUBLIC
+        ${PROJECT_NAME}::${PROJECT_NAME}
+        )
+
+#################################################
+#
 #   Bundling
 #
 #################################################
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(${PROJECT_NAME}-app PROPERTIES
         BUNDLE True
-        MACOSX_BUNDLE_GUI_IDENTIFIER org.digital-stage.libds.Client
+        MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
+        MACOSX_BUNDLE_BUNDLE_NAME App
+        MACOSX_BUNDLE_COPYRIGHT MIT
+        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
+        )
+set_target_properties(${PROJECT_NAME}-cli PROPERTIES
+        BUNDLE True
+        MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.cli
         MACOSX_BUNDLE_BUNDLE_NAME Client
         MACOSX_BUNDLE_COPYRIGHT MIT
         MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
-        RESOURCE "${RESOURCE_FILES}"
         )

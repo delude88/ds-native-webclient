@@ -6,7 +6,7 @@
 
 #include <DigitalStage/Api/Client.h>
 #include "webrtc/ConnectionService.h"
-#include "audio/MiniAudioIO.h"
+#include "audio/AudioIO.h"
 #include "audio/AudioMixer.h"
 #include "audio/AudioRenderer.h"
 #include "audio/RingBuffer.h"

@@ -1,9 +1,15 @@
+// AudioIO engine
+#ifdef USE_RT_AUDIO
+#include "audio/RtAudioIO.h"
+#else
 // Miniaudio
 #ifdef __APPLE__
 #define MA_NO_RUNTIME_LINKING
 #endif
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
+#include "audio/MiniAudioIO.h"
+#endif
 
 // Std lib
 #include <memory>
@@ -27,7 +33,7 @@
 #include <plog/Appenders/ConsoleAppender.h>
 
 // Signal handling (posix-only)
-#ifdef MA_POSIX
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 #include <csignal>
 #endif
 
@@ -36,12 +42,6 @@
 #include "utils/macos.h"
 #endif
 
-// AudioIO engine
-#ifdef USE_RT_AUDIO
-#include "audio/RtAudioIO.h"
-#else
-#include "audio/MiniAudioIO.h"
-#endif
 
 // Resource management
 #include <cmrc/cmrc.hpp>
@@ -56,9 +56,8 @@ void sig_handler(int s) {
 
 int main(int, char *[]) {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::info, &consoleAppender);
-
-#ifdef MA_POSIX
+  plog::init(plog::debug, &consoleAppender);
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
   // What to do for WIN32 here?
   signal(SIGINT, &sig_handler);
 #endif

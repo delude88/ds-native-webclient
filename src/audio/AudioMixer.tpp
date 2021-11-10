@@ -241,7 +241,7 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
       (custom_stage_device_volume ? custom_stage_device_volume->muted : stage_device->muted) ||
       (custom_audio_track_volume ? custom_audio_track_volume->muted : audio_track.muted);
 
-  PLOGV << "Got new volume for " << audio_track._id << ": " << volume << " " << (muted ? "(muted)" : "(unmuted)");
+  PLOGD << "Got new volume for " << audio_track._id << ": " << volume << " " << (muted ? "(muted)" : "(unmuted)");
 
   std::pair<T, bool> pair = {volume, muted};
   onGainChanged(audio_track._id, pair);

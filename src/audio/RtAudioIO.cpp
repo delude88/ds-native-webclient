@@ -9,12 +9,12 @@
 
 RtAudioIO::RtAudioIO(DigitalStage::Api::Client &client)
     : AudioIO(client), client_(client) {
-  PLOGV << "RtAudioIO";
+  PLOGD << "RtAudioIO";
 }
 
 std::vector<nlohmann::json> RtAudioIO::enumerateRtDevices(RtAudio::Api rt_api,
                                                           const DigitalStage::Api::Store &store) {
-  PLOGV << "enumerateRtDevices";
+  PLOGD << "enumerateRtDevices";
   auto sound_cards = std::vector<nlohmann::json>();
   auto rt_audio = std::make_unique<RtAudio>(rt_api);
   const std::string driver = RtAudio::getApiName(rt_api);
@@ -79,7 +79,7 @@ nlohmann::json RtAudioIO::getDevice(const std::string &id,
 }
 
 std::vector<json> RtAudioIO::enumerateDevices(const DigitalStage::Api::Store &store) {
-  PLOGV << "enumerateDevices";
+  PLOGD << "enumerateDevices";
   auto sound_cards = std::vector<nlohmann::json>();
   // Fetch existing
 
@@ -103,17 +103,17 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
   // Stop and close rt audio if open
   if (rt_audio_) {
     if (rt_audio_->isStreamRunning()) {
-      PLOGV << "RtAudiostop stream";
+      PLOGD << "RtAudiostop stream";
       rt_audio_->stopStream();
     }
     if (rt_audio_->isStreamOpen()) {
-      PLOGV << "close stream";
+      PLOGD << "close stream";
       rt_audio_->closeStream();
     }
   }
 
   if (local_device && local_device->audioDriver) {
-    PLOGV << "Got valid audio driver";
+    PLOGD << "Got valid audio driver";
     auto input_sound_card = store->getInputSoundCard();
     auto output_sound_card = store->getOutputSoundCard();
     unsigned int sampleRate = 48000;
@@ -124,7 +124,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
      */
     RtAudio::Api api = RtAudio::getCompiledApiByName(*local_device->audioDriver);
     if (!rt_audio_ || rt_audio_->getCurrentApi() != api) {
-      PLOGV << "(Re)init with audio driver " << *local_device->audioDriver;
+      PLOGD << "(Re)init with audio driver " << *local_device->audioDriver;
       rt_audio_ = std::make_unique<RtAudio>(api);
     }
 
@@ -136,7 +136,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && input_sound_card->online
         && local_device->sendAudio) {
       has_input = true;
-      PLOGV << "Got input sound card";
+      PLOGD << "Got input sound card";
       sampleRate = input_sound_card->sampleRate;
       bufferSize = input_sound_card->bufferSize;
       inputParameters = RtAudio::StreamParameters();
@@ -164,7 +164,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
     if (output_sound_card && output_sound_card->audioEngine == "rtaudio" && output_sound_card->online
         && local_device->receiveAudio) {
       has_output = true;
-      PLOGV << "Got output sound card";
+      PLOGD << "Got output sound card";
       sampleRate = output_sound_card->sampleRate;
       bufferSize = output_sound_card->bufferSize;
       outputParameters = RtAudio::StreamParameters();
@@ -256,7 +256,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       };
 
       try {
-        PLOGV << "open stream";
+        PLOGD << "open stream";
         rt_audio_->openStream(
             has_output ? &outputParameters : nullptr,
             has_input ? &inputParameters : nullptr,
@@ -268,7 +268,7 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
             this,
             &options
         );
-        PLOGV << "start stream";
+        PLOGD << "start stream";
         rt_audio_->startStream();
         PLOGI << "Started Audio IO";
       } catch (RtAudioError &e) {
@@ -283,43 +283,43 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       PLOGI << "Stopped Audio IO - no input or output sound card selected";
     }
   } else {
-    PLOGV << "Got invalid local_device or audio driver is missing";
+    PLOGD << "Got invalid local_device or audio driver is missing";
   }
 }
 
 void RtAudioIO::setAudioDriver(const std::string &audio_driver) {
-  PLOGV << "setAudioDriver()";
+  PLOGD << "setAudioDriver()";
   initAudio(client_);
 }
 
 void RtAudioIO::setInputSoundCard(const SoundCard &sound_card, bool start, DigitalStage::Api::Client &client) {
-  PLOGV << "setInputSoundCard()";
+  PLOGD << "setInputSoundCard()";
   initAudio(client);
 }
 void RtAudioIO::setOutputSoundCard(const SoundCard &sound_card, bool start) {
-  PLOGV << "setOutputSoundCard()";
+  PLOGD << "setOutputSoundCard()";
   initAudio(client_);
 }
 void RtAudioIO::startSending() {
-  PLOGV << "startSending()";
+  PLOGD << "startSending()";
   initAudio(client_);
 }
 void RtAudioIO::stopSending() {
-  PLOGV << "RtAudstopSending()";
+  PLOGD << "RtAudstopSending()";
   initAudio(client_);
 }
 void RtAudioIO::startReceiving() {
-  PLOGV << "startReceiving()";
+  PLOGD << "startReceiving()";
   initAudio(client_);
 }
 void RtAudioIO::stopReceiving() {
-  PLOGV << "stopReceiving()";
+  PLOGD << "stopReceiving()";
   initAudio(client_);
 }
 unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
                                             std::optional<RtAudio::StreamParameters> outputParameters,
                                             unsigned int sample_rate) {
-  PLOGV << "getLowestBufferSize";
+  PLOGD << "getLowestBufferSize";
   unsigned int buffer_size = 256; // = default
   if (inputParameters || outputParameters) {
     RtAudio::StreamOptions options;

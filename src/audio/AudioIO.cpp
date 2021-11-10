@@ -12,7 +12,7 @@ AudioIO::AudioIO(DigitalStage::Api::Client &client)
 
 void AudioIO::attachHandlers() {
   client_.ready.connect([this](const DigitalStage::Api::Store *store) {
-    PLOGV << "ready";
+    PLOGD << "ready";
     auto local_device = store->getLocalDevice();
     if (local_device) {
       // Read all available sound cards (and update with existing ones from store if available)
@@ -58,7 +58,7 @@ void AudioIO::attachHandlers() {
   client_.audioDriverSelected.connect([this](std::optional<std::string> audio_driver,
                                              const DigitalStage::Api::Store *store) {
     if (store->isReady() && audio_driver && !audio_driver->empty()) {
-      PLOGV << "audioDriverSelected";
+      PLOGD << "audioDriverSelected";
       auto local_device = store->getLocalDevice();
       if (local_device) {
         setAudioDriver(*audio_driver);
@@ -79,7 +79,7 @@ void AudioIO::attachHandlers() {
   client_.soundCardChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                           const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      PLOGV << "soundCardChanged";
+      PLOGD << "soundCardChanged";
       auto local_device = store->getLocalDevice();
       if (local_device) {
         // Are the changes relevant, so that we should react here?
@@ -106,7 +106,7 @@ void AudioIO::attachHandlers() {
   client_.deviceChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                        const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      PLOGV << "deviceChanged";
+      PLOGD << "deviceChanged";
       // Did the local device changed? (so this device needs an update)
       auto local_device = store->getLocalDevice();
       if (local_device && local_device->_id == id) {
@@ -167,7 +167,7 @@ void AudioIO::attachHandlers() {
   });
   client_.audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      PLOGV << "audioTrackAdded";
+      PLOGD << "audioTrackAdded";
       auto localDeviceId = store->getLocalDeviceId();
       auto inputSoundCard = store->getInputSoundCard();
       if (localDeviceId && audio_track.deviceId == *localDeviceId && audio_track.sourceChannel) {
@@ -175,7 +175,7 @@ void AudioIO::attachHandlers() {
         mutex_.lock();
         if (!input_channel_mapping_.count(*audio_track.sourceChannel)) {
           input_channel_mapping_[*audio_track.sourceChannel] = audio_track._id;
-          PLOGV << "Added local track for channel " << *audio_track.sourceChannel;
+          PLOGD << "Added local track for channel " << *audio_track.sourceChannel;
         }
         mutex_.unlock();
       }
@@ -183,13 +183,13 @@ void AudioIO::attachHandlers() {
   });
   client_.audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
-      PLOGV << "audioTrackRemoved";
+      PLOGD << "audioTrackRemoved";
       auto localDeviceId = store->getLocalDeviceId();
       if (localDeviceId && audio_track.deviceId == *localDeviceId && audio_track.sourceChannel) {
         mutex_.lock();
         if (input_channel_mapping_.count(*audio_track.sourceChannel)) {
           input_channel_mapping_.erase(*audio_track.sourceChannel);
-          PLOGV << "Removed local track for channel " << *audio_track.sourceChannel;
+          PLOGD << "Removed local track for channel " << *audio_track.sourceChannel;
         }
         mutex_.unlock();
       }
@@ -199,28 +199,28 @@ void AudioIO::attachHandlers() {
 
 void AudioIO::publishChannel(DigitalStage::Api::Client &client, int channel) {
   if (!input_channel_mapping_.count(channel)) {
-    PLOGV << "publishChannel " << channel;
+    PLOGD << "publishChannel " << channel;
     auto store = client.getStore();
     auto stageId = store->getStageId();
     nlohmann::json payload;
     payload["stageId"] = *stageId;
     payload["type"] = "native";
     payload["sourceChannel"] = channel;
-    PLOGV << "Publishing audio track";
+    PLOGD << "Publishing audio track";
     client.send(DigitalStage::Api::SendEvents::CREATE_AUDIO_TRACK,
                 payload);
   }
 }
 
 void AudioIO::unPublishChannel(DigitalStage::Api::Client &client, int channel) {
-  PLOGV << "unPublishChannel " << channel;
+  PLOGD << "unPublishChannel " << channel;
   if (input_channel_mapping_.count(channel))
     client.send(DigitalStage::Api::SendEvents::REMOVE_AUDIO_TRACK, input_channel_mapping_[channel]);
 }
 
 void AudioIO::unPublishAll(DigitalStage::Api::Client &client) {
   for (const auto &item: input_channel_mapping_) {
-    PLOGV << "unPublishAll";
+    PLOGD << "unPublishAll";
     client.send(DigitalStage::Api::SendEvents::REMOVE_AUDIO_TRACK, item.second);
   }
 }

@@ -1,15 +1,17 @@
+// AudioIO engine
+#ifdef USE_RT_AUDIO
+#include "audio/RtAudioIO.h"
+#else
+// Miniaudio
 #ifdef __APPLE__
-#include "utils/macos.h"
 #define MA_NO_RUNTIME_LINKING
 #endif
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
+#include "audio/MiniAudioIO.h"
+#endif
 
 #include <cmrc/cmrc.hpp>
-
-#ifdef MA_POSIX
-#include <csignal>
-#endif
 
 #include <plog/Init.h>
 #include <plog/Formatters/TxtFormatter.h>
