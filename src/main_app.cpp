@@ -1,7 +1,3 @@
-#include <plog/Init.h>
-#include <plog/Formatters/TxtFormatter.h>
-#include <plog/Appenders/ConsoleAppender.h>
-
 #include <QApplication>
 #include <QMessageBox>
 #include <QSystemTrayIcon>
@@ -12,8 +8,9 @@
 #include "gui/utils/macos.h"
 #endif
 
-#include "gui/KeyStore.h"
+//#include "gui/KeyStore.h"
 #include "gui/LoginDialog.h"
+#include "gui/Dummy.h"
 
 #include <DigitalStage/Auth/AuthService.h>
 
@@ -27,9 +24,6 @@ int main(int argc, char *argv[]) {
 
   QApplication qApplication(argc, argv);
 
-  static plog::QtDebugOutputAppender<plog::TxtFormatter> qtDebugAppender();
-  plog::init(plog::debug, &qtDebugAppender);
-
   if (!QSystemTrayIcon::isSystemTrayAvailable()) {
     QMessageBox::critical(nullptr, QObject::tr("Systray"),
                           QObject::tr("I couldn't detect any system tray "
@@ -37,6 +31,9 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  auto dummy = std::make_unique<Dummy>();
+
+  /*
   std::optional<std::string> token;
   auto auth_service = std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL);
   auto key_store = std::make_unique<KeyStore>();
@@ -47,7 +44,7 @@ int main(int argc, char *argv[]) {
     if (credentials) {
       // Try to get token
       try {
-        token = auth_service->signInSync(credentials->email.toStdString(), credentials->password.toStdString());
+        token = auth_service->signInSync(credentials->email, credentials->password);
       } catch (...) {
       }
     }
@@ -56,7 +53,7 @@ int main(int argc, char *argv[]) {
     // Show login panel
     auto login_pane = std::make_unique<LoginDialog>();
     login_pane->show();
-  }
+  }*/
 
   std::cout << "OK, let's go" << std::endl;
 

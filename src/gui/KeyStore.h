@@ -3,8 +3,8 @@
 //
 #pragma once
 
-#include <QtCore/QObject>
-#include <QtCore/QString>
+#include <QObject>
+#include <string>
 #include <optional>
 
 #ifndef KEYSTORE_PACKAGE
@@ -19,18 +19,18 @@ class KeyStore : QObject {
 
  public:
   struct Credentials {
-    QString email;
-    QString password;
+    std::string email;
+    std::string password;
   };
 
   KeyStore();
-  ~KeyStore() override;
+  ~KeyStore();
 
   bool store(const Credentials& credentials);
-  static std::optional<Credentials> restore(const QString& email) ;
-  bool remove(const QString& email) const;
+  static std::optional<Credentials> restore(const std::string& email) ;
+  [[nodiscard]] bool remove(const std::string& email) const;
 
-  std::optional<QString> restoreEmail();
-  void storeEmail(const QString& email);
+  std::optional<std::string> restoreEmail();
+  void storeEmail(const std::string& email);
 };
 

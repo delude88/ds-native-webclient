@@ -123,7 +123,7 @@ if (USE_RT_AUDIO)
             PUBLIC
             USE_RT_AUDIO)
     target_link_libraries(${PROJECT_NAME}
-            PRIVATE
+            PUBLIC
             rtaudio
             )
 else ()
@@ -200,26 +200,26 @@ target_link_libraries(${PROJECT_NAME}-cli
 #   Configure artifact - GUI Application
 #
 #################################################
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
-add_subdirectory(include/keychain)
-set(BUILD_WITH_QT6 ON)
-if (APPLE)
-    qt_add_executable(${PROJECT_NAME}-app MACOSX_BUNDLE)
-else ()
-    qt_add_executable(${PROJECT_NAME}-app)
-endif ()
-target_sources(${PROJECT_NAME}-app
+add_subdirectory(include/keychain EXCLUDE_FROM_ALL)
+add_executable(${PROJECT_NAME}_app)
+set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
+set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
+set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
+target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
+target_sources(${PROJECT_NAME}_app
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/Dummy.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/Dummy.cpp
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.h
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.cpp
+        #${CMAKE_CURRENT_SOURCE_DIR}/include/keychain/include/keychain/keychain.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         )
-target_link_libraries(${PROJECT_NAME}-app
+target_link_libraries(${PROJECT_NAME}_app
         PRIVATE
         ${PROJECT_NAME}::${PROJECT_NAME}
         Qt6::Core
@@ -230,14 +230,14 @@ if (APPLE)
     enable_language(OBJC)
     find_library(CORE_FOUNDATION Foundation)
     find_library(AV_FOUNDATION AVFoundation)
-    target_sources(${PROJECT_NAME}-app
-            PUBLIC
+    target_sources(${PROJECT_NAME}_app
+            PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos_internal.mm
             ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos_internal.h
             )
-    target_link_libraries(${PROJECT_NAME}-app
-            PUBLIC
+    target_link_libraries(${PROJECT_NAME}_app
+            PRIVATE
             ${CORE_FOUNDATION}
             ${AV_FOUNDATION}
             )
@@ -249,7 +249,7 @@ endif (APPLE)
 #   Bundling
 #
 #################################################
-set_target_properties(${PROJECT_NAME}-app PROPERTIES
+set_target_properties(${PROJECT_NAME}_app PROPERTIES
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
         MACOSX_BUNDLE_BUNDLE_NAME App
