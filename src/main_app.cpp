@@ -6,9 +6,16 @@
 #include <QMessageBox>
 #include <QSystemTrayIcon>
 
+#include <memory>
+
 #ifdef __APPLE__
 #include "gui/utils/macos.h"
 #endif
+
+#include "gui/KeyStore.h"
+#include "gui/LoginDialog.h"
+
+#include <DigitalStage/Auth/AuthService.h>
 
 int main(int argc, char *argv[]) {
 #ifdef __APPLE__
@@ -20,8 +27,8 @@ int main(int argc, char *argv[]) {
 
   QApplication qApplication(argc, argv);
 
-  static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::debug, &consoleAppender);
+  static plog::QtDebugOutputAppender<plog::TxtFormatter> qtDebugAppender();
+  plog::init(plog::debug, &qtDebugAppender);
 
   if (!QSystemTrayIcon::isSystemTrayAvailable()) {
     QMessageBox::critical(nullptr, QObject::tr("Systray"),
@@ -30,7 +37,28 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  QMessageBox::warning(nullptr, QObject::tr("Hello"), QObject::tr("World!"));
+  std::optional<std::string> token;
+  auto auth_service = std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL);
+  auto key_store = std::make_unique<KeyStore>();
+  auto email = key_store->restoreEmail();
+  if (email) {
+    // Try to login using stored credentials
+    auto credentials = key_store->restore(*email);
+    if (credentials) {
+      // Try to get token
+      try {
+        token = auth_service->signInSync(credentials->email.toStdString(), credentials->password.toStdString());
+      } catch (...) {
+      }
+    }
+  }
+  if (!token) {
+    // Show login panel
+    auto login_pane = std::make_unique<LoginDialog>();
+    login_pane->show();
+  }
+
+  std::cout << "OK, let's go" << std::endl;
 
   return 0;
 }

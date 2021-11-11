@@ -25,3 +25,6 @@
 [submodule "include/cmrc"]
 	path = include/cmrc
 	url = https://github.com/vector-of-bool/cmrc.git
+[submodule "include/keychain"]
+	path = include/keychain
+	url = https://github.com/hrantzsch/keychain.git

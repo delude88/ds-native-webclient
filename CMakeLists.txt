@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21.1)
+cmake_minimum_required(VERSION 3.20)
 
 project(client LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
@@ -58,20 +58,20 @@ endif ()
 add_subdirectory(include/libdatachannel)
 #  - libdeviceid
 add_subdirectory(include/libdeviceid)
-#  - plog
-if (NOT TARGET plog)
-    FetchContent_Declare(
-            plog
-            GIT_REPOSITORY https://github.com/SergiusTheBest/plog.git
-            GIT_TAG 5b38cdf433b40986bdead473fcaad5a63ca6e32e # release-1.1.5-MIT
-    )
-    FetchContent_MakeAvailable(plog)
-endif ()
 #  - udp-discovery-cpp
 add_subdirectory(include/udp-discovery-cpp)
 #  - HRTF Engine
 #add_compile_definitions(USE_UPC_WITHOUT_MEMORY)
 add_subdirectory(include/3dti_AudioToolkit)
+#  - plog
+if (NOT TARGET plog)
+    include(FetchContent)
+    FetchContent_Declare(
+            plog
+            GIT_REPOSITORY https://github.com/SergiusTheBest/plog.git
+    )
+    FetchContent_MakeAvailable(plog)
+endif ()
 #  - rtaudio
 if (APPLE)
     #find_package(Jack)
@@ -86,7 +86,7 @@ add_subdirectory(include/rtaudio)
 #   Configure artifact - common lib
 #
 #################################################
-add_library(${PROJECT_NAME})
+add_library(${PROJECT_NAME} src/gui/KeyStore.cpp src/gui/KeyStore.h)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
         PUBLIC
@@ -123,7 +123,7 @@ if (USE_RT_AUDIO)
             PUBLIC
             USE_RT_AUDIO)
     target_link_libraries(${PROJECT_NAME}
-            PUBLIC
+            PRIVATE
             rtaudio
             )
 else ()
@@ -203,7 +203,9 @@ target_link_libraries(${PROJECT_NAME}-cli
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-find_package(Qt6 COMPONENTS Widgets LinguistTools REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
+add_subdirectory(include/keychain)
+set(BUILD_WITH_QT6 ON)
 if (APPLE)
     qt_add_executable(${PROJECT_NAME}-app MACOSX_BUNDLE)
 else ()
@@ -214,11 +216,15 @@ target_sources(${PROJECT_NAME}-app
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.cpp
         )
 target_link_libraries(${PROJECT_NAME}-app
         PRIVATE
         ${PROJECT_NAME}::${PROJECT_NAME}
+        Qt6::Core
         Qt6::Widgets
+        keychain
         )
 if (APPLE)
     enable_language(OBJC)
