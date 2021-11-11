@@ -1,3 +1,5 @@
+#pragma once
+
 #import <objc/NSObject.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <AVFoundation/AVFoundation.h>

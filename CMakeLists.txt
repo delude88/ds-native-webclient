@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.21.1)
 
 project(client LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
@@ -86,7 +86,7 @@ add_subdirectory(include/rtaudio)
 #   Configure artifact - common lib
 #
 #################################################
-add_library(${PROJECT_NAME} STATIC)
+add_library(${PROJECT_NAME})
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
         PUBLIC
@@ -178,62 +178,6 @@ target_link_libraries(${PROJECT_NAME}
         ${PROJECT_NAME}-resources
         )
 
-# Additions for macOS
-if (APPLE)
-    find_library(APPLICATION_SERVICES ApplicationServices)
-    find_library(AUDIO_TOOLBOX AudioToolbox)
-    find_library(AV_FOUNDATION AVFoundation)
-    find_library(CORE_AUDIO CoreAudio)
-    find_library(CORE_FOUNDATION Foundation)
-    find_library(CORE_MEDIA CoreMedia)
-    find_library(CORE_VIDEO CoreVideo)
-    find_library(CORE_SERVICES CoreServices)
-
-    enable_language(OBJC)
-    target_sources(${PROJECT_NAME}
-            PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.mm
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.h
-            )
-    target_link_libraries(${PROJECT_NAME}
-            PUBLIC
-            ${APPLICATION_SERVICES}
-            ${AUDIO_TOOLBOX}
-            ${AV_FOUNDATION}
-            ${CORE_AUDIO}
-            ${CORE_FOUNDATION}
-            ${CORE_MEDIA}
-            ${CORE_VIDEO}
-            ${CORE_SERVICES}
-            )
-endif (APPLE)
-
-
-#################################################
-#
-#   Configure artifact - GUI Application
-#
-#################################################
-if (APPLE)
-    add_executable(${PROJECT_NAME}-app MACOSX_BUNDLE)
-else ()
-    add_executable(${PROJECT_NAME}-app)
-endif ()
-find_package(wxWidgets REQUIRED COMPONENTS core base)
-include(${wxWidgets_USE_FILE})
-target_compile_definitions(${PROJECT_NAME}-app
-        PRIVATE
-        WITH_GUI)
-target_sources(${PROJECT_NAME}-app
-        PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
-        )
-target_link_libraries(${PROJECT_NAME}-app
-        PUBLIC
-        ${PROJECT_NAME}::${PROJECT_NAME}
-        ${wxWidgets_LIBRARIES}
-        )
 
 #################################################
 #
@@ -242,13 +186,57 @@ target_link_libraries(${PROJECT_NAME}-app
 #################################################
 add_executable(${PROJECT_NAME}-cli)
 target_sources(${PROJECT_NAME}-cli
-        PUBLIC
+        PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
         )
 target_link_libraries(${PROJECT_NAME}-cli
-        PUBLIC
+        PRIVATE
         ${PROJECT_NAME}::${PROJECT_NAME}
         )
+
+
+#################################################
+#
+#   Configure artifact - GUI Application
+#
+#################################################
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+find_package(Qt6 COMPONENTS Widgets LinguistTools REQUIRED)
+if (APPLE)
+    qt_add_executable(${PROJECT_NAME}-app MACOSX_BUNDLE)
+else ()
+    qt_add_executable(${PROJECT_NAME}-app)
+endif ()
+target_sources(${PROJECT_NAME}-app
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.cpp
+        )
+target_link_libraries(${PROJECT_NAME}-app
+        PRIVATE
+        ${PROJECT_NAME}::${PROJECT_NAME}
+        Qt6::Widgets
+        )
+if (APPLE)
+    enable_language(OBJC)
+    find_library(CORE_FOUNDATION Foundation)
+    find_library(AV_FOUNDATION AVFoundation)
+    target_sources(${PROJECT_NAME}-app
+            PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos_internal.mm
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos_internal.h
+            )
+    target_link_libraries(${PROJECT_NAME}-app
+            PUBLIC
+            ${CORE_FOUNDATION}
+            ${AV_FOUNDATION}
+            )
+endif (APPLE)
+
 
 #################################################
 #

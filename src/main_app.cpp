@@ -1,60 +1,36 @@
-// AudioIO engine
-#ifdef USE_RT_AUDIO
-#include "audio/RtAudioIO.h"
-#else
-// Miniaudio
-#ifdef __APPLE__
-#define MA_NO_RUNTIME_LINKING
-#endif
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-#include "audio/MiniAudioIO.h"
-#endif
-
-#include <cmrc/cmrc.hpp>
-
 #include <plog/Init.h>
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Appenders/ConsoleAppender.h>
 
-#include "wx/wxprec.h"
+#include <QApplication>
+#include <QMessageBox>
+#include <QSystemTrayIcon>
 
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
+#ifdef __APPLE__
+#include "gui/utils/macos.h"
 #endif
 
-#include "wx/taskbar.h"
+int main(int argc, char *argv[]) {
+#ifdef __APPLE__
+  // Special macOS routine (get microphone access rights)
+  if (!check_access()) {
+    return -1;
+  }
+#endif
 
-class App : public wxApp {
- public:
-  virtual bool OnInit()
-  wxOVERRIDE;
-};
+  QApplication qApplication(argc, argv);
 
-wxIMPLEMENT_APP(App);
-
-bool App::OnInit() {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
   plog::init(plog::debug, &consoleAppender);
 
-#ifdef __APPLE__
-  if (!check_access()) {
-    std::cerr << "No access" << std::endl;
-    return false;
-  }
-#endif
-
-  if (!wxApp::OnInit())
-    return false;
-
-  if (!wxTaskBarIcon::IsAvailable()) {
-    wxMessageBox
-        (
-            "There appears to be no system tray support in your current environment. This sample may not behave as expected.",
-            "Warning",
-            wxOK | wxICON_EXCLAMATION
-        );
+  if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+    QMessageBox::critical(nullptr, QObject::tr("Systray"),
+                          QObject::tr("I couldn't detect any system tray "
+                                      "on this system."));
+    return 1;
   }
 
-  return true;
+  QMessageBox::warning(nullptr, QObject::tr("Hello"), QObject::tr("World!"));
+
+  return 0;
 }

@@ -11,6 +11,10 @@
 #include "audio/MiniAudioIO.h"
 #endif
 
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#define POSIX
+#endif
+
 // Std lib
 #include <memory>
 #include <string>
@@ -33,15 +37,9 @@
 #include <plog/Appenders/ConsoleAppender.h>
 
 // Signal handling (posix-only)
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#ifdef POSIX
 #include <csignal>
 #endif
-
-// Special macOS routine (get microphone access rights)
-#ifdef __APPLE__
-#include "utils/macos.h"
-#endif
-
 
 // Resource management
 #include <cmrc/cmrc.hpp>
@@ -56,18 +54,13 @@ void sig_handler(int s) {
 
 int main(int, char *[]) {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::debug, &consoleAppender);
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+  plog::init(plog::warning, &consoleAppender);
+
+#ifdef POSIX
   // What to do for WIN32 here?
   signal(SIGINT, &sig_handler);
 #endif
 
-#ifdef __APPLE__
-  if (!check_access()) {
-    std::cerr << "No access" << std::endl;
-    return -1;
-  }
-#endif
   // Fetch unique deviceid
   const auto device_id = std::to_string(deviceid::get());
 
