@@ -10,23 +10,23 @@ LoginDialog::~LoginDialog() {
   delete ui;
 }
 
-void LoginDialog::setEmail(QString email) {
+void LoginDialog::setEmail(const QString &email) {
   ui->emailEdit->setText(email);
 }
 
-void LoginDialog::setPassword(QString password) {
+void LoginDialog::setPassword(const QString &password) {
   ui->passwordEdit->setText(password);
 }
 
-const QString LoginDialog::getEmail() {
+QString LoginDialog::getEmail() {
   return ui->emailEdit->text();
 }
 
-const QString LoginDialog::getPassword() {
+QString LoginDialog::getPassword() {
   return ui->passwordEdit->text();
 }
 
-void LoginDialog::setError(QString error) {
+void LoginDialog::setError(const QString &error) {
   ui->labelError->setText(error);
 }
 
@@ -35,9 +35,5 @@ void LoginDialog::resetError() {
 }
 
 void LoginDialog::on_buttonSignIn_clicked() {
-  logIn(getEmail(), getPassword());
-}
-
-void LoginDialog::on_buttonSwitch_clicked() {
-  emit switchToOrlandoViols();
+  login(getEmail(), getPassword());
 }

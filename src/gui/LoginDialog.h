@@ -11,28 +11,26 @@ class LoginDialog : public QDialog {
  Q_OBJECT
 
  public:
-  explicit LoginDialog(QWidget* parent = nullptr);
-  ~LoginDialog();
+  explicit LoginDialog(QWidget *parent = nullptr);
+  ~LoginDialog() override;
 
-  const QString getEmail();
-  const QString getPassword();
+  QString getEmail();
+  QString getPassword();
 
  public slots:
-  void setEmail(QString user);
-  void setPassword(QString password);
-  void setError(QString error);
+  void setEmail(const QString &user);
+  void setPassword(const QString &password);
+  void setError(const QString &error);
   void resetError();
 
  protected slots:
   void on_buttonSignIn_clicked();
-  void on_buttonSwitch_clicked();
 
  signals:
-  void logIn(const QString email, const QString password);
-  void switchToOrlandoViols();
+  void login(const QString &email, const QString &password);
 
  private:
-  Ui::LoginDialog* ui;
+  Ui::LoginDialog *ui;
 };
 
 #endif // LOGINDIALOG_H

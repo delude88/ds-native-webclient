@@ -3,7 +3,7 @@
 #include <QSettings>
 #include <iostream>
 
-#include <../../include/keychain/include/keychain/keychain.h>
+#include <keychain/keychain.h>
 
 KeyStore::KeyStore() {}
 

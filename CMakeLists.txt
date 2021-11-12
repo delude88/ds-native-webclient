@@ -86,7 +86,7 @@ add_subdirectory(include/rtaudio)
 #   Configure artifact - common lib
 #
 #################################################
-add_library(${PROJECT_NAME} src/gui/KeyStore.cpp src/gui/KeyStore.h)
+add_library(${PROJECT_NAME})
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
         PUBLIC
@@ -115,27 +115,27 @@ target_sources(${PROJECT_NAME}
 if (USE_RT_AUDIO)
     message(STATUS "Using RtAudio as audio engine")
     target_sources(${PROJECT_NAME}
-            PUBLIC
+            PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.cpp
             )
     target_compile_definitions(${PROJECT_NAME}
-            PUBLIC
+            PRIVATE
             USE_RT_AUDIO)
     target_link_libraries(${PROJECT_NAME}
-            PUBLIC
+            PRIVATE
             rtaudio
             )
 else ()
     message(STATUS "Using MiniAudio as audio engine")
     target_sources(${PROJECT_NAME}
-            PUBLIC
+            PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.cpp
             )
     target_include_directories(${PROJECT_NAME}
-            PUBLIC
+            PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
             )
 endif ()
@@ -169,13 +169,13 @@ target_link_libraries(${PROJECT_NAME}
         PUBLIC
         DigitalStage::Api
         DigitalStage::Auth
-        LibDataChannel::LibDataChannel
         DeviceId::DeviceId
-        plog
         Threads::Threads
         udp-discovery
         3dtiAudioToolkit
+        LibDataChannel::LibDataChannel
         ${PROJECT_NAME}-resources
+        plog
         )
 
 
@@ -202,7 +202,7 @@ target_link_libraries(${PROJECT_NAME}-cli
 #################################################
 find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
 add_subdirectory(include/keychain EXCLUDE_FROM_ALL)
-add_executable(${PROJECT_NAME}_app)
+add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
@@ -210,13 +210,14 @@ target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
 target_sources(${PROJECT_NAME}_app
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/App.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/App.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/TrayIcon.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/TrayIcon.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/Dummy.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/Dummy.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/include/keychain/include/keychain/keychain.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         )
 target_link_libraries(${PROJECT_NAME}_app
