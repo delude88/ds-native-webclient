@@ -5,9 +5,7 @@
 
 #include <keychain/keychain.h>
 
-KeyStore::KeyStore() {}
-
-KeyStore::~KeyStore() {}
+KeyStore::KeyStore(QObject *parent) : QObject(parent) {}
 
 bool KeyStore::store(const Credentials &credentials) {
   keychain::Error error{};

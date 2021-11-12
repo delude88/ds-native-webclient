@@ -1,15 +1,16 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QSystemTrayIcon>
-
-#include <memory>
+#include <QTimer>
+#include <QTranslator>
+#include <QSplashScreen>
 
 #ifdef __APPLE__
-#include "gui/utils/macos.h"
+#include "app/utils/macos.h"
 #endif
 
-#include "gui/KeyStore.h"
-#include "gui/App.h"
+#include "app/KeyStore.h"
+#include "app/App.h"
 
 int main(int argc, char *argv[]) {
 #ifdef __APPLE__
@@ -27,6 +28,18 @@ int main(int argc, char *argv[]) {
                                       "on this system."));
     return 1;
   }
+
+  QTranslator translator;
+  if (translator.load(QLocale(), QLatin1String("DigitalStage"),
+                      QLatin1String("_"), QLatin1String(":/i18n"))) {
+    QCoreApplication::installTranslator(&translator);
+  }
+
+  QPixmap pixmap(":/resources/splash.png");
+  QSplashScreen splash(pixmap);
+  splash.show();
+  QTimer::singleShot(1000, &splash,
+                     &QWidget::close); // keep displayed for 5 seconds
 
   App app;
   app.show();

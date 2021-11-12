@@ -1,6 +1,6 @@
 // AudioIO engine
 #ifdef USE_RT_AUDIO
-#include "audio/RtAudioIO.h"
+#include <audio/RtAudioIO.h>
 #else
 // Miniaudio
 #ifdef __APPLE__
@@ -8,7 +8,7 @@
 #endif
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
-#include "audio/MiniAudioIO.h"
+#include <audio/MiniAudioIO.h>
 #endif
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -26,10 +26,10 @@
 #include <deviceid/id.h>
 
 // Local
-#include "auth/auth_cli.h"
-#include "Client.h"
-#include "utils/ServiceDiscovery.h"
-#include "auth/RemoteAuthService.h"
+#include "cli/auth_cli.h"
+#include "cli/RemoteAuthService.h"
+#include <Client.h>
+#include <utils/ServiceDiscovery.h>
 
 // Logger
 #include <plog/Init.h>

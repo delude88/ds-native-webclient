@@ -45,24 +45,24 @@ if (APPLE)
     endif ()
 endif (APPLE)
 #  - resource compiling
-include(include/cmrc/CMakeRC.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/deps/cmrc/CMakeRC.cmake)
 #  - posix or win32 threads
 find_package(Threads REQUIRED)
 #  - libds
-add_subdirectory(include/libds)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
 #  - libdatachannel
 if (UNIX AND NOT APPLE)
     set(USE_SYSTEM_SRTP ON)
     set(USE_GNUTLS OFF)
 endif ()
-add_subdirectory(include/libdatachannel)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdatachannel EXCLUDE_FROM_ALL)
 #  - libdeviceid
-add_subdirectory(include/libdeviceid)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
 #  - udp-discovery-cpp
-add_subdirectory(include/udp-discovery-cpp)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
 #  - HRTF Engine
 #add_compile_definitions(USE_UPC_WITHOUT_MEMORY)
-add_subdirectory(include/3dti_AudioToolkit)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/3dti_AudioToolkit EXCLUDE_FROM_ALL)
 #  - plog
 if (NOT TARGET plog)
     include(FetchContent)
@@ -78,7 +78,7 @@ if (APPLE)
     set(RTAUDIO_API_JACK OFF)
     set(RTAUDIO_API_PULSE OFF)  # WHY?!?
 endif ()
-add_subdirectory(include/rtaudio)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/rtaudio EXCLUDE_FROM_ALL)
 
 
 #################################################
@@ -86,57 +86,57 @@ add_subdirectory(include/rtaudio)
 #   Configure artifact - common lib
 #
 #################################################
-add_library(${PROJECT_NAME})
+add_library(${PROJECT_NAME} EXCLUDE_FROM_ALL)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+target_include_directories(
+        ${PROJECT_NAME}
+        INTERFACE $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/src/core>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_sources(${PROJECT_NAME}
         PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Client.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Client.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/auth_cli.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthIO.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/RemoteAuthService.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/CMRCFileBuffer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/conversion.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/cp1252_to_utf8.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/ServiceDiscovery.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioIO.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioRenderer.tpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/AudioMixer.tpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RingBuffer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/ConnectionService.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc/PeerConnection.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Client.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/CMRCFileBuffer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/conversion.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/cp1252_to_utf8.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/ServiceDiscovery.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioIO.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioIO.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioRenderer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioRenderer.tpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioMixer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioMixer.tpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/RingBuffer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/webrtc/ConnectionService.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/webrtc/ConnectionService.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/webrtc/PeerConnection.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/webrtc/PeerConnection.cpp
         )
 if (USE_RT_AUDIO)
     message(STATUS "Using RtAudio as audio engine")
     target_sources(${PROJECT_NAME}
-            PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/RtAudioIO.cpp
+            PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/RtAudioIO.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/RtAudioIO.cpp
             )
     target_compile_definitions(${PROJECT_NAME}
-            PRIVATE
+            PUBLIC
             USE_RT_AUDIO)
     target_link_libraries(${PROJECT_NAME}
-            PRIVATE
+            PUBLIC
             rtaudio
             )
 else ()
     message(STATUS "Using MiniAudio as audio engine")
     target_sources(${PROJECT_NAME}
-            PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/miniaudio.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/audio/MiniAudioIO.cpp
+            PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/miniaudio.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/MiniAudioIO.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/MiniAudioIO.cpp
             )
     target_include_directories(${PROJECT_NAME}
-            PRIVATE
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/miniaudio"
+            PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_CURRENT_LIST_DIR}/deps/miniaudio"
             )
 endif ()
 
@@ -163,7 +163,7 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 #################################################
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/udp-discovery-cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp"
         )
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
@@ -188,6 +188,10 @@ add_executable(${PROJECT_NAME}-cli)
 target_sources(${PROJECT_NAME}-cli
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/auth_cli.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/AuthIO.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/RemoteAuthService.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/RemoteAuthService.cpp
         )
 target_link_libraries(${PROJECT_NAME}-cli
         PRIVATE
@@ -201,25 +205,25 @@ target_link_libraries(${PROJECT_NAME}-cli
 #
 #################################################
 find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
-add_subdirectory(include/keychain EXCLUDE_FROM_ALL)
-add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
+add_executable(${PROJECT_NAME}_app)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
-target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
 target_sources(${PROJECT_NAME}_app
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/App.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/App.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/TrayIcon.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/TrayIcon.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/LoginDialog.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/KeyStore.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
-        )
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/TrayIcon.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/TrayIcon.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.ui
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
+target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_app
         PRIVATE
         ${PROJECT_NAME}::${PROJECT_NAME}
@@ -233,9 +237,9 @@ if (APPLE)
     find_library(AV_FOUNDATION AVFoundation)
     target_sources(${PROJECT_NAME}_app
             PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos_internal.mm
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/utils/macos_internal.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/app/utils/macos.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/app/utils/macos_internal.mm
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/app/utils/macos_internal.h
             )
     target_link_libraries(${PROJECT_NAME}_app
             PRIVATE

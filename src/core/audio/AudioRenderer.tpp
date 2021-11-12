@@ -10,6 +10,7 @@ AudioRenderer<T>::AudioRenderer(DigitalStage::Api::Client &client, bool autostar
   PLOGD << "AudioRenderer";
   ERRORHANDLER3DTI.SetVerbosityMode(VERBOSITY_MODE_ONLYERRORS);
   ERRORHANDLER3DTI.SetErrorLogStream(&std::cerr, true);
+  ERRORHANDLER3DTI.SetAssertMode(ASSERT_MODE_CONTINUE);
 
   attachHandlers(client, autostart);
 }
@@ -61,6 +62,7 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   std::istream hrtfStream(&hrtfFileBuffer);
   audio_tracks_.clear();
   // Init core
+  current_frame_size_ = buffer_size;
   core_ = std::make_shared<Binaural::CCore>(Common::TAudioStateStruct{static_cast<int>(sample_rate),
                                                                       static_cast<int>(buffer_size)},
                                             hrtf_resampling_steps);
@@ -102,7 +104,6 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
     audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
     setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, store_));
   }
-
   initialized_ = true;
   PLOGI << "Started audio renderer";
 }
@@ -730,7 +731,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outLeft,
                               T *outRight,
                               std::size_t frame_size) {
-  if (initialized_) {
+  if (initialized_ && frame_size != current_frame_size_) {
     if (mutex_.try_lock()) {
       if (audio_tracks_.count(audio_track_id) != 0) {
         // Compare frame size
@@ -749,6 +750,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
           }
         } catch (std::exception &err) {
           PLOGE << err.what();
+          mutex_.unlock();
         }
       } else {
         PLOGD << "No render information for audio track - falling back to simple mixing";
@@ -778,7 +780,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
 }
 template<class T>
 void AudioRenderer<T>::renderReverb(T *outLeft, T *outRight, std::size_t frame_size) {
-  if (initialized_) {
+  if (initialized_ && frame_size == current_frame_size_) {
     if (mutex_.try_lock()) {
       Common::CEarPair<CMonoBuffer<float>> bufferReverb;
 

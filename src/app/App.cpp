@@ -2,17 +2,20 @@
 // Created by Tobias Hegemann on 11.11.21.
 //
 #include <QApplication>
-#include <DigitalStage/Api/Client.h>
 #include <deviceid/id.h>
 #include "App.h"
 #include "KeyStore.h"
-#include "../audio/RtAudioIO.h"
+
+#ifndef Q_MOC_RUN
+#include <DigitalStage/Api/Client.h>
+#include <audio/RtAudioIO.h>
+#endif
 
 App::App()
     : login_dialog_(new LoginDialog()),
       device_id_(std::to_string(deviceid::get())),
       tray_icon_(new TrayIcon(this)),
-      key_store_(std::make_unique<KeyStore>()),
+      key_store_(new KeyStore(this)),
       auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL)) {
   QApplication::setQuitOnLastWindowClosed(false);
 

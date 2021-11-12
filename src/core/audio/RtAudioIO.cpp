@@ -58,8 +58,6 @@ nlohmann::json RtAudioIO::getDevice(const std::string &id,
     sound_card["sampleRate"] = info.preferredSampleRate;
     sound_card["bufferSize"] = 512;
   }
-  //TODO: REMOVE ME:
-  sound_card["bufferSize"] = 128;
 
   std::vector<DigitalStage::Types::Channel> channels;
   auto channel_count = type == "input" ? info.inputChannels : info.outputChannels;

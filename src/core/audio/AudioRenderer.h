@@ -69,6 +69,7 @@ class AudioRenderer {
   void setAudioTrackPosition(const std::string &audio_track_id,
                              const DigitalStage::Types::ThreeDimensionalProperties &position);
 
+  std::atomic<std::size_t> current_frame_size_;
   const DigitalStage::Api::Store &store_;
   std::atomic<bool> initialized_;
   cmrc::embedded_filesystem fs_;

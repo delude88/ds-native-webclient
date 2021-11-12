@@ -11,7 +11,7 @@ class LoginDialog : public QDialog {
  Q_OBJECT
 
  public:
-  explicit LoginDialog(QWidget *parent = nullptr);
+  explicit LoginDialog(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
   ~LoginDialog() override;
 
   QString getEmail();

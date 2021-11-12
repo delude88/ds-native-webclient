@@ -23,8 +23,7 @@ class KeyStore : QObject {
     std::string password;
   };
 
-  KeyStore();
-  ~KeyStore();
+  explicit KeyStore(QObject *parent = nullptr);
 
   bool store(const Credentials& credentials);
   static std::optional<Credentials> restore(const std::string& email) ;

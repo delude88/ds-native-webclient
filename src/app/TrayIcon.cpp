@@ -7,7 +7,7 @@
 #include <QAction>
 
 TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
-  QIcon icon = QIcon(":/images/icon.png");
+  QIcon icon = QIcon(":/resources/icon.png");
   icon.setIsMask(true);
   this->setIcon(icon);
   this->setToolTip(tr("Digital Stage"));
@@ -29,6 +29,11 @@ TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
   status_menu_->addAction(openDigitalStageFrontendAction);
   connect(viewLoginAction, &QAction::triggered, [=]() {
     emit openStageClicked();
+  });
+  auto registerBoxAction = new QAction(tr("Neue Box hinzufügen"), this);
+  status_menu_->addAction(registerBoxAction);
+  connect(viewLoginAction, &QAction::triggered, [=]() {
+    emit addBoxClicked();
   });
   auto logoutAction = new QAction(tr("Logout"), this);
   status_menu_->addAction(logoutAction);

@@ -1,30 +1,30 @@
-[submodule "include/libds"]
-	path = include/libds
+[submodule "deps/libds"]
+	path = deps/libds
 	url = https://github.com/digital-stage/libds.git
-[submodule "include/miniaudio"]
-	path = include/miniaudio
+[submodule "deps/miniaudio"]
+	path = deps/miniaudio
 	url = https://github.com/mackron/miniaudio.git
-[submodule "include/libmediasoupclient"]
-	path = include/libmediasoupclient
+[submodule "deps/libmediasoupclient"]
+	path = deps/libmediasoupclient
 	url = https://github.com/versatica/libmediasoupclient.git
-[submodule "include/libdatachannel"]
-	path = include/libdatachannel
-	url = https://github.com/paullouisageneau/libdatachannel.git
-[submodule "include/libdeviceid"]
-	path = include/libdeviceid
+[submodule "deps/libdatachannel"]
+	path = deps/libdatachannel
+	url = https://github.com/delude88/libdatachannel.git
+[submodule "deps/libdeviceid"]
+	path = deps/libdeviceid
 	url = https://github.com/delude88/libdeviceid.git
-[submodule "include/rtaudio"]
-	path = include/rtaudio
+[submodule "deps/rtaudio"]
+	path = deps/rtaudio
 	url = https://github.com/thestk/rtaudio.git
-[submodule "include/udp-discovery-cpp"]
-	path = include/udp-discovery-cpp
+[submodule "deps/udp-discovery-cpp"]
+	path = deps/udp-discovery-cpp
 	url = https://github.com/truvorskameikin/udp-discovery-cpp
-[submodule "include/3dti_AudioToolkit"]
-	path = include/3dti_AudioToolkit
+[submodule "deps/3dti_AudioToolkit"]
+	path = deps/3dti_AudioToolkit
 	url = https://github.com/delude88/3dti_AudioToolkit.git
-[submodule "include/cmrc"]
-	path = include/cmrc
+[submodule "deps/cmrc"]
+	path = deps/cmrc
 	url = https://github.com/vector-of-bool/cmrc.git
-[submodule "include/keychain"]
-	path = include/keychain
+[submodule "deps/keychain"]
+	path = deps/keychain
 	url = https://github.com/hrantzsch/keychain.git

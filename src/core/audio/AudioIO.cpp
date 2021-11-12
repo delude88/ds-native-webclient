@@ -85,6 +85,7 @@ void AudioIO::attachHandlers() {
         // Are the changes relevant, so that we should react here?
         if (update.contains("channels") ||
             update.contains("sampleRate") ||
+            update.contains("bufferSize") ||
             update.contains("periodSize") ||
             update.contains("numPeriods") ||
             update.contains("online")) {
