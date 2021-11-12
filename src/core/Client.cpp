@@ -3,15 +3,17 @@
 //
 
 #include "Client.h"
+
+#include <utility>
 #include "utils/conversion.h"
 
-Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
-    :
+Client::Client(std::shared_ptr<DigitalStage::Api::Client> client, std::shared_ptr<AudioIO> audio_io) :
     connection_service_(client),
-    audio_mixer_(client),
-    audio_renderer_(client, true),
+    audio_io_(std::move(audio_io)),
+    audio_mixer_(std::make_unique<AudioMixer<float>>(*client)),
+    audio_renderer_(std::make_unique<AudioRenderer<float>>(*client, true)),
     receiver_buffer_(RECEIVER_BUFFER) {
-  connection_service_.onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
+  connection_service_->onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
       channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(receiver_buffer_);
@@ -27,8 +29,8 @@ Client::Client(DigitalStage::Api::Client &client, AudioIO &audio_io)
     }
     lock.unlock();  // May be useless here
   });
-  attachHandlers(client);
-  attachAudioHandlers(audio_io);
+  attachHandlers();
+  attachAudioHandlers();
 }
 
 Client::~Client() {
@@ -48,7 +50,7 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
   lock.unlock();
 
   // Send to webRTC
-  connection_service_.broadcast(audio_track_id, data, frame_count);
+  connection_service_->broadcast(audio_track_id, data, frame_count);
 }
 void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, const std::size_t frame_count) {
   float left[frame_count];
@@ -62,12 +64,12 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
       for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->get();
       }
-      audio_renderer_.render(item.first, buf, left, right, frame_count);
+      audio_renderer_->render(item.first, buf, left, right, frame_count);
       free(buf);
     }
   }
 
-  audio_renderer_.renderReverb(left, right, frame_count);
+  audio_renderer_->renderReverb(left, right, frame_count);
 
   if (num_output_channels % 2 == 0) {
     // Use stereo for all
@@ -85,14 +87,14 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
     }
   }
 }
-void Client::attachHandlers(DigitalStage::Api::Client &client) {
-  client.ready.connect([this](const DigitalStage::Api::Store *store) {
+void Client::attachHandlers() {
+  connection_service_->ready.connect([this](const DigitalStage::Api::Store *store) {
     auto local_device = store->getLocalDevice();
     if (local_device) {
       changeReceiverSize(local_device->buffer);
     }
   });
-  client.localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
+  connection_service_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
                                            const DigitalStage::Api::Store *store) {
     if (update.contains("buffer")) {
       changeReceiverSize(update["buffer"]);
@@ -113,9 +115,9 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   for (const auto &item: audio_tracks) {
     if (item.second) {
       // Send to webRTC
-      connection_service_.broadcast(item.first, item.second, frame_count);
+      connection_service_->broadcast(item.first, item.second, frame_count);
 
-      audio_renderer_.render(item.first, item.second, left, right, frame_count);
+      audio_renderer_->render(item.first, item.second, left, right, frame_count);
     } else {
       PLOGE << "Audio track item is null";
     }
@@ -128,14 +130,14 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
       for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->get();
       }
-      audio_renderer_.render(item.first, buf, left, right, frame_count);
+      audio_renderer_->render(item.first, buf, left, right, frame_count);
       free(buf);
     } else {
       std::cerr << "Channel item is null" << std::endl;
     }
   }
 
-  audio_renderer_.renderReverb(left, right, frame_count);
+  audio_renderer_->renderReverb(left, right, frame_count);
 
   if (num_output_channels % 2 == 0) {
     // Use stereo for all
@@ -154,10 +156,10 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
     }
   }
 }
-void Client::attachAudioHandlers(AudioIO &audio_io) {
-  audio_io.onPlayback.connect(&Client::onPlaybackCallback, this);
-  audio_io.onCapture.connect(&Client::onCaptureCallback, this);
-  audio_io.onDuplex.connect(&Client::onDuplexCallback, this);
+void Client::attachAudioHandlers() {
+  audio_io_->onPlayback.connect(&Client::onPlaybackCallback, this);
+  audio_io_->onCapture.connect(&Client::onCaptureCallback, this);
+  audio_io_->onDuplex.connect(&Client::onDuplexCallback, this);
 }
 void Client::changeReceiverSize(unsigned int receiver_buffer) {
   PLOGD << "changeReceiverSize to" << receiver_buffer;

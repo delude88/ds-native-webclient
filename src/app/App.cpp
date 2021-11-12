@@ -75,7 +75,7 @@ void App::logout() {
 void App::start(const std::string &token) {
   auto apiClient = std::make_unique<DigitalStage::Api::Client>(API_URL);
   auto audioIO = std::make_unique<RtAudioIO>(*apiClient);
-  client_ = std::make_unique<Client>(*apiClient, *audioIO);// Describe this device
+  client_ = std::make_unique<Client>(std::move(apiClient), std::move(apiClient));// Describe this device
   nlohmann::json initialDeviceInformation;
   // - always use an UUID when you want Digital Stage to remember this device and its settings
   initialDeviceInformation["uuid"] = device_id_;

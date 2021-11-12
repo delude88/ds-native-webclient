@@ -18,7 +18,7 @@
 
 class Client {
  public:
-  explicit Client(DigitalStage::Api::Client &client, AudioIO &audio_io);
+  explicit Client(std::shared_ptr<DigitalStage::Api::Client> client, std::shared_ptr<AudioIO> audio_io);
   ~Client();
 
  protected:
@@ -30,15 +30,17 @@ class Client {
                         std::size_t frame_count);
 
  private:
-  void attachHandlers(DigitalStage::Api::Client &client);
-  void attachAudioHandlers(AudioIO &audio_io);
+  void attachHandlers();
+  void attachAudioHandlers();
 
   void changeReceiverSize(unsigned int receiver_buffer);
 
   std::atomic<unsigned int> receiver_buffer_;
   std::map<std::string, std::shared_ptr<RingBuffer<float>>> channels_;
   std::shared_mutex channels_mutex_;
-  AudioMixer<float> audio_mixer_;
-  AudioRenderer<float> audio_renderer_;
-  ConnectionService connection_service_;
+
+  std::shared_ptr<AudioIO> audio_io_;
+  std::unique_ptr<AudioMixer<float>> audio_mixer_;
+  std::unique_ptr<AudioRenderer<float>> audio_renderer_;
+  std::shared_ptr<DigitalStage::Api::Client> connection_service_;
 };
