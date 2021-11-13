@@ -200,8 +200,8 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
                                      const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto current_stage = store->getStage();
-      if (current_stage && current_stage->_id == id && update.contains("width") || update.contains("length")
-          || update.contains("height")) {
+      if (current_stage && current_stage->_id == id && (update.contains("width") || update.contains("length")
+          || update.contains("height"))) {
         PLOGD << "stageChanged";
         auto output_sound_card = store->getOutputSoundCard();
         if (current_stage && output_sound_card && output_sound_card->online) {

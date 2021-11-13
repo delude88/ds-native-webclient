@@ -12,7 +12,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_L
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 
 #################################################
-#e
+#
 #   Environment configuration
 #
 #################################################
@@ -79,13 +79,11 @@ endif ()
 #  - rtaudio
 if (APPLE)
     #find_package(Jack)
-    cmake_policy(SET CMP0077 NEW)
-    set(RTAUDIO_BUILD_STATIC_LIBS ON)
-    set(RTAUDIO_API_JACK OFF)
-    set(RTAUDIO_API_PULSE OFF)  # WHY?!?
+    set(RTAUDIO_BUILD_STATIC_LIBS ON CACHE BOOL "Enabling static build for RtAudio" FORCE)
+    set(RTAUDIO_API_JACK OFF CACHE BOOL "Disabling Jack on MacOS" FORCE)
+    set(RTAUDIO_API_PULSE OFF CACHE BOOL "Disabling Pulse on MacOS" FORCE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/rtaudio EXCLUDE_FROM_ALL)
-set_target_properties(rtaudio PROPERTIES RTAUDIO_API_PULSE OFF)
 
 
 #################################################
