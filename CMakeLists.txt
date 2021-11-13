@@ -179,7 +179,7 @@ target_link_libraries(${PROJECT_NAME}
         DeviceId::DeviceId
         Threads::Threads
         udp-discovery
-        3dtiAudioToolkit
+        3dtiAudioToolkitStatic
         LibDataChannel::LibDataChannelStatic
         ${PROJECT_NAME}-resources
         plog
