@@ -9,7 +9,7 @@
 #include "audio/AudioIO.h"
 #include "audio/AudioMixer.h"
 #include "audio/AudioRenderer.h"
-#include "audio/RingBuffer.h"
+#include "utils/TBBRingBuffer.h"
 #include <mutex>
 #include <shared_mutex>
 #include <memory>

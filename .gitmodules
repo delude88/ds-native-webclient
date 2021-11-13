@@ -28,3 +28,6 @@
 [submodule "deps/keychain"]
 	path = deps/keychain
 	url = https://github.com/hrantzsch/keychain.git
+[submodule "deps/oneTBB"]
+	path = deps/oneTBB
+	url = https://github.com/oneapi-src/oneTBB.git
