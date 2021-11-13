@@ -9,9 +9,10 @@ if (NOT WIN32)
 endif ()
 set(CMAKE_PROJECT_VERSION "1.0.0")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 
 #################################################
-#
+#e
 #   Environment configuration
 #
 #################################################
@@ -79,6 +80,7 @@ endif ()
 if (APPLE)
     #find_package(Jack)
     cmake_policy(SET CMP0077 NEW)
+    set(RTAUDIO_BUILD_STATIC_LIBS ON)
     set(RTAUDIO_API_JACK OFF)
     set(RTAUDIO_API_PULSE OFF)  # WHY?!?
 endif ()
@@ -91,7 +93,7 @@ set_target_properties(rtaudio PROPERTIES RTAUDIO_API_PULSE OFF)
 #   Configure artifact - common lib
 #
 #################################################
-add_library(${PROJECT_NAME} EXCLUDE_FROM_ALL)
+add_library(${PROJECT_NAME} STATIC EXCLUDE_FROM_ALL)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(
         ${PROJECT_NAME}
@@ -172,13 +174,13 @@ target_include_directories(${PROJECT_NAME}
         )
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
-        DigitalStage::Api
-        DigitalStage::Auth
+        DigitalStage::ApiStatic
+        DigitalStage::AuthStatic
         DeviceId::DeviceId
         Threads::Threads
         udp-discovery
         3dtiAudioToolkit
-        LibDataChannel::LibDataChannel
+        LibDataChannel::LibDataChannelStatic
         ${PROJECT_NAME}-resources
         plog
         )
@@ -218,7 +220,7 @@ set(TS_FILES
         i18n/DigitalStage_fr.ts
         i18n/DigitalStage_es.ts
         )
-qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR} ${TS_FILES})
+qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src ${TS_FILES})
 set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/appicon.icns)
@@ -285,6 +287,8 @@ set_target_properties(${PROJECT_NAME}_app PROPERTIES
         )
 
 if (CMAKE_BUILD_TYPE MATCHES Release)
+    set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
+
     set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
     set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
 
@@ -294,12 +298,17 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
-                #-libpath="${PROJECT_BINARY_DIR}/plugins"
-                #-libpath="/I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_app,INCLUDE_DIRECTORIES>,;/I>"
-                -appstore-compliant
+                #-appstore-compliant
                 -always-overwrite
                 COMMENT "Running macdeployqt..."
                 )
+        #[[add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+                COMMAND "dylibbundler"
+                -od -b
+                -s "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../Frameworks"
+                -x "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>"
+                COMMENT "Running dylibbundler..."
+                )]]
     endif ()
 
     #################################################
@@ -307,8 +316,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     #   Codesigning
     #
     #################################################
-    if (APPLE)
-        set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
+    #[[if (APPLE)
         set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND
@@ -332,5 +340,5 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 )
     else ()
         set(M_SIGN_CERT_NAME "TODO")
-    endif ()
+    endif ()]]
 endif ()
