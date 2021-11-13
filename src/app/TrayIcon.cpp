@@ -12,7 +12,7 @@ TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
   this->setIcon(icon);
   this->setToolTip(tr("Digital Stage"));
   auto quitAction = new QAction(tr("Close"), this);
-  connect(quitAction, &QAction::triggered, qApp, &QApplication::exit);
+  connect(quitAction, &QAction::triggered, QCoreApplication::instance(), &QApplication::exit);
 
   // Login menu
   login_menu_ = new QMenu();
@@ -25,19 +25,24 @@ TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
 
   // Digital stage status menu
   status_menu_ = new QMenu();
-  auto openDigitalStageFrontendAction = new QAction(tr("Open stage"), this);
-  status_menu_->addAction(openDigitalStageFrontendAction);
-  connect(viewLoginAction, &QAction::triggered, [=]() {
+  auto openStageAction = new QAction(tr("Open stage"), this);
+  status_menu_->addAction(openStageAction);
+  connect(openStageAction, &QAction::triggered, [=]() {
     emit openStageClicked();
   });
-  auto registerBoxAction = new QAction(tr("Neue Box hinzufügen"), this);
+  auto openSettingsAction = new QAction(tr("Open settings"), this);
+  status_menu_->addAction(openSettingsAction);
+  connect(openSettingsAction, &QAction::triggered, [=]() {
+    emit openSettingsClicked();
+  });
+  auto registerBoxAction = new QAction(tr("Add Box"), this);
   status_menu_->addAction(registerBoxAction);
-  connect(viewLoginAction, &QAction::triggered, [=]() {
+  connect(registerBoxAction, &QAction::triggered, [=]() {
     emit addBoxClicked();
   });
   auto logoutAction = new QAction(tr("Logout"), this);
   status_menu_->addAction(logoutAction);
-  connect(viewLoginAction, &QAction::triggered, [=]() {
+  connect(logoutAction, &QAction::triggered, [=]() {
     emit logoutClicked();
   });
   status_menu_->addSeparator();

@@ -25,6 +25,8 @@ class App : public QObject {
   std::optional<std::string> autoLogin();
   void login(const QString &email, const QString &password);
   void logout();
+  void openStage();
+  void openSettings();
 
  private:
   void start(const std::string &token);
@@ -33,10 +35,10 @@ class App : public QObject {
   std::string device_id_;
   std::optional<std::string> token_;
   std::unique_ptr<DigitalStage::Auth::AuthService> auth_service_;
+  std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<Client> client_;
 
-
-  KeyStore* key_store_;
+  KeyStore *key_store_;
   TrayIcon *tray_icon_;
   LoginDialog *login_dialog_;
 };

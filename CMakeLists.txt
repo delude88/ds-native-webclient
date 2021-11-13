@@ -19,8 +19,10 @@ add_compile_definitions(SIGNUP_URL="https://beta.digital-stage.org/account/signu
 add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
 add_compile_definitions(STAGE_URL="https://beta.digital-stage.org/stage")
+add_compile_definitions(SETTINGS_URL="https://beta.digital-stage.org/devices")
 option(WITH_GUI "Build with graphical user interface" OFF)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
+
 include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
@@ -76,6 +78,7 @@ endif ()
 #  - rtaudio
 if (APPLE)
     #find_package(Jack)
+    cmake_policy(SET CMP0077 NEW)
     set(RTAUDIO_API_JACK OFF)
     set(RTAUDIO_API_PULSE OFF)  # WHY?!?
 endif ()
@@ -187,6 +190,7 @@ target_link_libraries(${PROJECT_NAME}
 #
 #################################################
 add_executable(${PROJECT_NAME}-cli)
+set_target_properties(${PROJECT_NAME}-cli PROPERTIES OUTPUT_NAME "digital-stage-client")
 target_sources(${PROJECT_NAME}-cli
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
@@ -208,7 +212,19 @@ target_link_libraries(${PROJECT_NAME}-cli
 #################################################
 find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
-add_executable(${PROJECT_NAME}_app)
+add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
+set(TS_FILES
+        i18n/DigitalStage_de.ts
+        i18n/DigitalStage_fr.ts
+        i18n/DigitalStage_es.ts
+        )
+qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR} ${TS_FILES})
+set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
+if (APPLE)
+    set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/appicon.icns)
+    set_source_files_properties(${APP_ICON} PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+endif (APPLE)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
@@ -224,7 +240,8 @@ target_sources(${PROJECT_NAME}_app
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.ui
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc)
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
+        ${APP_ICON})
 target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_app
         PRIVATE
@@ -264,13 +281,56 @@ set_target_properties(${PROJECT_NAME}_app PROPERTIES
         MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
+        MACOSX_BUNDLE_ICON_FILE appicon.icns
         )
-set_target_properties(${PROJECT_NAME}-cli PROPERTIES
-        BUNDLE True
-        MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.cli
-        MACOSX_BUNDLE_BUNDLE_NAME Client
-        MACOSX_BUNDLE_COPYRIGHT MIT
-        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
-        )
+
+if (CMAKE_BUILD_TYPE MATCHES Release)
+    set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
+    set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
+
+    if (APPLE)
+        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
+        # First use macdeployqt to bundle the qt libs, but do NOT sign yet
+        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                #-libpath="${PROJECT_BINARY_DIR}/plugins"
+                #-libpath="/I$<JOIN:$<TARGET_PROPERTY:${PROJECT_NAME}_app,INCLUDE_DIRECTORIES>,;/I>"
+                -appstore-compliant
+                -always-overwrite
+                COMMENT "Running macdeployqt..."
+                )
+    endif ()
+
+    #################################################
+    #
+    #   Codesigning
+    #
+    #################################################
+    if (APPLE)
+        set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
+        set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
+        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+                COMMAND
+                codesign
+                --force
+                --deep
+                --sign "${M_SIGN_CERT_NAME}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                COMMENT "Signing app bundle using certificate ${M_SIGN_CERT_NAME}..."
+                VERBATIM
+                )
+        add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
+                COMMAND
+                codesign
+                --force
+                --deep
+                --sign "${M_SIGN_CERT_NAME}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
+                COMMENT "Signing app bundle using certificate ${APPLE_CERT}..."
+                VERBATIM
+                )
+    else ()
+        set(M_SIGN_CERT_NAME "TODO")
+    endif ()
+endif ()

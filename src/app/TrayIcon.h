@@ -20,6 +20,7 @@ class TrayIcon : public QSystemTrayIcon {
  signals:
   void loginClicked();
   void openStageClicked();
+  void openSettingsClicked();
   void addBoxClicked();
   void logoutClicked();
 

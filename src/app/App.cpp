@@ -14,14 +14,14 @@ App::App()
       device_id_(std::to_string(deviceid::get())),
       tray_icon_(new TrayIcon(this)),
       key_store_(new KeyStore(this)),
+      api_client_(std::make_shared<DigitalStage::Api::Client>(API_URL)),
       auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL)) {
   QApplication::setQuitOnLastWindowClosed(false);
 
   connect(tray_icon_, SIGNAL(loginClicked()), login_dialog_, SLOT(show()));
   connect(tray_icon_, SIGNAL(logoutClicked()), this, SLOT(logout()));
-  connect(tray_icon_, &TrayIcon::openStageClicked, []() {
-    QDesktopServices::openUrl(QUrl(STAGE_URL));
-  });
+  connect(tray_icon_, SIGNAL(openStageClicked()), this, SLOT(openStage()));
+  connect(tray_icon_, SIGNAL(openSettingsClicked()), this, SLOT(openSettings()));
   connect(login_dialog_, SIGNAL(login(QString, QString)), SLOT(login(QString, QString)));
 }
 
@@ -66,19 +66,17 @@ void App::login(const QString &email, const QString &password) {
 
 void App::logout() {
   login_dialog_->setPassword("");
-  if (token_)
-    auth_service_->signOut(*token_)
-        .then([=](bool) {
-          token_ = std::nullopt;
-          stop();
-        });
+  if (token_) {
+    auth_service_->signOutSync(*token_);
+    token_ = std::nullopt;
+    stop();
+  }
 }
 void App::start(const std::string &token) {
   login_dialog_->hide();
   tray_icon_->showStatusMenu();
 
-  auto apiClient = std::make_shared<DigitalStage::Api::Client>(API_URL);
-  client_ = std::make_unique<Client>(apiClient);// Describe this device
+  client_ = std::make_unique<Client>(api_client_);// Describe this device
   nlohmann::json initialDeviceInformation;
   // - always use an UUID when you want Digital Stage to remember this device and its settings
   initialDeviceInformation["uuid"] = device_id_;
@@ -87,13 +85,25 @@ void App::start(const std::string &token) {
   initialDeviceInformation["canVideo"] = false;
 
   // And finally connect with the token and device description
-  apiClient->disconnected.connect([=](bool) {
+  api_client_->disconnected.connect([=](bool) {
     stop();
   });
-  apiClient->connect(token, initialDeviceInformation);
+  api_client_->connect(token, initialDeviceInformation);
 }
 void App::stop() {
+  api_client_->disconnect();
   client_ = nullptr;
   tray_icon_->showLoginMenu();
   login_dialog_->show();
+}
+
+void App::openStage() {
+  QDesktopServices::openUrl(QUrl(STAGE_URL));
+}
+
+void App::openSettings() {
+  auto uri = std::string(SETTINGS_URL);
+  uri += "/" + device_id_;
+  std::cout << "Opening" << uri << std::endl;
+  QDesktopServices::openUrl(QUrl(SETTINGS_URL));
 }
