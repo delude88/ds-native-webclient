@@ -10,18 +10,19 @@
 
 class MiniAudioIO : public AudioIO {
  public:
-  explicit MiniAudioIO(DigitalStage::Api::Client &client);
+  explicit MiniAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
   ~MiniAudioIO();
  protected:
   std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;
 
   void setAudioDriver(const std::string &audio_driver) override;
-  void setInputSoundCard(const SoundCard &sound_card, bool start, DigitalStage::Api::Client &client) override;
+  void setInputSoundCard(const SoundCard &sound_card, bool start) override;
   void setOutputSoundCard(const SoundCard &sound_card, bool start) override;
   void startSending() override;
   void stopSending() override;
   void startReceiving() override;
   void stopReceiving() override;
+  void shutdown() override;
 
  private:
   std::atomic<bool> initialized_{};

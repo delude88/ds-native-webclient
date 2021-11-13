@@ -11,10 +11,8 @@
 #include <optional>
 #include <string>
 
-#ifndef Q_MOC_RUN
 #include <Client.h>
 #include <DigitalStage/Auth/AuthService.h>
-#endif
 
 class App : public QObject {
  Q_OBJECT
@@ -34,9 +32,11 @@ class App : public QObject {
 
   std::string device_id_;
   std::optional<std::string> token_;
-  std::unique_ptr<Client> client_;
-  KeyStore* key_store_;
   std::unique_ptr<DigitalStage::Auth::AuthService> auth_service_;
+  std::unique_ptr<Client> client_;
+
+
+  KeyStore* key_store_;
   TrayIcon *tray_icon_;
   LoginDialog *login_dialog_;
 };

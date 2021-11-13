@@ -5,11 +5,26 @@
 #include "RtAudioIO.h"
 #include "../utils/cp1252_to_utf8.h"
 #include <memory>
+#include <utility>
 #include <plog/Log.h>
 
-RtAudioIO::RtAudioIO(DigitalStage::Api::Client &client)
-    : AudioIO(client), client_(client) {
+RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
+    : AudioIO(std::move(client)) {
   PLOGD << "RtAudioIO";
+}
+
+RtAudioIO::~RtAudioIO() {
+  PLOGI << "Stopping rt audio";
+  if (rt_audio_) {
+    if (rt_audio_->isStreamRunning()) {
+      PLOGD << "RtAudiostop stream";
+      rt_audio_->stopStream();
+    }
+    if (rt_audio_->isStreamOpen()) {
+      PLOGD << "close stream";
+      rt_audio_->closeStream();
+    }
+  }
 }
 
 std::vector<nlohmann::json> RtAudioIO::enumerateRtDevices(RtAudio::Api rt_api,
@@ -91,11 +106,11 @@ std::vector<json> RtAudioIO::enumerateDevices(const DigitalStage::Api::Store &st
   return sound_cards;
 }
 
-void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
+void RtAudioIO::initAudio() {
   std::lock_guard<std::mutex> guard{mutex_};
 
   // Capture all dependencies
-  auto store = client.getStore();
+  auto store = client_->getStore();
   auto local_device = store->getLocalDevice();
 
   // Stop and close rt audio if open
@@ -143,13 +158,13 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
       // Sync enabled channels
       for (int channel = 0; channel < input_sound_card->channels.size(); channel++) {
         if (input_sound_card->channels[channel].active) {
-          publishChannel(client, channel);
+          publishChannel(channel);
         } else if (input_channel_mapping_.count(channel)) {
-          unPublishChannel(client, channel);
+          unPublishChannel(channel);
         }
       }
     } else {
-      unPublishAll(client);
+      unPublishAll();
     }
 
     /**
@@ -287,32 +302,32 @@ void RtAudioIO::initAudio(DigitalStage::Api::Client &client) {
 
 void RtAudioIO::setAudioDriver(const std::string &audio_driver) {
   PLOGD << "setAudioDriver()";
-  initAudio(client_);
+  initAudio();
 }
 
-void RtAudioIO::setInputSoundCard(const SoundCard &sound_card, bool start, DigitalStage::Api::Client &client) {
+void RtAudioIO::setInputSoundCard(const SoundCard &sound_card, bool start) {
   PLOGD << "setInputSoundCard()";
-  initAudio(client);
+  initAudio();
 }
 void RtAudioIO::setOutputSoundCard(const SoundCard &sound_card, bool start) {
   PLOGD << "setOutputSoundCard()";
-  initAudio(client_);
+  initAudio();
 }
 void RtAudioIO::startSending() {
   PLOGD << "startSending()";
-  initAudio(client_);
+  initAudio();
 }
 void RtAudioIO::stopSending() {
   PLOGD << "RtAudstopSending()";
-  initAudio(client_);
+  initAudio();
 }
 void RtAudioIO::startReceiving() {
   PLOGD << "startReceiving()";
-  initAudio(client_);
+  initAudio();
 }
 void RtAudioIO::stopReceiving() {
   PLOGD << "stopReceiving()";
-  initAudio(client_);
+  initAudio();
 }
 unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
                                             std::optional<RtAudio::StreamParameters> outputParameters,

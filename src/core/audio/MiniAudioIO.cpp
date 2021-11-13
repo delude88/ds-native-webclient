@@ -6,11 +6,18 @@
 #include "../utils/miniaudio.h"
 #include <plog/Log.h>
 
-MiniAudioIO::MiniAudioIO(DigitalStage::Api::Client &client) : AudioIO(client) {
+MiniAudioIO::MiniAudioIO(std::shared_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)) {
   PLOGD << "MiniAudioIO::MiniAudioIO";
 }
 
 MiniAudioIO::~MiniAudioIO() {
+  PLOGD << "MiniAudioIO::~MiniAudioIO";
+  ma_device_uninit(&input_device_);
+  ma_device_uninit(&output_device_);
+  ma_context_uninit(&context_);
+}
+
+MiniAudioIO::shutdown() {
   PLOGD << "MiniAudioIO::~MiniAudioIO";
   ma_device_uninit(&input_device_);
   ma_device_uninit(&output_device_);
@@ -32,17 +39,16 @@ void MiniAudioIO::setAudioDriver(const std::string &audio_driver) {
   initialized_ = true;
 }
 void MiniAudioIO::setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card,
-                                    bool start,
-                                    DigitalStage::Api::Client &client) {
+                                    bool start) {
   if (initialized_) {
     PLOGD << "AudioService::setInputSoundCard";
     // Un-init existing output device
     ma_device_uninit(&input_device_);
 
-    unPublishAll(client);
+    unPublishAll();
     for (int channel = 0; channel < sound_card.channels.size(); channel++) {
       if (sound_card.channels[channel].active) {
-        publishChannel(client, channel);
+        publishChannel(channel);
       }
     }
 

@@ -31,7 +31,7 @@ class AudioRenderer {
     LARGE
   };
 
-  explicit AudioRenderer(DigitalStage::Api::Client &client, bool autostart = false);
+  explicit AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart = false);
 
   /**
    * Init this audio renderer manually with the given sample rate, buffer size and room size;
@@ -59,7 +59,7 @@ class AudioRenderer {
 
   void autoInit(const DigitalStage::Types::Stage &stage, const DigitalStage::Types::SoundCard &sound_card);
 
-  void attachHandlers(DigitalStage::Api::Client &client, bool autostart);
+  void attachHandlers(bool autostart);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
                                                                            const DigitalStage::Api::Store &store);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
@@ -70,7 +70,7 @@ class AudioRenderer {
                              const DigitalStage::Types::ThreeDimensionalProperties &position);
 
   std::atomic<std::size_t> current_frame_size_;
-  const DigitalStage::Api::Store &store_;
+  std::shared_ptr<DigitalStage::Api::Client> client_;
   std::atomic<bool> initialized_;
   cmrc::embedded_filesystem fs_;
   std::shared_ptr<Binaural::CCore> core_;

@@ -18,13 +18,13 @@
 
 class Client {
  public:
-  explicit Client(std::shared_ptr<DigitalStage::Api::Client> client, std::shared_ptr<AudioIO> audio_io);
+  explicit Client(std::shared_ptr<DigitalStage::Api::Client> api_client);
   ~Client();
 
  protected:
   void onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count);
   void onPlaybackCallback(float **data, std::size_t num_channels, std::size_t frame_count);
-  void onDuplexCallback(const std::unordered_map<std::string, float *>&,
+  void onDuplexCallback(const std::unordered_map<std::string, float *> &,
                         float **data,
                         std::size_t num_channels,
                         std::size_t frame_count);
@@ -39,8 +39,8 @@ class Client {
   std::map<std::string, std::shared_ptr<RingBuffer<float>>> channels_;
   std::shared_mutex channels_mutex_;
 
-  std::shared_ptr<AudioIO> audio_io_;
-  std::unique_ptr<AudioMixer<float>> audio_mixer_;
+  std::shared_ptr<DigitalStage::Api::Client> api_client_;
+  std::unique_ptr<AudioIO> audio_io_;
   std::unique_ptr<AudioRenderer<float>> audio_renderer_;
-  std::shared_ptr<DigitalStage::Api::Client> connection_service_;
+  std::shared_ptr<ConnectionService> connection_service_;
 };

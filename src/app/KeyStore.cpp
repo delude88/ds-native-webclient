@@ -9,7 +9,7 @@ KeyStore::KeyStore(QObject *parent) : QObject(parent) {}
 
 bool KeyStore::store(const Credentials &credentials) {
   keychain::Error error{};
-  keychain::setPassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, credentials.email, "hunter2", error);
+  keychain::setPassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, credentials.email, credentials.password, error);
   if (error) {
     std::cerr << "Storing of password failed: "
               << error.message << std::endl;
@@ -29,7 +29,7 @@ std::optional<KeyStore::Credentials> KeyStore::restore(const std::string &email)
   return Credentials{email, password};
 }
 
-bool KeyStore::remove(const std::string &email) const {
+bool KeyStore::remove(const std::string &email) {
   keychain::Error error{};
   keychain::deletePassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {

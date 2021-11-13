@@ -13,8 +13,8 @@ typedef std::unordered_map<unsigned int, std::string> ChannelMap;
 
 class AudioIO {
  public:
-  explicit AudioIO(DigitalStage::Api::Client &client);
-  ~AudioIO();
+  explicit AudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
+  virtual ~AudioIO();
 
   Pal::sigslot::signal<
       /* audio_track_id */ std::string,
@@ -46,16 +46,15 @@ class AudioIO {
   virtual std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) = 0;
   virtual void setAudioDriver(const std::string &audio_driver) = 0;
   virtual void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card,
-                                 bool start,
-                                 DigitalStage::Api::Client &client) = 0;
+                                 bool start) = 0;
   virtual void setOutputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) = 0;
   virtual void startSending() = 0;
   virtual void stopSending() = 0;
   virtual void startReceiving() = 0;
   virtual void stopReceiving() = 0;
-  void publishChannel(DigitalStage::Api::Client &client, int channel);
-  void unPublishChannel(DigitalStage::Api::Client &client, int channel);
-  void unPublishAll(DigitalStage::Api::Client &client);
+  void publishChannel(int channel);
+  void unPublishChannel(int channel);
+  void unPublishAll();
 
   std::mutex mutex_;
   /**
@@ -63,7 +62,7 @@ class AudioIO {
    * Source channel <-> audio_track_id (online)
    */
   ChannelMap input_channel_mapping_;
-  DigitalStage::Api::Client &client_;
+  std::shared_ptr<DigitalStage::Api::Client> client_;
 
  private:
   void attachHandlers();

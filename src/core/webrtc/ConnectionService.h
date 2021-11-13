@@ -21,8 +21,7 @@
 
 class ConnectionService {
  public:
-  explicit ConnectionService(DigitalStage::Api::Client &client);
-  ~ConnectionService();
+  explicit ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client);
 
   void broadcast(const std::string &audio_track_id, float data);
   void broadcast(const std::string &audio_track_id, const std::byte *data, size_t size);
@@ -30,13 +29,13 @@ class ConnectionService {
 
   Pal::sigslot::signal<std::string, std::vector<std::byte>> onData;
  private:
-  void attachHandlers(DigitalStage::Api::Client &client);
-  void onStageChanged(DigitalStage::Api::Client &client);
+  void attachHandlers();
+  void onStageChanged();
   void createPeerConnection(const std::string &stage_device_id,
-                            const std::string &local_stage_device_id,
-                            DigitalStage::Api::Client &client);
+                            const std::string &local_stage_device_id);
   void closePeerConnection(const std::string &stage_device_id);
 
+  std::shared_ptr<DigitalStage::Api::Client> client_;
   std::unordered_map<std::string, std::shared_ptr<PeerConnection>> peer_connections_;
   std::shared_mutex peer_connections_mutex_;
 

@@ -1,15 +1,4 @@
-// AudioIO engine
-#ifdef USE_RT_AUDIO
-#include <audio/RtAudioIO.h>
-#else
-// Miniaudio
-#ifdef __APPLE__
-#define MA_NO_RUNTIME_LINKING
-#endif
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-#include <audio/MiniAudioIO.h>
-#endif
+
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 #define POSIX
@@ -54,7 +43,7 @@ void sig_handler(int s) {
 
 int main(int, char *[]) {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::warning, &consoleAppender);
+  plog::init(plog::info, &consoleAppender);
 
 #ifdef POSIX
   // What to do for WIN32 here?
@@ -74,13 +63,8 @@ int main(int, char *[]) {
   auto token = authenticate_user(); //TODO: Remove
 
   // Create an API service
-  auto apiClient = std::make_unique<DigitalStage::Api::Client>(API_URL);
-#if USE_RT_AUDIO
-  auto audioIO = std::make_unique<RtAudioIO>(*apiClient);
-#else
-  auto audioIO = std::make_unique<MiniAudioIO>(*apiClient);
-#endif
-  auto client = std::make_unique<Client>(*apiClient, *audioIO);
+  auto apiClient = std::make_shared<DigitalStage::Api::Client>(API_URL);
+  auto client = std::make_unique<Client>(apiClient);
 
   // Describe this device
   nlohmann::json initialDeviceInformation;
@@ -94,8 +78,7 @@ int main(int, char *[]) {
   apiClient->connect(token, initialDeviceInformation);
 
   // For debug only, show discovered peers
-  auto peers = discovery->scan();
-  for (const auto &item: peers) {
+  for (const auto &item: discovery->scan()) {
     auto ip_and_port = item.ip_port();
     std::cout << "Found other client in local network at " << ip_and_port.ip() << std::endl;
   }

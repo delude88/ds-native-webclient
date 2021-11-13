@@ -9,10 +9,17 @@
 #include "app/utils/macos.h"
 #endif
 
-#include "app/KeyStore.h"
 #include "app/App.h"
 
+// Logger
+#include <plog/Init.h>
+#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Appenders/ConsoleAppender.h>
+
 int main(int argc, char *argv[]) {
+  static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
+  plog::init(plog::info, &consoleAppender);
+
 #ifdef __APPLE__
   // Special macOS routine (get microphone access rights)
   if (!check_access()) {

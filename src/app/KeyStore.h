@@ -25,11 +25,11 @@ class KeyStore : QObject {
 
   explicit KeyStore(QObject *parent = nullptr);
 
-  bool store(const Credentials& credentials);
+  static bool store(const Credentials& credentials);
   static std::optional<Credentials> restore(const std::string& email) ;
-  [[nodiscard]] bool remove(const std::string& email) const;
+  [[nodiscard]] static bool remove(const std::string& email) ;
 
-  std::optional<std::string> restoreEmail();
-  void storeEmail(const std::string& email);
+  static std::optional<std::string> restoreEmail();
+  static void storeEmail(const std::string& email);
 };
 

@@ -18,6 +18,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_L
 add_compile_definitions(SIGNUP_URL="https://beta.digital-stage.org/account/signup")
 add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
+add_compile_definitions(STAGE_URL="https://beta.digital-stage.org/stage")
 option(WITH_GUI "Build with graphical user interface" OFF)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 include(TestBigEndian)
@@ -79,6 +80,7 @@ if (APPLE)
     set(RTAUDIO_API_PULSE OFF)  # WHY?!?
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/rtaudio EXCLUDE_FROM_ALL)
+set_target_properties(rtaudio PROPERTIES RTAUDIO_API_PULSE OFF)
 
 
 #################################################
@@ -163,7 +165,7 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 #################################################
 target_include_directories(${PROJECT_NAME}
         PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp"
+        "/${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp"
         )
 target_link_libraries(${PROJECT_NAME}
         PUBLIC

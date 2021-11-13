@@ -2,17 +2,35 @@
 // Created by Tobias Hegemann on 26.10.21.
 //
 
+// AudioIO engine
+#ifdef USE_RT_AUDIO
+#include "audio/RtAudioIO.h"
+#else
+// Miniaudio
+#ifdef __APPLE__
+#define MA_NO_RUNTIME_LINKING
+#endif
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+#include "audio/MiniAudioIO.h"
+#endif
+
 #include "Client.h"
 
 #include <utility>
 #include "utils/conversion.h"
 
-Client::Client(std::shared_ptr<DigitalStage::Api::Client> client, std::shared_ptr<AudioIO> audio_io) :
-    connection_service_(client),
-    audio_io_(std::move(audio_io)),
-    audio_mixer_(std::make_unique<AudioMixer<float>>(*client)),
-    audio_renderer_(std::make_unique<AudioRenderer<float>>(*client, true)),
+Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
+    api_client_(std::move(api_client)),
+    audio_renderer_(std::make_unique<AudioRenderer<float>>(api_client_, true)),
+    connection_service_(std::make_unique<ConnectionService>(api_client_)),
     receiver_buffer_(RECEIVER_BUFFER) {
+#ifdef USE_RT_AUDIO
+  audio_io_ = std::make_unique<RtAudioIO>(api_client_);
+#else
+  audio_io_ = std::make_unique<MiniAudioIO>(api_client_);
+#endif
+
   connection_service_->onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
@@ -33,8 +51,7 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> client, std::shared_pt
   attachAudioHandlers();
 }
 
-Client::~Client() {
-}
+Client::~Client() = default;
 
 void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count) {
   // Write to channels
@@ -88,14 +105,14 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   }
 }
 void Client::attachHandlers() {
-  connection_service_->ready.connect([this](const DigitalStage::Api::Store *store) {
+  api_client_->ready.connect([this](const DigitalStage::Api::Store *store) {
     auto local_device = store->getLocalDevice();
     if (local_device) {
       changeReceiverSize(local_device->buffer);
     }
   });
-  connection_service_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
-                                           const DigitalStage::Api::Store *store) {
+  api_client_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
+                                                 const DigitalStage::Api::Store *store) {
     if (update.contains("buffer")) {
       changeReceiverSize(update["buffer"]);
     }
