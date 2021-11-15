@@ -25,7 +25,7 @@ class App : public QObject {
   std::optional<std::string> autoLogin();
   void login(const QString &email, const QString &password);
   void logout();
-  void openStage();
+  static void openStage();
   void openSettings();
 
  private:

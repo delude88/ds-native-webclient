@@ -42,7 +42,7 @@ void App::show() {
 std::optional<std::string> App::autoLogin() {
   auto email = KeyStore::restoreEmail();
   if (email) {
-    // Try to login using stored credentials
+    // Try to log in using stored credentials
     auto credentials = KeyStore::restore(*email);
     if (credentials) {
       // Try to get token
@@ -78,7 +78,7 @@ void App::start(const std::string &token) {
 
   client_ = std::make_unique<Client>(api_client_);// Describe this device
   nlohmann::json initialDeviceInformation;
-  // - always use an UUID when you want Digital Stage to remember this device and its settings
+  // - always use a UUID when you want Digital Stage to remember this device and its settings
   initialDeviceInformation["uuid"] = device_id_;
   initialDeviceInformation["type"] = "native";
   initialDeviceInformation["canAudio"] = true;
