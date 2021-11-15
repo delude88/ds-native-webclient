@@ -275,7 +275,7 @@ if (APPLE)
 endif (APPLE)
 
 
-#################################################
+################################################
 #
 #   Bundling
 #
@@ -298,22 +298,35 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
 
     if (APPLE)
-        #[[find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
+        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
         # First use macdeployqt to bundle the qt libs, but do NOT sign yet
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
-                #-appstore-compliant
+                -appstore-compliant
                 -always-overwrite
                 COMMENT "Running macdeployqt..."
                 )
-        #[[add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
-                COMMAND "dylibbundler"
-                -od -b
-                -s "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../Frameworks"
-                -x "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>"
-                COMMENT "Running dylibbundler..."
-                )]]
+        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+                COMMAND
+                ${CMAKE_INSTALL_NAME_TOOL}
+                -change
+                "@rpath/libkeychain.dylib"
+                "@executable_path/../Frameworks/libkeychain.dylib"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                COMMENT "Fixing libkeychain rpath"
+                VERBATIM
+                )
+        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+                COMMAND
+                ${CMAKE_INSTALL_NAME_TOOL}
+                -change
+                "@rpath/libtbb.12.dylib"
+                "@executable_path/../Frameworks/libtbb.12.dylib"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                COMMENT "Fixing libtbb rpath"
+                VERBATIM
+                )
     endif ()
 
     #################################################
@@ -321,7 +334,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     #   Codesigning
     #
     #################################################
-    #[[if (APPLE)
+    if (APPLE)
         set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND
@@ -345,5 +358,5 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 )
     else ()
         set(M_SIGN_CERT_NAME "TODO")
-    endif ()]]
+    endif ()
 endif ()
