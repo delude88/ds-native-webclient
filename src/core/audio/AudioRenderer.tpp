@@ -80,7 +80,7 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   if (!environment_->GetBRIR()->IsBRIRready()) {
     throw std::runtime_error("Created BRIR but it is not ready");
   }
-  PLOGD << "Loaded BRIR";
+  PLOGI << "Loaded BRIR " << brirPath;
 
   listener_ = core_->CreateListener();
   listener_->DisableCustomizedITD();
@@ -91,7 +91,7 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   if (!listener_->GetHRTF()->IsHRTFLoaded()) {
     throw std::runtime_error("Created HRTF but it is not loaded");
   }
-  PLOGD << "Loaded HRTF";
+  PLOGI << "Loaded HRTF " << hrtfPath;
 
   // Listener
   auto store = client_->getStore();
@@ -128,9 +128,9 @@ void AudioRenderer<T>::autoInit(const DigitalStage::Types::Stage &stage,
     // Get room size
     auto room_volume = stage.width * stage.length * stage.height;
     auto room_size = AudioRenderer::RoomSize::SMALL;
-    if (room_volume > 1000) {
+    if (room_volume > 10000) {
       room_size = AudioRenderer::RoomSize::LARGE;
-    } else if (room_volume > 100) {
+    } else if (room_volume > 1000) {
       room_size = AudioRenderer::RoomSize::MEDIUM;
     }
     try {

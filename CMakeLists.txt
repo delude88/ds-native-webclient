@@ -86,7 +86,7 @@ if (APPLE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/rtaudio EXCLUDE_FROM_ALL)
 #  - oneTBB
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/oneTBB EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/oneTBB EXCLUDE_FROM_ALL)
 
 
 #################################################
@@ -104,13 +104,11 @@ target_sources(${PROJECT_NAME}
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Client.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Client.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/CircularQueue.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/CMRCFileBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/conversion.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/cp1252_to_utf8.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/ServiceDiscovery.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/RingBuffer.h
-        #${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/TBBRingBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioRenderer.h
@@ -180,7 +178,7 @@ target_link_libraries(${PROJECT_NAME}
         DigitalStage::ApiStatic
         DigitalStage::AuthStatic
         DeviceId::DeviceId
-        #TBB::tbb
+        TBB::tbb
         Threads::Threads
         udp-discovery
         3dtiAudioToolkitStatic
