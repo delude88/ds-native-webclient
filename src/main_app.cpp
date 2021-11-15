@@ -16,6 +16,8 @@
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Appenders/ConsoleAppender.h>
 
+#define USE_ONLY_NATIVE_DEVICES
+
 int main(int argc, char *argv[]) {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
   plog::init(plog::info, &consoleAppender);

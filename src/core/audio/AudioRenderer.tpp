@@ -3,7 +3,6 @@
 //
 
 #include "../utils/CMRCFileBuffer.h"
-#include "AudioRenderer.h"
 
 template<class T>
 AudioRenderer<T>::AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart)
@@ -103,12 +102,18 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
 
   // Other remote audio tracks
   for (const auto &audio_track: store->audioTracks.getAll()) {
+#ifdef USE_ONLY_NATIVE_DEVICES
+    if(audio_track.kind == "native") {
+#endif
     audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
     audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
     audio_tracks_[audio_track._id]->DisableNearFieldEffect();
     audio_tracks_[audio_track._id]->EnableAnechoicProcess();
     audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
     setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+#ifdef USE_ONLY_NATIVE_DEVICES
+    }
+#endif
   }
   initialized_ = true;
   PLOGI << "Started audio renderer";
@@ -218,6 +223,11 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
   client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       PLOGD << "audioTrackAdded";
+#ifdef USE_ONLY_NATIVE_DEVICES
+      if(audio_track.type != "native") {
+        return;
+      }
+#endif
       mutex_.lock();
       if (!audio_tracks_.count(audio_track._id)) {
         audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();

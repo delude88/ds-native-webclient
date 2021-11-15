@@ -34,6 +34,8 @@
 #include <cmrc/cmrc.hpp>
 CMRC_DECLARE(clientres);
 
+//#define USE_ONLY_NATIVE_DEVICES
+
 bool isRunning = false;
 
 void sig_handler(int s) {
