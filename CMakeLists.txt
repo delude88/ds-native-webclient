@@ -89,7 +89,7 @@ if (APPLE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/rtaudio EXCLUDE_FROM_ALL)
 #  - oneTBB
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/oneTBB EXCLUDE_FROM_ALL)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/oneTBB EXCLUDE_FROM_ALL)
 
 
 #################################################
@@ -181,7 +181,7 @@ target_link_libraries(${PROJECT_NAME}
         DigitalStage::ApiStatic
         DigitalStage::AuthStatic
         DeviceId::DeviceId
-        TBB::tbb
+        #TBB::tbb
         Threads::Threads
         udp-discovery
         3dtiAudioToolkitStatic
@@ -317,7 +317,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
-        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+        #[[add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND
                 ${CMAKE_INSTALL_NAME_TOOL}
                 -change
@@ -326,7 +326,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
                 COMMENT "Fixing libtbb rpath"
                 VERBATIM
-                )
+                )]]
     endif ()
 
     #################################################
