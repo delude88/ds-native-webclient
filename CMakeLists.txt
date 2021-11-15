@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(client LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
@@ -53,6 +53,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/deps/cmrc/CMakeRC.cmake)
 #  - posix or win32 threads
 find_package(Threads REQUIRED)
 #  - libds
+set(TECKOS_BUILD_SOURCES ON CACHE BOOL "Using only local sources for all dependencies")
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
 #  - libdatachannel
 if (UNIX AND NOT APPLE)
@@ -85,7 +86,7 @@ if (APPLE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/rtaudio EXCLUDE_FROM_ALL)
 #  - oneTBB
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/oneTBB EXCLUDE_FROM_ALL)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/oneTBB EXCLUDE_FROM_ALL)
 
 
 #################################################
@@ -103,13 +104,13 @@ target_sources(${PROJECT_NAME}
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Client.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/Client.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/CircularQueue.h
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/CircularQueue.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/CMRCFileBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/conversion.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/cp1252_to_utf8.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/ServiceDiscovery.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/RingBuffer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/TBBRingBuffer.h
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/core/utils/TBBRingBuffer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioIO.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioIO.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core/audio/AudioRenderer.h
@@ -179,7 +180,7 @@ target_link_libraries(${PROJECT_NAME}
         DigitalStage::ApiStatic
         DigitalStage::AuthStatic
         DeviceId::DeviceId
-        TBB::tbb
+        #TBB::tbb
         Threads::Threads
         udp-discovery
         3dtiAudioToolkitStatic
@@ -296,7 +297,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
 
     if (APPLE)
-        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
+        #[[find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
         # First use macdeployqt to bundle the qt libs, but do NOT sign yet
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"

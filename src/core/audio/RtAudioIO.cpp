@@ -159,7 +159,7 @@ void RtAudioIO::initAudio() {
       for (int channel = 0; channel < input_sound_card->channels.size(); channel++) {
         if (input_sound_card->channels[channel].active) {
           publishChannel(channel);
-        } else if (input_channel_mapping_.count(channel)) {
+        } else if (published_channels_[channel]) {
           unPublishChannel(channel);
         }
       }
@@ -290,7 +290,6 @@ void RtAudioIO::initAudio() {
           rt_audio_->closeStream();
           PLOGI << "Stopped Audio IO";
         }
-        //exit(0);
       }
     } else {
       PLOGI << "Stopped Audio IO - no input or output sound card selected";

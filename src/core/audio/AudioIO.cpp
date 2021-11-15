@@ -6,7 +6,10 @@
 #include <plog/Log.h>
 
 AudioIO::AudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
-    : client_(std::move(client)), num_devices_(0), watching_device_updates_(false) {
+    : client_(std::move(client)),
+      num_devices_(0),
+      watching_device_updates_(false),
+      published_channels_() {
   attachHandlers();
 }
 
@@ -199,7 +202,8 @@ void AudioIO::attachHandlers() {
 }
 
 void AudioIO::publishChannel(int channel) {
-  if (!input_channel_mapping_.count(channel)) {
+  if (!published_channels_[channel] && !input_channel_mapping_.count(channel)) {
+    published_channels_[channel] = true;
     PLOGD << "publishChannel " << channel;
     auto store = client_->getStore();
     auto stageId = store->getStageId();
@@ -210,18 +214,25 @@ void AudioIO::publishChannel(int channel) {
     PLOGD << "Publishing audio track";
     client_->send(DigitalStage::Api::SendEvents::CREATE_AUDIO_TRACK,
                   payload);
+  } else {
+    PLOGD << "publishChannel " << channel << " NOT ";
   }
 }
 
 void AudioIO::unPublishChannel(int channel) {
   PLOGD << "unPublishChannel " << channel;
-  if (input_channel_mapping_.count(channel))
+  if (input_channel_mapping_.count(channel)) {
+    published_channels_[channel] = false;
     client_->send(DigitalStage::Api::SendEvents::REMOVE_AUDIO_TRACK, input_channel_mapping_[channel]);
+  } else {
+    PLOGD << "unPublishChannel " << channel << " NOT ";
+  }
 }
 
 void AudioIO::unPublishAll() {
   for (const auto &item: input_channel_mapping_) {
     PLOGD << "unPublishAll";
+    published_channels_[item.first] = false;
     client_->send(DigitalStage::Api::SendEvents::REMOVE_AUDIO_TRACK, item.second);
   }
 }

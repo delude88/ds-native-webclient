@@ -18,6 +18,7 @@
 #include <BRIR/BRIRCereal.h>
 #include <BinauralSpatializer/3DTI_BinauralSpatializer.h>
 #include <plog/Log.h>
+#include "AudioMixer.h"
 
 #include <cmrc/cmrc.hpp>
 CMRC_DECLARE(clientres);
@@ -69,6 +70,8 @@ class AudioRenderer {
   void setAudioTrackPosition(const std::string &audio_track_id,
                              const DigitalStage::Types::ThreeDimensionalProperties &position);
 
+  void renderFallback(T *in, T *outLeft, T *outRight, std::size_t frame_size, std::optional<std::pair<T, bool>> volume_info);
+
   std::atomic<std::size_t> current_frame_size_;
   std::shared_ptr<DigitalStage::Api::Client> client_;
   std::atomic<bool> initialized_;
@@ -78,6 +81,8 @@ class AudioRenderer {
   std::shared_ptr<Binaural::CEnvironment> environment_;
   std::unordered_map<std::string, std::shared_ptr<Binaural::CSingleSourceDSP>> audio_tracks_;
   std::mutex mutex_;
+
+  std::unique_ptr<AudioMixer<float>> audio_mixer_;
 };
 
 #include "AudioRenderer.tpp"

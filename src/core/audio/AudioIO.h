@@ -58,7 +58,11 @@ class AudioIO {
 
   std::mutex mutex_;
   /**
-   * Mapping of input channels.
+   * Indicates if a channel has been or is being published.
+   */
+  std::array<bool, 64> published_channels_;
+  /**
+   * Mapping of successful published input channels.
    * Source channel <-> audio_track_id (online)
    */
   ChannelMap input_channel_mapping_;

@@ -13,22 +13,26 @@
 #include <sigslot/signal.hpp>
 #include <plog/Log.h>
 
+template<class T> using VolumeInfo = std::pair<T /* volume */, bool /* muted */>;
+
 template<class T>
 class AudioMixer {
  public:
-  explicit AudioMixer(DigitalStage::Api::Client &client);
+
+  explicit AudioMixer(std::shared_ptr<DigitalStage::Api::Client> client);
 
   void applyGain(const std::string &audio_track_id, T *data, std::size_t frame_count);
   T applyGain(const std::string &audio_track_id, T data);
-  std::optional<std::pair<T, bool>> getGain(const std::string &audio_track_id) const;
+  std::optional<VolumeInfo<T>> getGain(const std::string &audio_track_id) const;
 
   Pal::sigslot::signal<std::string, std::pair<T, bool>> onGainChanged;
  private:
-  void attachHandlers(DigitalStage::Api::Client &client);
+  void attachHandlers();
   std::pair<T, bool> calculateVolume(const DigitalStage::Types::AudioTrack &audio_track,
                                      const DigitalStage::Api::Store &store);
 
   std::unordered_map<std::string, std::pair<T, bool>> volume_map_;
+  std::shared_ptr<DigitalStage::Api::Client> client_;
 };
 
 #include "AudioMixer.tpp"

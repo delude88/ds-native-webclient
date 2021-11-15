@@ -18,7 +18,9 @@ struct alignas(64) CircularQueue {
 
   inline void enqueue(T val) {
     if ((m_front == 0 && m_rear == m_size - 1)) {
-      throw std::runtime_error("Queue is Full \n");
+      printf("Queue is Full \n");
+      //throw std::runtime_error("Queue is Full \n");
+      return;
     } else {
       if (m_front == -1) { /* Insert First Element */
         m_front = 0;
@@ -30,9 +32,11 @@ struct alignas(64) CircularQueue {
     m_counter++;
   }
 
-  inline void enqueue_many(T *vals, int start, int end) {
+  inline void enqueue_many(const T *vals, int start, int end) {
     if (m_counter + (end - start) > m_size) {
-      throw std::runtime_error("Queue is Full \n");
+      printf("Queue is Full \n");
+      //throw std::runtime_error("Queue is Full \n");
+      return;
     }
 
     if (m_front == -1) { /* Insert First Element */
@@ -79,22 +83,5 @@ struct alignas(64) CircularQueue {
     m_front = -1;
     m_rear = -1;
     m_counter = 0;
-  }
-
-  // todo: Fix this for non-int types
-  inline void print_queue() {
-    if (m_front == -1) {
-      printf("Queue is Empty\n");
-      throw;
-    }
-    printf("Elements in Circular Queue are: \n");
-    if (m_rear >= m_front) {
-      for (int i = m_front; i <= m_rear; i++) printf("%d ", m_arr[i]);
-    } else {
-      for (int i = m_front; i < m_size; i++) printf("%d ", m_arr[i]);
-
-      for (int i = 0; i <= m_rear; i++) printf("%d ", m_arr[i]);
-    }
-    printf("\n");
   }
 };

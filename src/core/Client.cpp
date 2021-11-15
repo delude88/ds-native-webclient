@@ -34,17 +34,24 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
   connection_service_->onData.connect([this](const std::string &audio_track_id, std::vector<std::byte> data) {
     if (channels_.count(audio_track_id) == 0) {
       std::unique_lock lock(channels_mutex_);
+#ifdef USE_CIRCULAR_QUEUE
+      channels_[audio_track_id] = std::make_shared<CircularQueue<float>>(receiver_buffer_);
+#else
       channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(receiver_buffer_);
+#endif
       lock.unlock();
     }
     auto values_size = data.size() / 4;
     float values[values_size];
     deserialize(data.data(), data.size(), values);
     std::shared_lock lock(channels_mutex_);
-    //channels_[audio_track_id]->write(values, values_size);
+#ifdef USE_CIRCULAR_QUEUE
+
+#else
     for (int v = 0; v < values_size; v++) {
       channels_[audio_track_id]->put(values[v]);
     }
+#endif
     lock.unlock();  // May be useless here
   });
   attachHandlers();
@@ -57,13 +64,21 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
   // Write to channels
   if (channels_.count(audio_track_id) == 0) {
     std::unique_lock lock(channels_mutex_);
+#ifdef USE_CIRCULAR_QUEUE
+    channels_[audio_track_id] = std::make_shared<CircularQueue<float>>(receiver_buffer_);
+#else
     channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(receiver_buffer_);
+#endif
     lock.unlock();
   }
   std::shared_lock lock(channels_mutex_);
+#ifdef USE_CIRCULAR_QUEUE
+  channels_[audio_track_id]->enqueue_many(data, 0, frame_count);
+#else
   for (int f = 0; f < frame_count; f++) {
     channels_[audio_track_id]->put(data[f]);
   }
+#endif
   lock.unlock();
 
   // Send to webRTC
@@ -78,9 +93,15 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   for (const auto &item: channels_) {
     if (item.second) {
       auto buf = (float *) malloc(frame_count * sizeof(float));
+#ifdef USE_CIRCULAR_QUEUE
+      for (int f = 0; f < frame_count; f++) {
+        buf[f] = item.second->dequeue();
+      }
+#else
       for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->get();
       }
+#endif
       audio_renderer_->render(item.first, buf, left, right, frame_count);
       free(buf);
     }
@@ -144,9 +165,15 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   for (const auto &item: channels_) {
     if (item.second) {
       auto buf = (float *) malloc(frame_count * sizeof(float));
+#ifdef USE_CIRCULAR_QUEUE
+      for (int f = 0; f < frame_count; f++) {
+        buf[f] = item.second->dequeue();
+      }
+#else
       for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->get();
       }
+#endif
       audio_renderer_->render(item.first, buf, left, right, frame_count);
       free(buf);
     } else {
@@ -185,7 +212,11 @@ void Client::changeReceiverSize(unsigned int receiver_buffer) {
     receiver_buffer_ = receiver_buffer;
     // Recreate buffers with
     for (auto &item: channels_) {
+#ifdef USE_CIRCULAR_QUEUE
+      item.second = std::make_shared<CircularQueue<float>>(receiver_buffer_);
+#else
       item.second = std::make_shared<RingBuffer<float>>(receiver_buffer_);
+#endif
     }
     lock.unlock();
   }
