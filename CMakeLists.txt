@@ -53,7 +53,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/deps/cmrc/CMakeRC.cmake)
 #  - posix or win32 threads
 find_package(Threads REQUIRED)
 #  - libds
-set(TECKOS_BUILD_SOURCES ON CACHE BOOL "Using only local sources for all dependencies")
+set(TECKOS_BUILD_SOURCES OFF CACHE BOOL "Using only local sources for all dependencies")
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
 #  - libdatachannel
 if (UNIX AND NOT APPLE)
