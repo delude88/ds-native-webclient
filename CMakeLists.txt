@@ -11,7 +11,7 @@ set(CMAKE_PROJECT_VERSION "1.0.0")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
-set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+#set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 
 
 #################################################
@@ -19,11 +19,11 @@ set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 #   Environment configuration
 #
 #################################################
-add_compile_definitions(SIGNUP_URL="https://beta.digital-stage.org/account/signup")
+add_compile_definitions(SIGNUP_URL="https://dev.dstage.org/account/signup")
 add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
-add_compile_definitions(STAGE_URL="https://beta.digital-stage.org/stage")
-add_compile_definitions(SETTINGS_URL="https://beta.digital-stage.org/devices")
+add_compile_definitions(STAGE_URL="https://dev.dstage.org/stage")
+add_compile_definitions(SETTINGS_URL="https://dev.dstage.org/devices")
 option(WITH_GUI "Build with graphical user interface" OFF)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 
