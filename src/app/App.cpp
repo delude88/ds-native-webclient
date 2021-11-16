@@ -107,6 +107,11 @@ void App::start() {
   initialDeviceInformation["sendAudio"] = false;
   initialDeviceInformation["receiveAudio"] = true;
   initialDeviceInformation["canVideo"] = false;
+#ifdef USE_RT_AUDIO
+  initialDeviceInformation["audioEngine"] = "rtaudio";
+#else
+  initialDeviceInformation["audioEngine"] = "miniaudio";
+#endif
 
   // And finally connect with the token and device description
   api_client_->disconnected.connect([=](bool expected) {

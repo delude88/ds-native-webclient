@@ -110,6 +110,7 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   for (const auto &audio_track: store->audioTracks.getAll()) {
 #ifdef USE_ONLY_NATIVE_DEVICES
     if (audio_track.type == "native") {
+      PLOGI << "Found an existing native audio_track";
 #endif
       audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
       audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
@@ -118,6 +119,8 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
       audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
       setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
 #ifdef USE_ONLY_NATIVE_DEVICES
+    } else {
+      PLOGW << "Ignoring existing but non-native audio track";
     }
 #endif
   }
@@ -231,8 +234,10 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       PLOGD << "audioTrackAdded";
 #ifdef USE_ONLY_NATIVE_DEVICES
       if (audio_track.type != "native") {
+        PLOGW << "Ignoring non-native audio track, which has been published right now";
         return;
       }
+      PLOGI << "A native audio track has been added";
 #endif
       mutex_.lock();
       if (!audio_tracks_.count(audio_track._id)) {
@@ -686,32 +691,40 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
   auto custom_stage_member_position =
       store.getCustomStageMemberPositionByStageMemberAndDevice(stage_member->_id, *local_device_id);
   // Get related group
-  auto group = store.groups.get(stage_member->groupId);
-  if (!group) {
-    PLOGE << "Group not found";
-    return {"cardoid", 0, 0, 0, 0, 0, 0};
-  }
+  auto group = stage_member->groupId ? store.groups.get(*stage_member->groupId) : std::nullopt;
   auto custom_group_position = store.getCustomGroupPositionByGroupAndDevice(group->_id, *local_device_id);
 
   // Calculate coordinates
   double x = custom_stage_device_position ? custom_stage_device_position->x : stage_device.x;
   x += custom_stage_member_position ? custom_stage_member_position->x : stage_member->x;
-  x *= custom_group_position ? custom_group_position->x : group->x;
+  if(group) {
+    x += custom_group_position ? custom_group_position->x : group->x;
+  }
   double y = custom_stage_device_position ? custom_stage_device_position->y : stage_device.y;
   y += custom_stage_member_position ? custom_stage_member_position->y : stage_member->y;
-  y *= custom_group_position ? custom_group_position->y : group->y;
+  if(group) {
+    y += custom_group_position ? custom_group_position->y : group->y;
+  }
   double z = custom_stage_device_position ? custom_stage_device_position->z : stage_device.z;
   z += custom_stage_member_position ? custom_stage_member_position->z : stage_member->z;
-  z *= custom_group_position ? custom_group_position->z : group->z;
+  if(group) {
+    z += custom_group_position ? custom_group_position->z : group->z;
+  }
   double rX = custom_stage_device_position ? custom_stage_device_position->rX : stage_device.rX;
   rX += custom_stage_member_position ? custom_stage_member_position->rX : stage_member->rX;
-  rX *= custom_group_position ? custom_group_position->rX : group->rX;
+  if(group) {
+    rX += custom_group_position ? custom_group_position->rX : group->rX;
+  }
   double rY = custom_stage_device_position ? custom_stage_device_position->rY : stage_device.rY;
   rY += custom_stage_member_position ? custom_stage_member_position->rY : stage_member->rY;
-  rY *= custom_group_position ? custom_group_position->rY : group->rY;
+  if(group) {
+    rY += custom_group_position ? custom_group_position->rY : group->rY;
+  }
   double rZ = custom_stage_device_position ? custom_stage_device_position->rZ : stage_device.rZ;
   rZ += custom_stage_member_position ? custom_stage_member_position->rZ : stage_member->rZ;
-  rZ *= custom_group_position ? custom_group_position->rZ : group->rZ;
+  if(group) {
+    rZ += custom_group_position ? custom_group_position->rZ : group->rZ;
+  }
 
   return {"cardoid", x, y, z, rX, rY, rZ};
 }

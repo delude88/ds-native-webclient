@@ -210,6 +210,7 @@ void AudioMixer<T>::attachHandlers() {
 
 template<class T>
 double AudioMixer<T>::calculateBalance(double balance, bool is_local) {
+  PLOGI << "balance: " << std::to_string(balance) << " for " << (is_local ? "local" : "foreign");
   if (is_local) {
     if (balance > 0.5) {
       return 1 - balance;
@@ -231,6 +232,7 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
   assert(local_device_id);
   // Get balance (0 = only me, 1 = only others)
   auto balance = calculateBalance(store.getLocalDevice()->balance, audio_track.deviceId == *local_device_id);
+  PLOGI << "Results in " << balance;
 
   auto custom_audio_track_volume =
       store.getCustomAudioTrackVolumeByAudioTrackAndDevice(audio_track._id, *local_device_id);
@@ -246,21 +248,26 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
       store.getCustomStageMemberVolumeByStageMemberAndDevice(stage_member->_id, *local_device_id);
 
   // Get related group
-  auto group = store.groups.get(stage_member->groupId);
-  assert(group);
-  auto custom_group_volume = store.getCustomGroupVolumeByGroupAndDevice(group->_id, *local_device_id);
+  auto group = stage_member->groupId ? store.groups.get(*stage_member->groupId) : std::nullopt;
+  auto custom_group_volume =
+      group ? store.getCustomGroupVolumeByGroupAndDevice(group->_id, *local_device_id) : std::nullopt;
 
   // Calculate volumes
   double volume = custom_audio_track_volume ? custom_audio_track_volume->volume : audio_track.volume;
   volume *= custom_stage_device_volume ? custom_stage_device_volume->volume : stage_device->volume;
   volume *= custom_stage_member_volume ? custom_stage_member_volume->volume : stage_member->volume;
-  volume *= custom_group_volume ? custom_group_volume->volume : group->volume;
+  if (group) {
+    volume *= custom_group_volume ? custom_group_volume->volume : group->volume;
+  }
   volume *= balance;
 
-  bool muted = (custom_group_volume ? custom_group_volume->muted : group->muted) ||
+  bool muted =
       (custom_stage_member_volume ? custom_stage_member_volume->muted : stage_member->muted) ||
-      (custom_stage_device_volume ? custom_stage_device_volume->muted : stage_device->muted) ||
-      (custom_audio_track_volume ? custom_audio_track_volume->muted : audio_track.muted);
+          (custom_stage_device_volume ? custom_stage_device_volume->muted : stage_device->muted) ||
+          (custom_audio_track_volume ? custom_audio_track_volume->muted : audio_track.muted);
+  if (group) {
+    muted = (custom_group_volume ? custom_group_volume->muted : group->muted) || muted;
+  }
 
   PLOGD << "Got new volume for " << audio_track._id << ": " << volume << " " << (muted ? "(muted)" : "(unmuted)");
 

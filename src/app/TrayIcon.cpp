@@ -21,6 +21,7 @@ void TrayIcon::showStatusMenu() {
   connect(restartAction, &QAction::triggered, [=]() {
     emit restartClicked();
   });
+  menu->addSeparator();
   auto openStageAction = new QAction(tr("Open stage"), this);
   menu->addAction(openStageAction);
   connect(openStageAction, &QAction::triggered, [=]() {
@@ -31,11 +32,13 @@ void TrayIcon::showStatusMenu() {
   connect(openSettingsAction, &QAction::triggered, [=]() {
     emit openSettingsClicked();
   });
+  menu->addSeparator();
   auto registerBoxAction = new QAction(tr("Add Box"), this);
   menu->addAction(registerBoxAction);
   connect(registerBoxAction, &QAction::triggered, [=]() {
     emit addBoxClicked();
   });
+  menu->addSeparator();
   auto logoutAction = new QAction(tr("Logout"), this);
   menu->addAction(logoutAction);
   connect(logoutAction, &QAction::triggered, [=]() {

@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="de_DE">
+<TS version="2.1" language="fr_FR">
 <context>
     <name>LoginDialog</name>
     <message>
         <location filename="../src/app/LoginDialog.ui" line="14"/>
         <source>Digital Stage</source>
-        <translation>Digitale Bühne</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/LoginDialog.ui" line="51"/>
         <source>Password:</source>
-        <translation>Passwort:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/LoginDialog.ui" line="58"/>
         <source>Email:</source>
-        <translation>E-Mail Adresse:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/LoginDialog.ui" line="65"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;No Account yet? &lt;a href=&quot;https://dev.dstage.org/account/signup&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0068da;&quot;&gt;Sign up here&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Kein Konto? &lt;a href=&quot;https://dev.dstage.org/account/signup&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0068da;&quot;&gt;Erstelle Dir hier neues Konto&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/LoginDialog.ui" line="75"/>
         <source>Sign in</source>
-        <translation>Anmelden</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/LoginDialog.ui" line="95"/>
         <source>Please enter your email and password from test.digital-stage.org:</source>
-        <translation>Bitte gebe Deine E-Mail Adresse und Dein Passwort von dev.dstage.org ein:</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -39,12 +39,12 @@
     <message>
         <location filename="../src/main_app.cpp" line="33"/>
         <source>Systray</source>
-        <translation>Statusleiste fehlt</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/main_app.cpp" line="34"/>
         <source>I couldn&apos;t detect any system tray on this system.</source>
-        <translation>Dein System unterstützt leider diese Anwendung nicht, da keine Statusleiste angezeigt werden kann.</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -52,43 +52,43 @@
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="13"/>
         <source>Digital Stage</source>
-        <translation>Digitale Bühne</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="19"/>
         <source>Restart</source>
-        <translation>Neustarten</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="24"/>
         <source>Open stage</source>
-        <translation>Bühne anzeigen</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="29"/>
         <source>Open settings</source>
-        <translation>Einstellungen</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="34"/>
         <source>Add Box</source>
-        <translation>Eine Box registrieren</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="39"/>
         <source>Logout</source>
-        <translation>Abmelden</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="45"/>
         <location filename="../src/app/TrayIcon.cpp" line="58"/>
         <source>Close</source>
-        <translation>Beenden</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/app/TrayIcon.cpp" line="53"/>
         <source>Login</source>
-        <translation>Anmelden</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

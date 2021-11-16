@@ -7,6 +7,5 @@
         <file>resources/logo-full.svg</file>
         <file>resources/logo-full.png</file>
         <file>resources/logo-full@2x.png</file>
-        <file>i18n/DigitalStage_de.qm</file>
     </qresource>
 </RCC>

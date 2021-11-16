@@ -42,10 +42,13 @@ void ConnectionService::attachHandlers() {
   client_->stageDeviceAdded.connect([this](const StageDevice &device, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
-#if USE_ONLY_NATIVE_DEVICES
-      if (device.active && device.type == "native") {
-#else
       if (device.active) {
+#if USE_ONLY_NATIVE_DEVICES
+        if (device.type != "native") {
+          PLOGW << "Ignoring recently added non-native stage device";
+          return;
+        }
+        PLOGI << "Connecting to recently added native stage device " << device._id;
 #endif
         std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // WRITE
         auto local_stage_device_id = store->getStageDeviceId();
@@ -62,10 +65,12 @@ void ConnectionService::attachHandlers() {
         if (update.contains("active")) {
           bool is_active = update["active"];
 #if USE_ONLY_NATIVE_DEVICES
-          auto device = store->devices.get(_id);
+          auto device = store->stageDevices.get(_id);
           if (device->type != "native") {
+            PLOGW << "Ignoring non-native device " << _id;
             return;
           }
+          PLOGI << "Connecting to recently activated native stage device " << _id;
 #endif
           std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // maybe WRITE
           if (is_active) {
@@ -86,9 +91,11 @@ void ConnectionService::attachHandlers() {
     assert(offer.to == *local_stage_device_id);
     assert(offer.from != *local_stage_device_id);
 #if USE_ONLY_NATIVE_DEVICES
-    if(store->devices.get(offer.from)->type != "native") {
+    if (store->stageDevices.get(offer.from)->type != "native") {
+      PLOGW << "Ignoring offer from non-native stage device" << offer.from;
       return;
     }
+    PLOGI << "Accepting offer from native stage device " << offer.from;
 #endif
     std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
     if (!peer_connections_.count(offer.from)) {
@@ -130,10 +137,13 @@ void ConnectionService::onStageChanged() {
         assert(local_stage_device_id);
         auto stage_devices = store->stageDevices.getAll();
         for (const auto &item: stage_devices) {
-#if USE_ONLY_NATIVE_DEVICES
-          if (item._id != *local_stage_device_id && item.type == "native") {
-#else
           if (item._id != *local_stage_device_id) {
+#if USE_ONLY_NATIVE_DEVICES
+            if (item.type != "native") {
+              PLOGW << "Ignoring existing non-native stage device " << item._id;
+              return;
+            }
+            PLOGI << "Found existing native stage device " << item._id;
 #endif
             std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
             if (item.active) {

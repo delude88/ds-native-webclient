@@ -216,8 +216,20 @@ target_link_libraries(${PROJECT_NAME}-cli
 #
 #################################################
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
+find_package(Qt6 COMPONENTS LinguistTools)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
-add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
+qt_add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
+if (COMMAND qt_add_lupdate)
+    message(STATUS "Using Linguist Tools to update and generate language files")
+    qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
+            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
+    set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
+            PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
+    qt_add_translations(${PROJECT_NAME}_app TS_FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
+            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
+endif ()
 set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/appicon.icns)
@@ -227,7 +239,8 @@ endif (APPLE)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
-set(APP-SOURCES
+target_sources(${PROJECT_NAME}_app
+        PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.cpp
@@ -237,21 +250,17 @@ set(APP-SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.ui
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.cpp)
-target_sources(${PROJECT_NAME}_app
-        PRIVATE
-        ${APP-SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
-        ${APP_ICON})
+        ${APP_ICON}
+        ${QM_FILES})
 target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_app
         PRIVATE
         ${PROJECT_NAME}::${PROJECT_NAME}
-        Qt6::Core
         Qt6::Widgets
         keychain
         )
-#qt_add_translations(${PROJECT_NAME}_app TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts ${APP-SOURCES})
 if (APPLE)
     enable_language(OBJC)
     find_library(CORE_FOUNDATION Foundation)
@@ -287,12 +296,11 @@ set_target_properties(${PROJECT_NAME}_app PROPERTIES
         )
 
 if (CMAKE_BUILD_TYPE MATCHES Release)
-    set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
-
     set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
     set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
 
     if (APPLE)
+        set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
         find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
         # First use macdeployqt to bundle the qt libs, but do NOT sign yet
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
