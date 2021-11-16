@@ -34,7 +34,7 @@ jobs:
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle with CPack
-        run: cpack
+        run: cpack -G DragNDrop
       - name: Publish bundle
         uses: svenstaro/upload-release-action@v2
         with:
