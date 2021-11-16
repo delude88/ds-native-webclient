@@ -60,33 +60,33 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/app/TrayIcon.cpp" line="24"/>
+        <location filename="../src/app/TrayIcon.cpp" line="25"/>
         <source>Open stage</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/app/TrayIcon.cpp" line="29"/>
+        <location filename="../src/app/TrayIcon.cpp" line="30"/>
         <source>Open settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/app/TrayIcon.cpp" line="34"/>
+        <location filename="../src/app/TrayIcon.cpp" line="36"/>
         <source>Add Box</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/app/TrayIcon.cpp" line="39"/>
+        <location filename="../src/app/TrayIcon.cpp" line="42"/>
         <source>Logout</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/app/TrayIcon.cpp" line="45"/>
-        <location filename="../src/app/TrayIcon.cpp" line="58"/>
+        <location filename="../src/app/TrayIcon.cpp" line="48"/>
+        <location filename="../src/app/TrayIcon.cpp" line="61"/>
         <source>Close</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/app/TrayIcon.cpp" line="53"/>
+        <location filename="../src/app/TrayIcon.cpp" line="56"/>
         <source>Login</source>
         <translation type="unfinished"></translation>
     </message>
