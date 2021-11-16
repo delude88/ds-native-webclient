@@ -10,7 +10,7 @@ endif ()
 set(CMAKE_PROJECT_VERSION "0.0.1")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
+#set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
 
 #################################################
 #
@@ -218,7 +218,7 @@ target_link_libraries(${PROJECT_NAME}-cli
 #################################################
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
-qt_add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
+add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
 if (GENERATE_TS)
     find_package(Qt6 COMPONENTS LinguistTools)
     message(STATUS "Using Linguist Tools to update and generate language files")

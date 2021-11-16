@@ -11,10 +11,10 @@ jobs:
       matrix:
         config:
           - {
-            name: "Windows Latest MSVC 2019",
-            os: windows-latest,
+            name: "Windows Latest MSVC 2022",
+            os: windows-2022,
             build_type: "Release",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           }
           - {
             name: "Ubuntu Latest",
@@ -22,8 +22,8 @@ jobs:
             build_type: "Release"
           }
           - {
-            name: "macOS Latest Clang",
-            os: macos-latest,
+            name: "macOS 10.15",
+            os: macos-10.15,
             build_type: "Release"
           }
 
@@ -41,14 +41,15 @@ jobs:
       - name: Install Dependencies with Conan
         if: ${{ matrix.config.os != 'ubuntu-latest' }}
         run: |
-          conan install -if build .
+          conan install -if build --build missing .
       - name: Install Dependencies with Conan (Ubuntu gcc)
         if: ${{ matrix.config.os == 'ubuntu-latest' }}
         run: |
+          sudo apt-get update
           sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev pkg-config libasound2-dev libjack-dev
           conan profile new default --detect
           conan profile update settings.compiler.libcxx=libstdc++17 default
-          conan install -if build .
+          conan install -if build --build missing .
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
       - name: Build with CMake
