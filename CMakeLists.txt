@@ -57,8 +57,8 @@ set(TECKOS_BUILD_SOURCES OFF CACHE BOOL "Using only local sources for all depend
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
 #  - libdatachannel
 if (UNIX AND NOT APPLE)
-    set(USE_SYSTEM_SRTP ON)
-    set(USE_GNUTLS OFF)
+    set(USE_SYSTEM_SRTP ON CACHE BOOL "" FORCE)
+    set(USE_GNUTLS OFF CACHE BOOL "" FORCE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdatachannel EXCLUDE_FROM_ALL)
 #  - libdeviceid
