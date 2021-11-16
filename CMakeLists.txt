@@ -7,10 +7,10 @@ if (NOT WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
-set(CMAKE_PROJECT_VERSION "1.0.0")
+set(CMAKE_PROJECT_VERSION "0.0.1")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
 
 #################################################
 #
@@ -289,8 +289,8 @@ set_target_properties(${PROJECT_NAME}_app PROPERTIES
         MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
         MACOSX_BUNDLE_BUNDLE_NAME App
         MACOSX_BUNDLE_COPYRIGHT MIT
-        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
         MACOSX_BUNDLE_ICON_FILE appicon.icns
         )
@@ -316,7 +316,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 -change
                 "@rpath/libkeychain.dylib"
                 "@executable_path/../Frameworks/libkeychain.dylib"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                "$<TARGET_FILE:${PROJECT_NAME}_app>"
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
@@ -326,7 +326,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 -change
                 "@rpath/libtbb.12.dylib"
                 "@executable_path/../Frameworks/libtbb.12.dylib"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                "$<TARGET_FILE:${PROJECT_NAME}_app>"
                 COMMENT "Fixing libtbb rpath"
                 VERBATIM
                 )]]
