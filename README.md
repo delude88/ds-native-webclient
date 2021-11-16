@@ -14,36 +14,108 @@ Mainly this project acts as feasibility and archive for example code provided to
 - cpprestsdk/2.10.18
 - openssl/1.1.1l
 
-### macOS
+## macOS
 
-To install the missing dependencies using brew:
+Clone this repository and enter it:
+
+```shell
+git clone https://github.com/delude88/ds-native-webclient.git
+cd ds-native-webclient
+```
+
+Then proceed either using conan or not:
+
+### Using conan
+
+Install conan if you dont' own it yet:
+
+```shell
+pip3 install wheel setuptools
+pip3 install conan
+  ```
+
+Install the missing dependencies:
+
+```shell
+git submodule update --init --recursive
+conan install -if build .
+```
+
+And build:
+
+```shell
+cmake -S . -B build
+cmake --build build --parallel
+```
+
+### Without conan
+
+Install the missing dependencies using brew:
 
 ```shell
 brew install nlohmann-json cpprestsdk cmake
 ```
 
-### Linux
+And build:
 
-To install the missing dependencies on Ubuntu via apt:
 ```shell
-sudo apt-get install libcpprest-dev nlohmann-json-dev cmake
+cmake -S . -B build
+cmake --build build --parallel
 ```
 
-## Checkout
+## Linux
 
-Check out this repository and fetch all submodules via:
+Clone this repository and enter it:
+
+```shell
+git clone https://github.com/delude88/ds-native-webclient.git
+cd ds-native-webclient
+```
+
+Then proceed either using conan or not:
+
+### Using conan
+
+Install conan if you don't own it yet:
+
+```shell
+sudo apt-get install python3-pip
+pip3 install wheel setuptools
+pip3 install conan
+  ```
+
+Install the missing dependencies:
+
+```shell
+sudo apt-get install libssl-dev libsrtp2-dev
+git submodule update --init --recursive
+conan install -if build .
+```
+
+And build:
+
+```shell
+cmake -S . -B build
+cmake --build build --parallel
+```
+
+### Without conan
+
+Install the missing dependencies via apt:
+
+```shell
+sudo apt-get install libssl-dev libsrtp2-dev libcpprest-dev nlohmann-json-dev cmake
+```
+
+Install local dependencies using submodules:
 
 ```shell
 git submodule update --init --recursive
 ```
 
-### Build
-
-Once checked out with all submodules, you can build:
+And build:
 
 ```shell
-cmake -B build .
+cmake -S . -B build
 cmake --build build --parallel
 ```
-
-You'll find the executables then inside the build folder.
