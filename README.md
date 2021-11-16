@@ -87,7 +87,7 @@ pip3 install conan
 Install the missing dependencies:
 
 ```shell
-sudo apt-get install libssl-dev libsrtp2-dev
+sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev build-essential cmake pkg-config libasound2-dev libjack-dev
 git submodule update --init --recursive
 conan install -if build .
 ```
@@ -104,7 +104,7 @@ cmake --build build --parallel
 Install the missing dependencies via apt:
 
 ```shell
-sudo apt-get install libssl-dev libsrtp2-dev libcpprest-dev nlohmann-json-dev cmake
+sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev libcpprest-dev nlohmann-json-dev build-essential cmake pkg-config libasound2-dev libjack-dev
 ```
 
 Install local dependencies using submodules:
