@@ -215,7 +215,7 @@ target_link_libraries(${PROJECT_NAME}-cli
 #   Configure artifact - GUI Application
 #
 #################################################
-find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
 set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
