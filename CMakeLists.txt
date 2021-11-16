@@ -319,14 +319,14 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
-        if (CODESIGN_CERTIFICATE)
+        if (CODESIGN_CERTIFICATE_NAME)
             set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
             add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                     COMMAND
                     codesign
                     --force
                     --deep
-                    --sign "${CODESIGN_CERTIFICATE}"
+                    --sign "${CODESIGN_CERTIFICATE_NAME}"
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
                     COMMENT "Signing app bundle using certificate ${M_SIGN_CERT_NAME}..."
                     VERBATIM
@@ -336,12 +336,12 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                     codesign
                     --force
                     --deep
-                    --sign "${CODESIGN_CERTIFICATE}"
+                    --sign "${CODESIGN_CERTIFICATE_NAME}"
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
                     COMMENT "Signing app bundle using certificate ${APPLE_CERT}..."
                     VERBATIM
                     )
-        endif (CODESIGN_CERTIFICATE)
+        endif (CODESIGN_CERTIFICATE_NAME)
         set(CPACK_GENERATOR "DragNDrop")
         set(CPACK_DMG_VOLUME_NAME "DigitalStageInstaller")
         set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/cmake/Packaging_DMGSetup.scpt)

@@ -12,6 +12,17 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
+      - name: Codesign executable
+        env:
+          CODESIGN_CERTIFICATE: ${{ secrets.CODESIGN_CERTIFICATE }}
+          CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
+        run: |
+          echo $CODESIGN_CERTIFICATE | base64 —decode > certificate.p12
+          security create-keychain -p temp_pass build.keychain security default-keychain -s build.keychain
+          security unlock-keychain -p temp_pass build.keychain
+          security import certificate.p12 -k build.keychain -P $CODESIGN_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp_pass build.keychain
+          export CODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
       - name: Install Qt6
         uses: jurplel/install-qt-action@v2
         with:
