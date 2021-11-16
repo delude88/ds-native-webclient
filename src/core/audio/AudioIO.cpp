@@ -52,7 +52,7 @@ void AudioIO::attachHandlers() {
         }
       }
       // Also start live device update watcher
-      watchDeviceUpdates();
+      //watchDeviceUpdates();
     }
   });
   client_->disconnected.connect([this](bool normal_exit) {
@@ -275,6 +275,7 @@ void AudioIO::watchDeviceUpdates() {
         if (watching_device_updates_)
           std::this_thread::sleep_for(std::chrono::seconds(1));
       }
+      PLOGI << "Stopping AudioIO thread";
     });
   }
 }

@@ -11,8 +11,6 @@ set(CMAKE_PROJECT_VERSION "1.0.0")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
-#set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
-
 
 #################################################
 #
@@ -24,7 +22,7 @@ add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
 add_compile_definitions(STAGE_URL="https://dev.dstage.org/stage")
 add_compile_definitions(SETTINGS_URL="https://dev.dstage.org/devices")
-option(WITH_GUI "Build with graphical user interface" OFF)
+add_compile_definitions(USE_ONLY_NATIVE_DEVICES)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 
 include(TestBigEndian)
@@ -220,12 +218,6 @@ target_link_libraries(${PROJECT_NAME}-cli
 find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
-set(TS_FILES
-        i18n/DigitalStage_de.ts
-        i18n/DigitalStage_fr.ts
-        i18n/DigitalStage_es.ts
-        )
-qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src ${TS_FILES})
 set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/appicon.icns)
@@ -235,8 +227,7 @@ endif (APPLE)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
 set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
-target_sources(${PROJECT_NAME}_app
-        PRIVATE
+set(APP-SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main_app.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.cpp
@@ -246,7 +237,10 @@ target_sources(${PROJECT_NAME}_app
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/LoginDialog.ui
         ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app/KeyStore.cpp)
+target_sources(${PROJECT_NAME}_app
+        PRIVATE
+        ${APP-SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         ${APP_ICON})
 target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
@@ -257,6 +251,7 @@ target_link_libraries(${PROJECT_NAME}_app
         Qt6::Widgets
         keychain
         )
+#qt_add_translations(${PROJECT_NAME}_app TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts ${APP-SOURCES})
 if (APPLE)
     enable_language(OBJC)
     find_library(CORE_FOUNDATION Foundation)

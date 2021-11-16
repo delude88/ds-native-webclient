@@ -7,13 +7,29 @@
 
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)), configuration_(rtc::Configuration()) {
-  configuration_.iceServers.emplace_back("stun:stun.l.google.com:19302");
   attachHandlers();
 }
 
 void ConnectionService::attachHandlers() {
   PLOGD << "attachHandlers()";
   client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+    auto turn_urls = store->getTurnServers();
+    if (!turn_urls.empty()) {
+      auto turn_user = store->getTurnUsername();
+      auto turn_secret = store->getTurnPassword();
+      if (turn_user && turn_secret) {
+        for (const auto &turn_url: turn_urls) {
+          std::string delimiter = ":";
+          auto host = turn_url.substr(0, turn_url.find(delimiter));
+          auto port = turn_url.substr(turn_url.find(delimiter));
+          configuration_.iceServers.emplace_back(rtc::IceServer(host, port, *turn_user, *turn_secret));
+          PLOGI << "Using turn server:" << *turn_user << ":" << *turn_secret << "@" << host << ":" << port;
+        }
+      }
+    } else {
+      PLOGI << "Using public google STUN servers as fallback";
+      configuration_.iceServers.emplace_back("stun:stun.l.google.com:19302");
+    }
     onStageChanged();
   });
   client_->stageJoined.connect([this](const ID_TYPE &, const ID_TYPE &,
@@ -47,7 +63,7 @@ void ConnectionService::attachHandlers() {
           bool is_active = update["active"];
 #if USE_ONLY_NATIVE_DEVICES
           auto device = store->devices.get(_id);
-          if (device.type != "native") {
+          if (device->type != "native") {
             return;
           }
 #endif
@@ -175,7 +191,7 @@ void ConnectionService::createPeerConnection(const std::string &stage_device_id,
                                                       const std::vector<std::byte> &values) {
     onData(audio_track_id, values);
   };
-  PLOGI << "Have currently " << peer_connections_.size() << " connections";
+  PLOGI << "Connected to " << peer_connections_.size() << " peers";
 }
 void ConnectionService::closePeerConnection(const std::string &stage_device_id) {
   peer_connections_.erase(stage_device_id);

@@ -57,11 +57,6 @@ PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool pol
   });
 }
 
-PeerConnection::~PeerConnection() {
-  PLOGD << "~PeerConnection";
-  peer_connection_->close();
-}
-
 /*
 void PeerConnection::makeOffer() {
   PLOGD << "PeerConnection::makeOffer" ;

@@ -33,6 +33,7 @@ class AudioRenderer {
   };
 
   explicit AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart = false);
+  ~AudioRenderer();
 
   /**
    * Init this audio renderer manually with the given sample rate, buffer size and room size;

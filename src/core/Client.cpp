@@ -58,8 +58,6 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
   attachAudioHandlers();
 }
 
-Client::~Client() = default;
-
 void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count) {
   // Write to channels
   if (channels_.count(audio_track_id) == 0) {
@@ -90,24 +88,25 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   memset(left, 0, frame_count * sizeof(float));
   memset(right, 0, frame_count * sizeof(float));
 
-  for (const auto &item: channels_) {
-    if (item.second) {
-      auto buf = (float *) malloc(frame_count * sizeof(float));
+  if (audio_renderer_) {
+    for (const auto &item: channels_) {
+      if (item.second) {
+        auto buf = (float *) malloc(frame_count * sizeof(float));
 #ifdef USE_CIRCULAR_QUEUE
-      for (int f = 0; f < frame_count; f++) {
+        for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->dequeue();
       }
 #else
-      for (int f = 0; f < frame_count; f++) {
-        buf[f] = item.second->get();
-      }
+        for (int f = 0; f < frame_count; f++) {
+          buf[f] = item.second->get();
+        }
 #endif
-      audio_renderer_->render(item.first, buf, left, right, frame_count);
-      free(buf);
+        audio_renderer_->render(item.first, buf, left, right, frame_count);
+        free(buf);
+      }
     }
+    audio_renderer_->renderReverb(left, right, frame_count);
   }
-
-  audio_renderer_->renderReverb(left, right, frame_count);
 
   if (num_output_channels % 2 == 0) {
     // Use stereo for all

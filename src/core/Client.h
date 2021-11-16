@@ -25,7 +25,6 @@
 class Client {
  public:
   explicit Client(std::shared_ptr<DigitalStage::Api::Client> api_client);
-  ~Client();
 
  protected:
   void onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count);

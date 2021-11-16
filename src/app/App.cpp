@@ -12,89 +12,117 @@
 App::App()
     : login_dialog_(new LoginDialog()),
       device_id_(std::to_string(deviceid::get())),
-      tray_icon_(new TrayIcon(this)),
+      tray_icon_(new TrayIcon()),
       key_store_(new KeyStore(this)),
-      api_client_(std::make_shared<DigitalStage::Api::Client>(API_URL)),
+      api_client_(),
       auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL)) {
-  QApplication::setQuitOnLastWindowClosed(false);
+  //QApplication::setQuitOnLastWindowClosed(false);
 
   connect(tray_icon_, SIGNAL(loginClicked()), login_dialog_, SLOT(show()));
-  connect(tray_icon_, SIGNAL(logoutClicked()), this, SLOT(logout()));
+  connect(tray_icon_, SIGNAL(restartClicked()), this, SLOT(restart()));
+  connect(tray_icon_, SIGNAL(logoutClicked()), this, SLOT(logOut()));
   connect(tray_icon_, SIGNAL(openStageClicked()), this, SLOT(openStage()));
   connect(tray_icon_, SIGNAL(openSettingsClicked()), this, SLOT(openSettings()));
-  connect(login_dialog_, SIGNAL(login(QString, QString)), SLOT(login(QString, QString)));
+  connect(login_dialog_, SIGNAL(login(QString, QString)), SLOT(logIn(QString, QString)));
+
 }
 
 void App::show() {
-  // Try to auto sign in
-  token_ = autoLogin();
   tray_icon_->show();
+  // Try to auto sign in
+  auto email = KeyStore::restoreEmail();
+  if (email) {
+    login_dialog_->setEmail(QString::fromStdString(*email));
+    token_ = tryAutoLogin(*email);
+  }
   if (!token_) {
+    // Show login menu and dialog
     tray_icon_->showLoginMenu();
-    // Show login and wait for result
     login_dialog_->show();
   } else {
-    // Start
-    start(*token_);
+    // Show status menu, hide login and start
+    tray_icon_->showStatusMenu();
+    login_dialog_->hide();
+    start();
   }
 }
 
-std::optional<std::string> App::autoLogin() {
-  auto email = KeyStore::restoreEmail();
-  if (email) {
-    // Try to log in using stored credentials
-    auto credentials = KeyStore::restore(*email);
-    if (credentials) {
-      // Try to get token
-      auto token = auth_service_->signInSync(credentials->email, credentials->password);
-      if (!token.empty())
-        return token;
+std::optional<std::string> App::tryAutoLogin(const std::string &email) {
+  // Try to log in using stored credentials
+  auto credentials = KeyStore::restore(email);
+  if (credentials) {
+    // Try to get token
+    auto token = auth_service_->signInSync(credentials->email, credentials->password);
+    if (!token.empty()) {
+      return token;
+    }
+    if (!KeyStore::remove(email)) {
+      PLOGE << "Could not reset credentials for " << email;
     }
   }
   return std::nullopt;
 }
 
-void App::login(const QString &email, const QString &password) {
-  auth_service_->signIn(email.toStdString(), password.toStdString())
-      .then([=](const std::string &token) {
-        token_ = token;
-        KeyStore::storeEmail(email.toStdString());
-        KeyStore::store({email.toStdString(), password.toStdString()});
-        start(token);
-      });
+void App::logIn(const QString &email, const QString &password) {
+  login_dialog_->resetError();
+  try {
+    auth_service_->signIn(email.toStdString(), password.toStdString())
+        .then([=](const std::string &token) {
+          token_ = token;
+          KeyStore::storeEmail(email.toStdString());
+          KeyStore::store({email.toStdString(), password.toStdString()});
+          // Show status menu, hide login and start
+          tray_icon_->showStatusMenu();
+          login_dialog_->hide();
+          start();
+        });
+  } catch (std::exception &ex) {
+    login_dialog_->setError(ex.what());
+  }
 }
 
-void App::logout() {
+void App::logOut() {
+  stop();
+  tray_icon_->showLoginMenu();
   login_dialog_->setPassword("");
   if (token_) {
     auth_service_->signOutSync(*token_);
     token_ = std::nullopt;
-    stop();
   }
+  login_dialog_->show();
 }
-void App::start(const std::string &token) {
-  login_dialog_->hide();
-  tray_icon_->showStatusMenu();
 
+void App::start() {
+  if (!token_) {
+    throw std::logic_error("No token available");
+  }
+
+  api_client_ = std::make_unique<DigitalStage::Api::Client>(API_URL);
   client_ = std::make_unique<Client>(api_client_);// Describe this device
   nlohmann::json initialDeviceInformation;
   // - always use a UUID when you want Digital Stage to remember this device and its settings
   initialDeviceInformation["uuid"] = device_id_;
   initialDeviceInformation["type"] = "native";
   initialDeviceInformation["canAudio"] = true;
+  initialDeviceInformation["sendAudio"] = false;
+  initialDeviceInformation["receiveAudio"] = true;
   initialDeviceInformation["canVideo"] = false;
 
   // And finally connect with the token and device description
-  api_client_->disconnected.connect([=](bool) {
-    stop();
+  api_client_->disconnected.connect([=](bool expected) {
+    if (!expected) {
+      stop();
+    }
   });
-  api_client_->connect(token, initialDeviceInformation);
+  api_client_->connect(*token_, initialDeviceInformation);
 }
 void App::stop() {
-  api_client_->disconnect();
   client_ = nullptr;
-  tray_icon_->showLoginMenu();
-  login_dialog_->show();
+  api_client_ = nullptr;
+}
+void App::restart() {
+  stop();
+  start();
 }
 
 void App::openStage() {

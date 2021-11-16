@@ -16,7 +16,6 @@
 class PeerConnection {
  public:
   PeerConnection(const rtc::Configuration &configuration, bool polite);
-  ~PeerConnection();
 
   //void makeOffer();
 

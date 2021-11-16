@@ -3,7 +3,7 @@
 //
 
 #include "TrayIcon.h"
-#include <QApplication>
+#include <QCoreApplication>
 #include <QAction>
 
 TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
@@ -11,48 +11,52 @@ TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
   icon.setIsMask(true);
   this->setIcon(icon);
   this->setToolTip(tr("Digital Stage"));
-  auto quitAction = new QAction(tr("Close"), this);
-  connect(quitAction, &QAction::triggered, QCoreApplication::instance(), &QApplication::exit);
+  this->showLoginMenu();
+}
 
-  // Login menu
-  login_menu_ = new QMenu();
-  auto viewLoginAction = new QAction(tr("Login"), this);
-  login_menu_->addAction(viewLoginAction);
-  connect(viewLoginAction, &QAction::triggered, [=]() {
-    emit loginClicked();
+void TrayIcon::showStatusMenu() {
+  auto menu = new QMenu();
+  auto restartAction = new QAction(tr("Restart"), this);
+  menu->addAction(restartAction);
+  connect(restartAction, &QAction::triggered, [=]() {
+    emit restartClicked();
   });
-  login_menu_->addAction(quitAction);
-
-  // Digital stage status menu
-  status_menu_ = new QMenu();
   auto openStageAction = new QAction(tr("Open stage"), this);
-  status_menu_->addAction(openStageAction);
+  menu->addAction(openStageAction);
   connect(openStageAction, &QAction::triggered, [=]() {
     emit openStageClicked();
   });
   auto openSettingsAction = new QAction(tr("Open settings"), this);
-  status_menu_->addAction(openSettingsAction);
+  menu->addAction(openSettingsAction);
   connect(openSettingsAction, &QAction::triggered, [=]() {
     emit openSettingsClicked();
   });
   auto registerBoxAction = new QAction(tr("Add Box"), this);
-  status_menu_->addAction(registerBoxAction);
+  menu->addAction(registerBoxAction);
   connect(registerBoxAction, &QAction::triggered, [=]() {
     emit addBoxClicked();
   });
   auto logoutAction = new QAction(tr("Logout"), this);
-  status_menu_->addAction(logoutAction);
+  menu->addAction(logoutAction);
   connect(logoutAction, &QAction::triggered, [=]() {
     emit logoutClicked();
   });
-  status_menu_->addSeparator();
-  status_menu_->addAction(quitAction);
-}
-
-void TrayIcon::showStatusMenu() {
-  this->setContextMenu(status_menu_);
+  menu->addSeparator();
+  auto quitAction = new QAction(tr("Close"), this);
+  connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+  menu->addAction(quitAction);
+  this->setContextMenu(menu);
 }
 
 void TrayIcon::showLoginMenu() {
-  this->setContextMenu(login_menu_);
+  auto menu = new QMenu();
+  auto viewLoginAction = new QAction(tr("Login"), this);
+  menu->addAction(viewLoginAction);
+  connect(viewLoginAction, &QAction::triggered, [=]() {
+    emit loginClicked();
+  });
+  auto quitAction = new QAction(tr("Close"), this);
+  connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+  menu->addAction(quitAction);
+  this->setContextMenu(menu);
 }

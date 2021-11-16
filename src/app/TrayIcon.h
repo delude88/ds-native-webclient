@@ -19,13 +19,11 @@ class TrayIcon : public QSystemTrayIcon {
 
  signals:
   void loginClicked();
+  void restartClicked();
   void openStageClicked();
   void openSettingsClicked();
   void addBoxClicked();
   void logoutClicked();
 
- private:
-  QMenu *login_menu_;
-  QMenu *status_menu_;
 };
 

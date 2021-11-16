@@ -207,12 +207,31 @@ void AudioMixer<T>::attachHandlers() {
     }
   });
 }
+
+template<class T>
+double AudioMixer<T>::calculateBalance(double balance, bool is_local) {
+  if (is_local) {
+    if (balance > 0.5) {
+      return 1 - balance;
+    }
+    return 1;
+  } else {
+    if (balance < 0.5) {
+      return balance;
+    }
+    return 1;
+  }
+}
+
 template<class T>
 std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
                                                   const DigitalStage::Api::Store &store) {
   // Get this device ID
   auto local_device_id = store.getLocalDeviceId();
   assert(local_device_id);
+  // Get balance (0 = only me, 1 = only others)
+  auto balance = calculateBalance(store.getLocalDevice()->balance, audio_track.deviceId == *local_device_id);
+
   auto custom_audio_track_volume =
       store.getCustomAudioTrackVolumeByAudioTrackAndDevice(audio_track._id, *local_device_id);
   // Get related stage device
@@ -236,6 +255,7 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
   volume *= custom_stage_device_volume ? custom_stage_device_volume->volume : stage_device->volume;
   volume *= custom_stage_member_volume ? custom_stage_member_volume->volume : stage_member->volume;
   volume *= custom_group_volume ? custom_group_volume->volume : group->volume;
+  volume *= balance;
 
   bool muted = (custom_group_volume ? custom_group_volume->muted : group->muted) ||
       (custom_stage_member_volume ? custom_stage_member_volume->muted : stage_member->muted) ||

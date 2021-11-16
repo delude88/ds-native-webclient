@@ -22,14 +22,15 @@ class App : public QObject {
   void show();
 
  private slots:
-  std::optional<std::string> autoLogin();
-  void login(const QString &email, const QString &password);
-  void logout();
+  void logIn(const QString &email, const QString &password);
+  void logOut();
   static void openStage();
   void openSettings();
+  void restart();
 
  private:
-  void start(const std::string &token);
+  std::optional<std::string> tryAutoLogin(const std::string &email);
+  void start();
   void stop();
 
   std::string device_id_;

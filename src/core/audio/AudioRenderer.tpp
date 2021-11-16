@@ -3,6 +3,7 @@
 //
 
 #include "../utils/CMRCFileBuffer.h"
+#include "AudioRenderer.h"
 
 template<class T>
 AudioRenderer<T>::AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart)
@@ -17,6 +18,11 @@ AudioRenderer<T>::AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> clien
   ERRORHANDLER3DTI.SetAssertMode(ASSERT_MODE_CONTINUE);
 
   attachHandlers(autostart);
+}
+
+template<class T>
+AudioRenderer<T>::~AudioRenderer() {
+  initialized_ = false;
 }
 
 template<class T>
@@ -103,14 +109,14 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   // Other remote audio tracks
   for (const auto &audio_track: store->audioTracks.getAll()) {
 #ifdef USE_ONLY_NATIVE_DEVICES
-    if(audio_track.kind == "native") {
+    if (audio_track.type == "native") {
 #endif
-    audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
-    audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
-    audio_tracks_[audio_track._id]->DisableNearFieldEffect();
-    audio_tracks_[audio_track._id]->EnableAnechoicProcess();
-    audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
-    setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+      audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
+      audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
+      audio_tracks_[audio_track._id]->DisableNearFieldEffect();
+      audio_tracks_[audio_track._id]->EnableAnechoicProcess();
+      audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
+      setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
 #ifdef USE_ONLY_NATIVE_DEVICES
     }
 #endif
@@ -224,7 +230,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
     if (store->isReady() && initialized_) {
       PLOGD << "audioTrackAdded";
 #ifdef USE_ONLY_NATIVE_DEVICES
-      if(audio_track.type != "native") {
+      if (audio_track.type != "native") {
         return;
       }
 #endif
@@ -752,7 +758,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
                               T *outRight,
                               std::size_t frame_size) {
   // Get volume and mute state (if available)
-  auto volume_info = audio_mixer_->getGain(audio_track_id);
+  auto volume_info = audio_mixer_ ? audio_mixer_->getGain(audio_track_id) : std::nullopt;
   if (volume_info && volume_info->second) {
     // Muted, do nothing
     memset(outLeft, 0, sizeof(float) * frame_size);

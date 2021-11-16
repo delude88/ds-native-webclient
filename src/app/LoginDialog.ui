@@ -62,7 +62,7 @@
      <item row="11" column="0" colspan="2">
       <widget class="QLabel" name="labelSignUp">
        <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;No Account yet? &lt;a href=&quot;https://test.digital-stage.org/account/signup&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0068da;&quot;&gt;Sign up here&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;No Account yet? &lt;a href=&quot;https://dev.dstage.org/account/signup&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0068da;&quot;&gt;Sign up here&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="openExternalLinks">
         <bool>true</bool>
