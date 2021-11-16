@@ -24,6 +24,7 @@ add_compile_definitions(STAGE_URL="https://dev.dstage.org/stage")
 add_compile_definitions(SETTINGS_URL="https://dev.dstage.org/devices")
 add_compile_definitions(USE_ONLY_NATIVE_DEVICES)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
+option(GENERATE_TS "Update and generate language files (requires QT6::LinguistTools)" OFF)
 
 include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
@@ -216,10 +217,10 @@ target_link_libraries(${PROJECT_NAME}-cli
 #
 #################################################
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
-find_package(Qt6 COMPONENTS LinguistTools)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 qt_add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
-if (COMMAND qt_add_lupdate)
+if (GENERATE_TS)
+    find_package(Qt6 COMPONENTS LinguistTools)
     message(STATUS "Using Linguist Tools to update and generate language files")
     qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
@@ -229,7 +230,7 @@ if (COMMAND qt_add_lupdate)
     qt_add_translations(${PROJECT_NAME}_app TS_FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
             ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-endif ()
+endif (GENERATE_TS)
 set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/appicon.icns)
