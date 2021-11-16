@@ -320,6 +320,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 VERBATIM
                 )
         if (CODESIGN_CERTIFICATE_NAME)
+            message(STATUS "Codesinging using ${CODESIGN_CERTIFICATE_NAME}")
             set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
             add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                     COMMAND
@@ -328,7 +329,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                     --deep
                     --sign "${CODESIGN_CERTIFICATE_NAME}"
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
-                    COMMENT "Signing app bundle using certificate ${M_SIGN_CERT_NAME}..."
+                    COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
                     VERBATIM
                     )
             add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
@@ -338,7 +339,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                     --deep
                     --sign "${CODESIGN_CERTIFICATE_NAME}"
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
-                    COMMENT "Signing app bundle using certificate ${APPLE_CERT}..."
+                    COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
                     VERBATIM
                     )
         endif (CODESIGN_CERTIFICATE_NAME)
