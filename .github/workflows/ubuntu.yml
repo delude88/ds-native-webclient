@@ -12,6 +12,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
+      - name: Install Conan package manager
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan
       - name: Install Qt6
         uses: jurplel/install-qt-action@v2
         with:
@@ -19,7 +23,9 @@ jobs:
       - name: Install depedencies using apt-get
         run: |
           sudo apt-get update
-          sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev libcpprest-dev nlohmann-json3-dev cmake pkg-config libasound2-dev libjack-dev libeigen3-dev libcereal-dev
+          sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
+      - name: Install depedencies using Conan package manager
+        run: conan install -if build --build missing .
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake

@@ -332,7 +332,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                     COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
                     VERBATIM
                     )
-            add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
+            #[[add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
                     COMMAND
                     codesign
                     --force
@@ -341,7 +341,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
                     COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
                     VERBATIM
-                    )
+                    )]]
         endif (CODESIGN_CERTIFICATE_NAME)
         set(CPACK_GENERATOR "DragNDrop")
         set(CPACK_DMG_VOLUME_NAME "DigitalStageInstaller")
