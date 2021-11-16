@@ -1,0 +1,36 @@
+name: Ubuntu 20.04
+
+on:
+  push:
+    branches: [ main, development ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.2.1'
+      - name: Install depedencies using apt-get
+        run: |
+          sudo apt-get update
+          sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev libcpprest-dev nlohmann-json-dev cmake pkg-config libasound2-dev libjack-dev
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build with CMake
+        run: cmake --build build --config Release
+      - name: Bundle with CPack
+        run: cpack
+      - name: Publish deb
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/*.deb
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true

@@ -214,21 +214,17 @@ target_link_libraries(${PROJECT_NAME}-cli
 #   Configure artifact - GUI Application
 #
 #################################################
-find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
-if (GENERATE_TS)
-    find_package(Qt6 COMPONENTS LinguistTools)
-    message(STATUS "Using Linguist Tools to update and generate language files")
-    qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
-            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-    set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
-            PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
-    qt_add_translations(${PROJECT_NAME}_app TS_FILES
-            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
-            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-endif (GENERATE_TS)
+qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
+set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
+        PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
+qt_add_translations(${PROJECT_NAME}_app TS_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
 set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/appicon.icns)
@@ -304,7 +300,6 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
         #   Apple: Fix @rpaths, codesigning and packing
         #
         #################################################
-        set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
         find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
         # First use macdeployqt to bundle the qt libs, but do NOT sign yet
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
@@ -324,27 +319,29 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
-        set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
-        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
-                COMMAND
-                codesign
-                --force
-                --deep
-                --sign "${M_SIGN_CERT_NAME}"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
-                COMMENT "Signing app bundle using certificate ${M_SIGN_CERT_NAME}..."
-                VERBATIM
-                )
-        add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
-                COMMAND
-                codesign
-                --force
-                --deep
-                --sign "${M_SIGN_CERT_NAME}"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
-                COMMENT "Signing app bundle using certificate ${APPLE_CERT}..."
-                VERBATIM
-                )
+        if (CODESIGN_CERTIFICATE)
+            set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
+            add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+                    COMMAND
+                    codesign
+                    --force
+                    --deep
+                    --sign "${CODESIGN_CERTIFICATE}"
+                    "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                    COMMENT "Signing app bundle using certificate ${M_SIGN_CERT_NAME}..."
+                    VERBATIM
+                    )
+            add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
+                    COMMAND
+                    codesign
+                    --force
+                    --deep
+                    --sign "${CODESIGN_CERTIFICATE}"
+                    "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
+                    COMMENT "Signing app bundle using certificate ${APPLE_CERT}..."
+                    VERBATIM
+                    )
+        endif (CODESIGN_CERTIFICATE)
         set(CPACK_GENERATOR "DragNDrop")
         set(CPACK_DMG_VOLUME_NAME "DigitalStageInstaller")
         set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/cmake/Packaging_DMGSetup.scpt)
@@ -356,6 +353,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
         #   Windows: Packing
         #
         #################################################
+        set(CPACK_GENERATOR "ZIP")
     else ()
         #################################################
         #
