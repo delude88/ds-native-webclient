@@ -19,7 +19,7 @@ jobs:
       - name: Install depedencies using apt-get
         run: |
           sudo apt-get update
-          sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev libcpprest-dev nlohmann-json-dev cmake pkg-config libasound2-dev libjack-dev
+          sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev libcpprest-dev nlohmann-json3-dev cmake pkg-config libasound2-dev libjack-dev
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
