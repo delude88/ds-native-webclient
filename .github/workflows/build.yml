@@ -65,3 +65,12 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
+      - name: Publish app bundle
+        uses: svenstaro/upload-release-action@v2
+        if: ${{ matrix.config.os == 'ubuntu-latest' }}
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/*.deb
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true

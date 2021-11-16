@@ -299,6 +299,11 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
 
     if (APPLE)
+        #################################################
+        #
+        #   Apple: Fix @rpaths, codesigning and packing
+        #
+        #################################################
         set(M_SIGN_CERT_NAME "Developer ID Application: Tobias Hegemann (JH3275598G)")
         find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
         # First use macdeployqt to bundle the qt libs, but do NOT sign yet
@@ -319,24 +324,6 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
-        #[[add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
-                COMMAND
-                ${CMAKE_INSTALL_NAME_TOOL}
-                -change
-                "@rpath/libtbb.12.dylib"
-                "@executable_path/../Frameworks/libtbb.12.dylib"
-                "$<TARGET_FILE:${PROJECT_NAME}_app>"
-                COMMENT "Fixing libtbb rpath"
-                VERBATIM
-                )]]
-    endif ()
-
-    #################################################
-    #
-    #   Codesigning
-    #
-    #################################################
-    if (APPLE)
         set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
         add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
                 COMMAND
@@ -358,7 +345,24 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 COMMENT "Signing app bundle using certificate ${APPLE_CERT}..."
                 VERBATIM
                 )
+        set(CPACK_GENERATOR "DragNDrop")
+        set(CPACK_DMG_VOLUME_NAME "DigitalStageInstaller")
+        set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/cmake/Packaging_DMGSetup.scpt)
+        set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/resources/DMGBackground.tif)
+        set(CPACK_SOURCE_STRIP_FILES "")
+    elseif (WIN32)
+        #################################################
+        #
+        #   Windows: Packing
+        #
+        #################################################
     else ()
-        set(M_SIGN_CERT_NAME "TODO")
+        #################################################
+        #
+        #   Linux: Packing
+        #
+        #################################################
+        set(CPACK_PACKAGE_NAME "ds-client")
+        set(CPACK_GENERATOR "DEB")
     endif ()
 endif ()
