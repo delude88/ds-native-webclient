@@ -1,6 +1,6 @@
 name: Ubuntu
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   build:
@@ -52,3 +52,12 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
       - name: Build with CMake
         run: cmake --build build --config ${{ matrix.config.build_type }}
+      - name: Publish app bundle
+        uses: svenstaro/upload-release-action@v2
+        if: ${{ matrix.config.os == 'macos-10.15' }}
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/*.app
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
