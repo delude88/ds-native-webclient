@@ -73,6 +73,13 @@ int main(int, char *[]) {
   initialDeviceInformation["type"] = "native";
   initialDeviceInformation["canAudio"] = true;
   initialDeviceInformation["canVideo"] = false;
+  initialDeviceInformation["sendAudio"] = false;
+  initialDeviceInformation["receiveAudio"] = true;
+#ifdef USE_RT_AUDIO
+  initialDeviceInformation["audioEngine"] = "rtaudio";
+#else
+  initialDeviceInformation["audioEngine"] = "miniaudio";
+#endif
 
   // And finally connect with the token and device description
   apiClient->connect(token, initialDeviceInformation);

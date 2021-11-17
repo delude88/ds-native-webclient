@@ -27,7 +27,7 @@ jobs:
       - name: Install depedencies using Conan package manager
         run: conan install -if build --build missing .
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_APP=OFF
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle with CPack
