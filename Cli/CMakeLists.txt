@@ -27,9 +27,9 @@ endif ()
 #################################################
 set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
 set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
-set(API_URL "https://auth.dstage.org" CACHE STRING "API server websocket url (wss://...)")
-set(STAGE_URL "https://auth.dstage.org" CACHE STRING "Url link to active stage page")
-set(SETTINGS_URL "https://auth.dstage.org" CACHE STRING "Url link to settings page")
+set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
+set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
+set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
 
 
 #################################################
@@ -85,11 +85,11 @@ target_link_libraries(${PROJECT_NAME}
         cpprestsdk::cpprest
         OpenSSL::Crypto
         )
-target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL=${SIGNUP_URL})
-target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL=${AUTH_URL})
-target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL=${API_URL})
-target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL=${STAGE_URL})
-target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL=${SETTINGS_URL})
+target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
 
 
 if (CMAKE_BUILD_TYPE MATCHES Release)

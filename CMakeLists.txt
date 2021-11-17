@@ -24,10 +24,12 @@ endif (APPLE)
 #################################################
 set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
 set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
-set(API_URL "https://auth.dstage.org" CACHE STRING "API server websocket url (wss://...)")
-set(STAGE_URL "https://auth.dstage.org" CACHE STRING "Url link to active stage page")
-set(SETTINGS_URL "https://auth.dstage.org" CACHE STRING "Url link to settings page")
+set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
+set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
+set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
 set(USE_RT_AUDIO ON CACHE BOOL "Use RtAudio as audio engine" FORCE)
+option(BUILD_APP "Build App (requires Qt6)" ON)
+option(BUILD_SERVICE "Build headless service" ON)
 
 
 #################################################
@@ -51,5 +53,9 @@ set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
 
 
 add_subdirectory(Core EXCLUDE_FROM_ALL)
-add_subdirectory(Cli)
-add_subdirectory(App)
+if (BUILD_SERVICE)
+    add_subdirectory(Cli)
+endif (BUILD_SERVICE)
+if (BUILD_APP)
+    add_subdirectory(App)
+endif (BUILD_APP)
