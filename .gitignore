@@ -141,6 +141,6 @@ Temporary Items
 .apdisk
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake,macos,intellij+all
-
+_CPack_Packages
 build
 build-macos

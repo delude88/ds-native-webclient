@@ -37,7 +37,6 @@ option(BUILD_SERVICE "Build headless service" ON)
 #   Dependencies
 #
 #################################################
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/3dti_AudioToolkit EXCLUDE_FROM_ALL)
 set(NO_WEBSOCKET ON CACHE BOOL "" FORCE)
 set(NO_TESTS ON CACHE BOOL "" FORCE)
 set(NO_EXAMPLES ON CACHE BOOL "" FORCE)

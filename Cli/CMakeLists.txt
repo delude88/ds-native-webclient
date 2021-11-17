@@ -92,17 +92,26 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
 
 
-if (CMAKE_BUILD_TYPE MATCHES Release)
-    #################################################
-    #
-    #   Pack
-    #
-    #################################################
-    set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
-    set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
+#################################################
+#
+#   Installation
+#
+#################################################
+install(
+        TARGETS ${PROJECT_NAME}
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        RUNTIME DESTINATION bin COMPONENT Runtime
+)
 
-    set(CPACK_GENERATOR "ZIP")
-    include(CPack)
-endif ()
 
+#################################################
+#
+#   Pack
+#
+#################################################
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
+set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
+
+set(CPACK_GENERATOR "ZIP")
+include(CPack)
 

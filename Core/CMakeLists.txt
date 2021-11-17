@@ -44,6 +44,7 @@ option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 #
 #################################################
 include(${CMAKE_CURRENT_LIST_DIR}/deps/cmrc/CMakeRC.cmake)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/3dti_AudioToolkit EXCLUDE_FROM_ALL)
 find_package(Threads REQUIRED)
 if (NOT TARGET DigitalStageApi)
     find_package(DigitalStageApi REQUIRED)

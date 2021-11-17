@@ -8,7 +8,7 @@
 	path = Core/deps/rtaudio
 	url = https://github.com/thestk/rtaudio.git
 [submodule "Core/deps/3dti_AudioToolkit"]
-	path = deps/3dti_AudioToolkit
+	path = Core/deps/3dti_AudioToolkit
 	url = https://github.com/delude88/3dti_AudioToolkit.git
 [submodule "Core/deps/cmrc"]
 	path = Core/deps/cmrc

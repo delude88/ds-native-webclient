@@ -143,6 +143,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
         )
 
 
+#################################################
+#
+#   Post-build
+#
+#################################################
 if (CMAKE_BUILD_TYPE MATCHES Release)
     if (APPLE)
         find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
@@ -177,49 +182,60 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                     COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
                     VERBATIM
                     )
-            #[[add_custom_command(TARGET ${PROJECT_NAME}-cli POST_BUILD
-                    COMMAND
-                    codesign
-                    --force
-                    --deep
-                    --sign "${CODESIGN_CERTIFICATE_NAME}"
-                    "$<TARGET_FILE_DIR:${PROJECT_NAME}-cli>"
-                    COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
-                    VERBATIM
-                    )]]
         endif (CODESIGN_CERTIFICATE_NAME)
     endif (APPLE)
+endif ()
 
 
-    #################################################
-    #
-    #   Pack
-    #
-    #################################################
-    set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
-    set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
-
-    # DragNDrop
-    set(CPACK_DMG_VOLUME_NAME "DigitalStageInstaller")
-    set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
-    set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
-    set(CPACK_SOURCE_STRIP_FILES "")
+#################################################
+#
+#   Installation
+#
+#################################################
+install(
+        TARGETS ${PROJECT_NAME}
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        BUNDLE DESTINATION . COMPONENT Runtime
+        RUNTIME DESTINATION bin COMPONENT Runtime
+)
 
 
-    if (UNIX)
-        if (APPLE)
-            # macOS
-            set(CPACK_GENERATOR "DragNDrop")
-        else ()
-            # Linux
-            set(CPACK_GENERATOR "DEB")
-        endif ()
+#################################################
+#
+#   Pack
+#
+#################################################
+set(CPACK_PACKAGE_NAME "Digital Stage Connector")
+set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
+set(CPACK_PACKAGE_DESCRIPTION "Background service to connect with Digital Stage via P2P")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Background service to connect with Digital Stage via P2P")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
+set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector")
+set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
+
+if (UNIX)
+    if (APPLE)
+        # macOS
+        set(CPACK_DMG_VOLUME_NAME "DigitalStageConnector")
+        set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
+        set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
+        set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
+        #set(CPACK_SOURCE_STRIP_FILES "")
+        #set(CPACK_GENERATOR "DragNDrop")
+        set(CPACK_GENERATOR "ZIP")
     else ()
-        # Win32
-        set(CPACK_PACKAGE_NAME "ds-client")
+        # Linux
         set(CPACK_GENERATOR "ZIP")
     endif ()
-    include(CPack)
-endif ()
+else ()
+    # Windows
+    set(CPACK_GENERATOR "NSIS")
+endif (UNIX)
+
+
+include(CPack)
 
 
