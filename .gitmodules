@@ -1,0 +1,27 @@
+[submodule "Core/deps/libds"]
+	path = deps/libds
+	url = https://github.com/digital-stage/libds.git
+[submodule "Core/deps/miniaudio"]
+	path = Core/deps/miniaudio
+	url = https://github.com/mackron/miniaudio.git
+[submodule "Core/deps/rtaudio"]
+	path = Core/deps/rtaudio
+	url = https://github.com/thestk/rtaudio.git
+[submodule "Core/deps/3dti_AudioToolkit"]
+	path = deps/3dti_AudioToolkit
+	url = https://github.com/delude88/3dti_AudioToolkit.git
+[submodule "Core/deps/cmrc"]
+	path = Core/deps/cmrc
+	url = https://github.com/vector-of-bool/cmrc.git
+[submodule "Core/deps/libdatachannel"]
+	path = deps/libdatachannel
+	url = https://github.com/delude88/libdatachannel.git
+[submodule "deps/libdeviceid"]
+	path = deps/libdeviceid
+	url = https://github.com/delude88/libdeviceid.git
+[submodule "deps/udp-discovery-cpp"]
+	path = deps/udp-discovery-cpp
+	url = https://github.com/truvorskameikin/udp-discovery-cpp
+[submodule "App/deps/keychain"]
+	path = App/deps/keychain
+	url = https://github.com/delude88/keychain

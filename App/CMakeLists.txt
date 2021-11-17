@@ -9,18 +9,6 @@ if (NOT WIN32)
 endif ()
 set(CMAKE_PROJECT_VERSION "0.0.1")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/../cmake/modules)
-
-#################################################
-#
-#   Environment configuration
-#
-#################################################
-add_compile_definitions(SIGNUP_URL="https://dev.dstage.org/account/signup")
-add_compile_definitions(AUTH_URL="https://auth.dstage.org")
-add_compile_definitions(API_URL="wss://api.dstage.org")
-add_compile_definitions(STAGE_URL="https://dev.dstage.org/stage")
-add_compile_definitions(SETTINGS_URL="https://dev.dstage.org/devices")
-
 include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
@@ -34,34 +22,43 @@ endif ()
 
 #################################################
 #
+#   Environment configuration
+#
+#################################################
+set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
+set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
+set(API_URL "https://auth.dstage.org" CACHE STRING "API server websocket url (wss://...)")
+set(STAGE_URL "https://auth.dstage.org" CACHE STRING "Url link to active stage page")
+set(SETTINGS_URL "https://auth.dstage.org" CACHE STRING "Url link to settings page")
+
+
+#################################################
+#
 #   Dependencies
 #
 #################################################
-#   - openssl (for libds, here only fixing macOS paths)
-if (APPLE)
-    if (EXISTS "/usr/local/opt/openssl/")
-        set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl/")
-    else ()
-        include("${PROJECT_SOURCE_DIR}/cmake/BrewResolver.cmake")
-    endif ()
-endif (APPLE)
-#  - libds
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
-#  - libdeviceid
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
-#  - udp-discovery-cpp
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
-#  - plog
+# libds - Digital Stage API
+if (NOT TARGET libds)
+    find_package(libds REQUIRED)
+endif (NOT TARGET libds)
+# DeviceId - Get unique device ID
+if (NOT TARGET DeviceId)
+    find_package(DeviceId REQUIRED)
+endif (NOT TARGET DeviceId)
+# UDP Discovery - find other devices in local network
+if (NOT TARGET udp-discovery)
+    find_package(udp-discovery REQUIRED)
+endif (NOT TARGET udp-discovery)
+# pLog -Logger
 if (NOT TARGET plog)
-    include(FetchContent)
-    FetchContent_Declare(
-            plog
-            GIT_REPOSITORY https://github.com/SergiusTheBest/plog.git
-    )
-    FetchContent_MakeAvailable(plog)
+    find_package(plog REQUIRED)
 endif ()
-#  - QT6
-find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
+# QT6
+if (NOT TARGET Qt6)
+    find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
+endif (NOT TARGET Qt6)
+# Keychain
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 
 
 #################################################
@@ -69,26 +66,25 @@ find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
 #   Configure artifact
 #
 #################################################
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
-add_executable(${PROJECT_NAME}_app MACOSX_BUNDLE)
+add_executable(${PROJECT_NAME} MACOSX_BUNDLE)
 qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
 set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
         PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
-qt_add_translations(${PROJECT_NAME}_app TS_FILES
+qt_add_translations(${PROJECT_NAME} TS_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-set_target_properties(${PROJECT_NAME}_app PROPERTIES OUTPUT_NAME "Digital Stage Connector")
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns)
     set_source_files_properties(${APP_ICON} PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
 endif (APPLE)
-set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOMOC ON)
-set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTORCC ON)
-set_property(TARGET ${PROJECT_NAME}_app PROPERTY AUTOUIC ON)
-target_sources(${PROJECT_NAME}_app
+set_property(TARGET ${PROJECT_NAME} PROPERTY AUTOMOC ON)
+set_property(TARGET ${PROJECT_NAME} PROPERTY AUTORCC ON)
+set_property(TARGET ${PROJECT_NAME} PROPERTY AUTOUIC ON)
+target_sources(${PROJECT_NAME}
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/App.h
@@ -103,24 +99,30 @@ target_sources(${PROJECT_NAME}_app
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         ${APP_ICON}
         ${QM_FILES})
-target_include_directories(${PROJECT_NAME}_app PRIVATE ${Qt6_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}_app
+target_include_directories(${PROJECT_NAME} PRIVATE ${Qt6_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        ${PROJECT_NAME}::${PROJECT_NAME}
+        core
+        DeviceId::DeviceId
         Qt6::Widgets
         keychain
         )
+target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
 if (APPLE)
     enable_language(OBJC)
     find_library(CORE_FOUNDATION Foundation)
     find_library(AV_FOUNDATION AVFoundation)
-    target_sources(${PROJECT_NAME}_app
+    target_sources(${PROJECT_NAME}
             PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/app/utils/macos.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/app/utils/macos_internal.mm
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/app/utils/macos_internal.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.mm
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.h
             )
-    target_link_libraries(${PROJECT_NAME}_app
+    target_link_libraries(${PROJECT_NAME}
             PRIVATE
             ${CORE_FOUNDATION}
             ${AV_FOUNDATION}
@@ -133,14 +135,14 @@ endif (APPLE)
 #   Bundling
 #
 #################################################
-set_target_properties(${PROJECT_NAME}_app PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
         MACOSX_BUNDLE_BUNDLE_NAME App
         MACOSX_BUNDLE_COPYRIGHT MIT
         MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
         MACOSX_BUNDLE_ICON_FILE appicon.icns
         )
 
@@ -149,33 +151,33 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
     if (APPLE)
         find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
         # First use macdeployqt to bundle the qt libs, but do NOT sign yet
-        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/../.."
                 -appstore-compliant
                 -always-overwrite
                 COMMENT "Running macdeployqt..."
                 )
-        add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND
                 ${CMAKE_INSTALL_NAME_TOOL}
                 -change
                 "@rpath/libkeychain.dylib"
                 "@executable_path/../Frameworks/libkeychain.dylib"
-                "$<TARGET_FILE:${PROJECT_NAME}_app>"
+                "$<TARGET_FILE:${PROJECT_NAME}>"
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
         if (CODESIGN_CERTIFICATE_NAME)
             message(STATUS "Codesinging using ${CODESIGN_CERTIFICATE_NAME}")
             set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
-            add_custom_command(TARGET ${PROJECT_NAME}_app POST_BUILD
+            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                     COMMAND
                     codesign
                     --force
                     --deep
                     --sign "${CODESIGN_CERTIFICATE_NAME}"
-                    "$<TARGET_FILE_DIR:${PROJECT_NAME}_app>/../.."
+                    "$<TARGET_FILE_DIR:${PROJECT_NAME}>/../.."
                     COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
                     VERBATIM
                     )

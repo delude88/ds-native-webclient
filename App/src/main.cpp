@@ -6,10 +6,10 @@
 #include <QSplashScreen>
 
 #ifdef __APPLE__
-#include "app/utils/macos.h"
+#include "utils/macos.h"
 #endif
 
-#include "app/App.h"
+#include "App.h"
 
 // Logger
 #include <plog/Init.h>

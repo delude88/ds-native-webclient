@@ -15,8 +15,8 @@
 #include <deviceid/id.h>
 
 // Local
-#include "cli/auth_cli.h"
-#include "cli/RemoteAuthService.h"
+#include "auth_cli.h"
+#include "RemoteAuthService.h"
 #include <Client.h>
 #include <utils/ServiceDiscovery.h>
 
