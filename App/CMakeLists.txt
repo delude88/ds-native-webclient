@@ -38,9 +38,9 @@ set(SETTINGS_URL "https://auth.dstage.org" CACHE STRING "Url link to settings pa
 #
 #################################################
 # libds - Digital Stage API
-if (NOT TARGET libds)
-    find_package(libds REQUIRED)
-endif (NOT TARGET libds)
+if (NOT TARGET DigitalStage)
+    find_package(DigitalStage REQUIRED)
+endif (NOT TARGET DigitalStage)
 # DeviceId - Get unique device ID
 if (NOT TARGET DeviceId)
     find_package(DeviceId REQUIRED)

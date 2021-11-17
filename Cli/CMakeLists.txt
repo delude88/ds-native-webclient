@@ -45,9 +45,9 @@ if (NOT TARGET OpenSSL)
     find_package(OpenSSL REQUIRED)
 endif (NOT TARGET OpenSSL)
 # libds - Digital Stage API
-if (NOT TARGET libds)
-    find_package(libds REQUIRED)
-endif (NOT TARGET libds)
+if (NOT TARGET DigitalStage)
+    find_package(DigitalStage REQUIRED)
+endif (NOT TARGET DigitalStage)
 # DeviceId - Get unique device ID
 if (NOT TARGET DeviceId)
     find_package(DeviceId REQUIRED)
