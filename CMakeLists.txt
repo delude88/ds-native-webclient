@@ -186,8 +186,6 @@ target_link_libraries(${PROJECT_NAME}
         LibDataChannel::LibDataChannelStatic
         ${PROJECT_NAME}-resources
         plog
-        cpprestsdk::cpprest
-        OpenSSL::Crypto
         )
 
 
@@ -209,6 +207,8 @@ target_sources(${PROJECT_NAME}-cli
 target_link_libraries(${PROJECT_NAME}-cli
         PRIVATE
         ${PROJECT_NAME}::${PROJECT_NAME}
+        cpprestsdk::cpprest
+        OpenSSL::Crypto
         )
 
 if (BUILD_APP)
@@ -259,7 +259,6 @@ if (BUILD_APP)
             ${PROJECT_NAME}::${PROJECT_NAME}
             Qt6::Widgets
             keychain
-
             )
     if (APPLE)
         enable_language(OBJC)
