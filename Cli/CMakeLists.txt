@@ -44,10 +44,6 @@ endif (NOT TARGET cpprestsdk)
 if (NOT TARGET OpenSSL)
     find_package(OpenSSL REQUIRED)
 endif (NOT TARGET OpenSSL)
-# libds - Digital Stage API
-if (NOT TARGET DigitalStage)
-    find_package(DigitalStage REQUIRED)
-endif (NOT TARGET DigitalStage)
 # DeviceId - Get unique device ID
 if (NOT TARGET DeviceId)
     find_package(DeviceId REQUIRED)
@@ -89,11 +85,11 @@ target_link_libraries(${PROJECT_NAME}
         cpprestsdk::cpprest
         OpenSSL::Crypto
         )
-target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL=${SIGNUP_URL})
+target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL=${AUTH_URL})
+target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL=${API_URL})
+target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL=${STAGE_URL})
+target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL=${SETTINGS_URL})
 
 
 if (CMAKE_BUILD_TYPE MATCHES Release)

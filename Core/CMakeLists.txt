@@ -45,9 +45,12 @@ option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 #################################################
 include(${CMAKE_CURRENT_LIST_DIR}/deps/cmrc/CMakeRC.cmake)
 find_package(Threads REQUIRED)
-if (NOT TARGET DigitalStage)
-    find_package(DigitalStage REQUIRED)
-endif (NOT TARGET DigitalStage)
+if (NOT TARGET DigitalStageApi)
+    find_package(DigitalStageApi REQUIRED)
+endif (NOT TARGET DigitalStageApi)
+if (NOT TARGET DigitalStageAuth)
+    find_package(DigitalStageAuth REQUIRED)
+endif (NOT TARGET DigitalStageAuth)
 if (NOT TARGET datachannel)
     find_package(LibDataChannel REQUIRED)
 endif (NOT TARGET datachannel)
@@ -61,7 +64,7 @@ endif ()
 #   Configure artifact
 #
 #################################################
-add_library(${PROJECT_NAME} STATIC EXCLUDE_FROM_ALL)
+add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(
         ${PROJECT_NAME}
