@@ -15,6 +15,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_L
 #   Environment configuration
 #
 #################################################
+option(BUILD_CLI "Build CLI" ON)
+option(BUILD_APP "Build app" ON)
 add_compile_definitions(SIGNUP_URL="https://dev.dstage.org/account/signup")
 add_compile_definitions(AUTH_URL="https://auth.dstage.org")
 add_compile_definitions(API_URL="wss://api.dstage.org")
@@ -22,10 +24,6 @@ add_compile_definitions(STAGE_URL="https://dev.dstage.org/stage")
 add_compile_definitions(SETTINGS_URL="https://dev.dstage.org/devices")
 add_compile_definitions(USE_ONLY_NATIVE_DEVICES)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
-if (UNIX AND NOT APPLE)
-    set(BUILD_APP OFF CACHE BOOL "Disabling App build on Linux")
-endif ()
-option(BUILD_APP "Build app" ON)
 
 include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
@@ -189,27 +187,30 @@ target_link_libraries(${PROJECT_NAME}
         )
 
 
-#################################################
-#
-#   Configure artifact - CLI Application
-#
-#################################################
-add_executable(${PROJECT_NAME}-cli)
-set_target_properties(${PROJECT_NAME}-cli PROPERTIES OUTPUT_NAME "digital-stage-client")
-target_sources(${PROJECT_NAME}-cli
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/auth_cli.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/AuthIO.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/RemoteAuthService.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/RemoteAuthService.cpp
-        )
-target_link_libraries(${PROJECT_NAME}-cli
-        PRIVATE
-        ${PROJECT_NAME}::${PROJECT_NAME}
-        cpprestsdk::cpprest
-        OpenSSL::Crypto
-        )
+if (BUILD_CLI)
+    #################################################
+    #
+    #   Configure artifact - CLI Application
+    #
+    #################################################
+    add_executable(${PROJECT_NAME}-cli)
+    set_target_properties(${PROJECT_NAME}-cli PROPERTIES OUTPUT_NAME "digital-stage-client")
+    target_sources(${PROJECT_NAME}-cli
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/auth_cli.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/AuthIO.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/RemoteAuthService.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/RemoteAuthService.cpp
+            )
+    target_link_libraries(${PROJECT_NAME}-cli
+            PRIVATE
+            ${PROJECT_NAME}::${PROJECT_NAME}
+            cpprestsdk::cpprest
+            OpenSSL::Crypto
+            )
+endif (BUILD_CLI)
+
 
 if (BUILD_APP)
     option(GENERATE_TS "Update and generate language files (requires QT6::LinguistTools)" OFF)
