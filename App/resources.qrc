@@ -1,0 +1,11 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file>assets/icon.png</file>
+        <file>assets/icon@2x.png</file>
+        <file>assets/splash.png</file>
+        <file>assets/logo-full.svg</file>
+        <file>assets/logo-full.png</file>
+        <file>assets/logo-full@2x.png</file>
+    </qresource>
+</RCC>
