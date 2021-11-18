@@ -109,8 +109,27 @@ install(
 #   Pack
 #
 #################################################
+set(CPACK_PACKAGE_NAME "Digital Stage Connector")
+set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
+set(CPACK_PACKAGE_DESCRIPTION "Background service to connect with Digital Stage via P2P")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Background service to connect with Digital Stage via P2P")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
 set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector")
+set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
+set(CPACK_COMPONENTS_ALL Runtime)
+
+if (UNIX)
+    if (APPLE)
+        set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-linux")
+        set(CPACK_ARCHIVE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
+        set(CPACK_GENERATOR "ZIP")
+    else ()
+    endif ()
+else ()
+endif ()
 
 set(CPACK_GENERATOR "ZIP")
 include(CPack)

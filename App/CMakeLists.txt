@@ -145,9 +145,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 #################################################
 #
-#   Post-build
+#   Installation
 #
 #################################################
+install(
+        TARGETS ${PROJECT_NAME}
+        EXPORT "${TARGETS_EXPORT_NAME}"
+        BUNDLE DESTINATION . COMPONENT Runtime
+)
 if (CMAKE_BUILD_TYPE MATCHES Release)
     if (APPLE)
         find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
@@ -155,7 +160,6 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/../.."
-                -appstore-compliant
                 -always-overwrite
                 COMMENT "Running macdeployqt..."
                 )
@@ -172,32 +176,16 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
         if (CODESIGN_CERTIFICATE_NAME)
             message(STATUS "Codesinging using ${CODESIGN_CERTIFICATE_NAME}")
             set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
-            add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                    COMMAND
-                    codesign
-                    --force
-                    --deep
-                    --sign "${CODESIGN_CERTIFICATE_NAME}"
-                    "$<TARGET_FILE_DIR:${PROJECT_NAME}>/../.."
-                    COMMENT "Signing app bundle using certificate ${CODESIGN_CERTIFICATE_NAME}..."
-                    VERBATIM
-                    )
+            install(CODE "
+            include(BundleUtilities)
+            message(STATUS \"Codesinging using ${CODESIGN_CERTIFICATE_NAME}\")
+            verify_app(\"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../..\")
+            execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../..\")"
+                    DESTINATION .
+                    COMPONENT Runtime)
         endif (CODESIGN_CERTIFICATE_NAME)
     endif (APPLE)
 endif ()
-
-
-#################################################
-#
-#   Installation
-#
-#################################################
-install(
-        TARGETS ${PROJECT_NAME}
-        EXPORT "${TARGETS_EXPORT_NAME}"
-        BUNDLE DESTINATION . COMPONENT Runtime
-        RUNTIME DESTINATION bin COMPONENT Runtime
-)
 
 
 #################################################
@@ -215,6 +203,7 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector")
 set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
+set(CPACK_COMPONENTS_ALL Runtime)
 
 if (UNIX)
     if (APPLE)
@@ -224,10 +213,11 @@ if (UNIX)
         set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
         set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
         #set(CPACK_SOURCE_STRIP_FILES "")
-        #set(CPACK_GENERATOR "DragNDrop")
-        set(CPACK_GENERATOR "ZIP")
+        set(CPACK_GENERATOR "DragNDrop")
     else ()
         # Linux
+        set(CPACK_PACKAGE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
+        set(CPACK_ARCHIVE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
         set(CPACK_GENERATOR "ZIP")
     endif ()
 else ()
