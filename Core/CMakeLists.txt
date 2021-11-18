@@ -49,9 +49,6 @@ find_package(Threads REQUIRED)
 if (NOT TARGET DigitalStageApi)
     find_package(DigitalStageApi REQUIRED)
 endif (NOT TARGET DigitalStageApi)
-if (NOT TARGET DigitalStageAuth)
-    find_package(DigitalStageAuth REQUIRED)
-endif (NOT TARGET DigitalStageAuth)
 if (NOT TARGET datachannel)
     find_package(LibDataChannel REQUIRED)
 endif (NOT TARGET datachannel)
@@ -150,7 +147,6 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
         DigitalStage::ApiStatic
-        DigitalStage::AuthStatic
         Threads::Threads
         3dtiAudioToolkitStatic
         LibDataChannel::LibDataChannelStatic

@@ -205,7 +205,7 @@ set(CPACK_COMPONENTS_ALL Runtime)
 if (UNIX)
     if (APPLE)
         # macOS
-        set(CPACK_DMG_VOLUME_NAME "DigitalStageConnector")
+        set(CPACK_DMG_VOLUME_NAME "Install Connector")
         set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
         set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
         set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
@@ -213,12 +213,33 @@ if (UNIX)
         set(CPACK_GENERATOR "DragNDrop")
     else ()
         # Linux
-        set(CPACK_PACKAGE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
-        set(CPACK_ARCHIVE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
         set(CPACK_GENERATOR "ZIP")
     endif ()
 else ()
     # Windows
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+    set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+    include(InstallRequiredSystemLibraries)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/"
+            COMMAND "${CMAKE_COMMAND}" -E
+            env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
+            --verbose 0
+            --no-compiler-runtime
+            --no-angle
+            --no-webkit2
+            --no-quick-import
+            --no-translations
+            --dir "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/" $<TARGET_FILE:${PROJECT_NAME}>
+            COMMENT "Deploying Qt..."
+            )
+
+    install(
+            DIRECTORY "${CMAKE_BINARY_DIR}/qtDeploy/"
+            DESTINATION .
+    )
+    set(CPACK_GENERATOR "ZIP;NSIS")
     set(CPACK_GENERATOR "NSIS")
 endif (UNIX)
 

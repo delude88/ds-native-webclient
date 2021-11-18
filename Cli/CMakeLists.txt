@@ -44,6 +44,9 @@ endif (NOT TARGET cpprestsdk)
 if (NOT TARGET OpenSSL)
     find_package(OpenSSL REQUIRED)
 endif (NOT TARGET OpenSSL)
+if (NOT TARGET DigitalStageAuth)
+    find_package(DigitalStageAuth REQUIRED)
+endif (NOT TARGET DigitalStageAuth)
 # DeviceId - Get unique device ID
 if (NOT TARGET DeviceId)
     find_package(DeviceId REQUIRED)
@@ -84,6 +87,7 @@ target_link_libraries(${PROJECT_NAME}
         udp-discovery
         cpprestsdk::cpprest
         OpenSSL::Crypto
+        DigitalStage::AuthStatic
         )
 target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
