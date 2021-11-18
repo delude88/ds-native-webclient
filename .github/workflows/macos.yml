@@ -18,9 +18,9 @@ jobs:
           p12-file-base64: ${{ secrets.CODESIGN_CERTIFICATE }}
           p12-password: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
       - name: Install Qt6
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: '6.2.1'
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.2.1'
       - name: Install depedencies using brew
         run: |
           brew install nlohmann-json cpprestsdk openssl eigen cereal
