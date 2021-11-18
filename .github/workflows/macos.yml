@@ -18,14 +18,15 @@ jobs:
           p12-file-base64: ${{ secrets.CODESIGN_CERTIFICATE }}
           p12-password: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
       - name: Install depedencies using brew
-        run: brew install nlohmann-json cpprestsdk openssl eigen cereal qt@6
+        run: |
+          brew install nlohmann-json cpprestsdk openssl eigen cereal qt@6
       - name: Configure CMake
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle with CPack
-        run: cpack --config build/CPackConfig.cmake -B build -G ZIP
+        run: cpack --config build/CPackConfig.cmake -B build -G DragNDrop
       - name: Publish bundle
         uses: svenstaro/upload-release-action@v2
         with:

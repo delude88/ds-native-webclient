@@ -14,10 +14,9 @@ on run argv
         close
       on error errStr number errorNumber
         set open_attempts to open_attempts + 1
-        delay 10
+        delay 3
       end try
     end repeat
-    delay 5
 
     -- open the image the first time and save a DS_Store with just
     -- background and icon setup
@@ -27,7 +26,6 @@ on run argv
       set background picture of theViewOptions to file ".background:background.tif"
       set arrangement of theViewOptions to not arranged
       set icon size of theViewOptions to 128
-      delay 5
     close
 
     -- next setup the position of the app and Applications symlink
@@ -43,15 +41,8 @@ on run argv
         set position of item "Applications" to { 378, 200 }
       end tell
       update without registering applications
-      delay 5
-    close
-
-    -- one last open and close so you can see everything looks correct
-    open
-      delay 5
     close
 
   end tell
-  delay 1
 end tell
 end run

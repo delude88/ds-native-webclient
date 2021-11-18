@@ -173,17 +173,14 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
                 COMMENT "Fixing libkeychain rpath"
                 VERBATIM
                 )
-        if (CODESIGN_CERTIFICATE_NAME)
-            message(STATUS "Codesinging using ${CODESIGN_CERTIFICATE_NAME}")
-            set(ENV{CODESIGN_ALLOCATE} /Applications/Xcode.app/Contents/Developer/usr/bin/codesign_allocate)
-            install(CODE "
+        install(CODE "
             include(BundleUtilities)
-            message(STATUS \"Codesinging using ${CODESIGN_CERTIFICATE_NAME}\")
-            verify_app(\"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../..\")
-            execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../..\")"
-                    DESTINATION .
-                    COMPONENT Runtime)
-        endif (CODESIGN_CERTIFICATE_NAME)
+            #message(STATUS \"Fixing bundle\")
+            #fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/Digital Stage Connector.app\" \"\" \"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../plugins\")
+            message(STATUS \"Signing bundle\")
+            execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/Digital Stage Connector.app\")"
+                DESTINATION .
+                COMPONENT Runtime)
     endif (APPLE)
 endif ()
 
@@ -212,7 +209,7 @@ if (UNIX)
         set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
         set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
         set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-        #set(CPACK_SOURCE_STRIP_FILES "")
+        set(CPACK_SOURCE_STRIP_FILES "")
         set(CPACK_GENERATOR "DragNDrop")
     else ()
         # Linux
@@ -224,7 +221,6 @@ else ()
     # Windows
     set(CPACK_GENERATOR "NSIS")
 endif (UNIX)
-
 
 include(CPack)
 
