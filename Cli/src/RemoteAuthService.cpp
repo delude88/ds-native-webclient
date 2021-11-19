@@ -4,7 +4,6 @@
 
 #include <cpprest/details/basic_types.h>
 #include <cpprest/uri_builder.h>
-#include <cpprest/http_listener.h>
 #include "RemoteAuthService.h"
 #include "AuthIO.h"
 #include <plog/Log.h>

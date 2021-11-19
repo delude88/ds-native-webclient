@@ -41,6 +41,9 @@ set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to sett
 if (NOT TARGET DeviceId)
     find_package(DeviceId REQUIRED)
 endif (NOT TARGET DeviceId)
+if (NOT TARGET DigitalStage::AuthStatic)
+    find_package(DigitalStage::AuthStatic REQUIRED)
+endif (NOT TARGET DigitalStage::AuthStatic)
 # UDP Discovery - find other devices in local network
 if (NOT TARGET udp-discovery)
     find_package(udp-discovery REQUIRED)
@@ -107,6 +110,7 @@ target_link_libraries(${PROJECT_NAME}
         DeviceId::DeviceId
         Qt6::Widgets
         keychain
+        DigitalStage::AuthStatic
         )
 if (APPLE)
     enable_language(OBJC)
