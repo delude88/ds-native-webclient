@@ -42,4 +42,6 @@ jobs:
         with:
          artifacts: "*.tar.gz"
          bodyFile: "HOWTO.md"
+         commit: "main"
+         tag: "nightly"
          token: ${{ secrets.GITHUB_TOKEN }}

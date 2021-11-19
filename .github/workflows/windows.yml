@@ -16,6 +16,9 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           version: '6.2.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
       - name: Install openssl
         run: choco install openssl
       - name: Install Conan package manager
@@ -35,4 +38,6 @@ jobs:
         with:
           artifacts: "*.zip"
           bodyFile: "HOWTO.md"
+          commit: "main"
+          tag: "nightly"
           token: ${{ secrets.GITHUB_TOKEN }}
