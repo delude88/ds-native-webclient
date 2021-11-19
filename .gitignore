@@ -144,3 +144,7 @@ Temporary Items
 _CPack_Packages
 build
 build-macos
+/*.tar.gz
+/*.app
+/*.zip
+aqtinstall.log

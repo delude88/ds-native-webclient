@@ -30,12 +30,12 @@ jobs:
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle with CPack
-        run: cpack --config build/CPackConfig.cmake -B build -G DragNDrop
+        run: cpack --config build/CPackConfig.cmake
       - name: Publish bundle
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/*.dmg
+          file: *.dmg
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true

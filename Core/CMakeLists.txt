@@ -55,6 +55,12 @@ endif (NOT TARGET datachannel)
 if (NOT TARGET plog)
     find_package(plog REQUIRED)
 endif ()
+if (NOT TARGET cpprestsdk)
+    find_package(cpprestsdk REQUIRED)
+endif (NOT TARGET cpprestsdk)
+if (NOT TARGET OpenSSL)
+    find_package(OpenSSL REQUIRED)
+endif (NOT TARGET OpenSSL)
 
 
 #################################################
@@ -147,6 +153,8 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
         DigitalStage::ApiStatic
+        cpprestsdk::cpprest
+        OpenSSL::Crypto
         Threads::Threads
         3dtiAudioToolkitStatic
         LibDataChannel::LibDataChannelStatic

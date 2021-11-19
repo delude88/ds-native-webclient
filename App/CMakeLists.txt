@@ -156,6 +156,8 @@ install(
         TARGETS ${PROJECT_NAME}
         EXPORT "${TARGETS_EXPORT_NAME}"
         BUNDLE DESTINATION . COMPONENT Runtime
+        RUNTIME DESTINATION bin COMPONENT Runtime
+        LIBRARY DESTINATION lib COMPONENT Runtime
 )
 if (CMAKE_BUILD_TYPE MATCHES Release)
     if (APPLE)
@@ -217,7 +219,7 @@ if (UNIX)
         set(CPACK_GENERATOR "DragNDrop")
     else ()
         # Linux
-        set(CPACK_GENERATOR "ZIP")
+        set(CPACK_GENERATOR "TGZ")
     endif ()
 else ()
     # Windows
@@ -238,11 +240,16 @@ else ()
             --dir "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/" $<TARGET_FILE:${PROJECT_NAME}>
             COMMENT "Deploying Qt..."
             )
-
     install(
             DIRECTORY "${CMAKE_BINARY_DIR}/qtDeploy/"
             DESTINATION .
     )
+    set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\Digital Stage Connector.exe")
+    set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} Digital Stage Connector")
+    set(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.digital-stage.org")
+    set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.digital-stage.org")
+    set(CPACK_NSIS_CONTACT "tobias.hegemann@digital-stage.com")
+    set(CPACK_NSIS_MODIFY_PATH ON)
     set(CPACK_GENERATOR "ZIP;NSIS")
     set(CPACK_GENERATOR "NSIS")
 endif (UNIX)

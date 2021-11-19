@@ -105,6 +105,7 @@ install(
         TARGETS ${PROJECT_NAME}
         EXPORT "${TARGETS_EXPORT_NAME}"
         RUNTIME DESTINATION bin COMPONENT Runtime
+        LIBRARY DESTINATION lib COMPONENT Runtime
 )
 
 
@@ -131,6 +132,8 @@ if (UNIX)
         set(CPACK_ARCHIVE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
         set(CPACK_GENERATOR "ZIP")
     else ()
+        include(InstallRequiredSystemLibraries)
+        set(CPACK_GENRATOR "TGZ")
     endif ()
 else ()
 endif ()

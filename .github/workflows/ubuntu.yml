@@ -8,6 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
+      - name: Update apt source
+        run: sudo apt-get update
       - name: Checkout repository and submodules
         uses: actions/checkout@v2
         with:
@@ -16,27 +18,30 @@ jobs:
         run: |
           pip3 install wheel setuptools
           pip3 install conan
+      - name: Install apt packages for Qt6
+        run: sudo apt-get -y install build-essential libgl1-mesa-dev libxkbcommon-dev libfontconfig-dev # libglu1-mesa-dev libvulkan-dev libx11-xcb-dev 
       - name: Install Qt6
         uses: jurplel/install-qt-action@v2
         with:
           version: '6.2.1'
-      - name: Install depedencies using apt-get
+      - name: Install linux related project dependencies using apt
+        run: sudo apt-get -y install libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
+      - name: Install general project dependencies using Conan package manager
         run: |
-          sudo apt-get update
-          sudo apt-get install libssl-dev libsrtp2-dev libgl-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
-      - name: Install depedencies using Conan package manager
-        run: conan install -if build --build missing .
+          conan profile new default --detect
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan install -if build .
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle with CPack
-        run: cpack --config build/CPackConfig.cmake -B build
+        run: cpack --config build/CPackConfig.cmake
       - name: Publish deb
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/App/*.zip
+          file: *.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
