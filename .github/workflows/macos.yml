@@ -32,10 +32,8 @@ jobs:
       - name: Bundle with CPack
         run: cpack --config build/CPackConfig.cmake
       - name: Publish bundle
-        uses: svenstaro/upload-release-action@v2
+        uses: ncipollo/release-action@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: *.dmg
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
+          artifacts: "*.dmg"
+          bodyFile: "HOWTO.md"
+          token: ${{ secrets.GITHUB_TOKEN }}
