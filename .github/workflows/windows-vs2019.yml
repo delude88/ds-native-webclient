@@ -1,0 +1,49 @@
+name: Windows
+
+on:
+  push:
+    branches: [ main, development ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.1.3'
+          host: "windows"
+          target: "desktop"
+          arch: "win64_msvc2019_64"
+          dir: "${{github.workspace}}/qt/"
+          install-deps: "true"
+
+      - name: Install Conan package manager
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan
+      - name: Install depedencies using Conan package manager
+        run: |
+          conan install -if build --build missing .
+      - name: Configure CMake
+        env:
+          CMAKE_PREFIX_PATH: ${{env.Qt6_Dir}}
+        run: cmake -S . -B build -DBUILD_SERVICE=OFF -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release
+      - name: Build with CMake
+        run: cmake --build build --config Release
+      - name: Bundle with CPack
+        run: cpack --config build/CPackConfig.cmake -B build
+      - name: Publish installer
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "*.zip"
+          bodyFile: "HOWTO.md"
+          commit: "main"
+          tag: "Nightly"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
