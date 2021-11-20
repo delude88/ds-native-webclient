@@ -14,9 +14,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-
+      - name: Install Conan package manager
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan
       - name: Install apt packages for Qt6
-        run: sudo apt-get -y install build-essential libgl1-mesa-dev libxkbcommon-dev libfontconfig-dev # libglu1-mesa-dev libvulkan-dev libx11-xcb-dev 
+        run: sudo apt-get -y install build-essential libgl1-mesa-dev libxkbcommon-dev libfontconfig-dev # libglu1-mesa-dev libvulkan-dev libx11-xcb-dev
       - name: Install Qt6
         uses: jurplel/install-qt-action@v2
         with:
@@ -25,9 +28,9 @@ jobs:
         run: sudo apt-get -y install libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
       - name: Install general project dependencies using Conan package manager
         run: |
-         conan profile new default --detect
-         conan profile update settings.compiler.libcxx=libstdc++11 default
-         conan install -if build .
+          conan profile new default --detect
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan install -if build .
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
@@ -37,9 +40,9 @@ jobs:
       - name: Publish archive
         uses: ncipollo/release-action@v1
         with:
-         artifacts: "*.tar.gz"
-         bodyFile: "HOWTO.md"
-         commit: "main"
-         tag: "Nightly"
-         allowUpdates: true
-         token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "*.tar.gz"
+          bodyFile: "HOWTO.md"
+          commit: "main"
+          tag: "Nightly"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
