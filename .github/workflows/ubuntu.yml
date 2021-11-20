@@ -21,7 +21,7 @@ jobs:
         with:
           version: '6.2.1'
       - name: Install dependencies using apt
-        run: sudo apt-get -y install libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev libeigen3-dev libcereal-dev libcpprest-dev nlohmann-json3-dev
+        run: sudo apt-get -y install libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev libeigen3-dev libcpprest-dev nlohmann-json3-dev
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake

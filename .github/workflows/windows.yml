@@ -34,7 +34,7 @@ jobs:
           pip3 install conan
       - name: Install depedencies using Conan package manager
         run: |
-          conan install -if build --build missing .
+          conan install -if build --profile msys2_mingw --build missing .
       - name: Configure CMake
         env:
           CMAKE_PREFIX_PATH: ${{env.Qt6_Dir}}
