@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v2
@@ -18,7 +18,7 @@ jobs:
           version: '6.2.1'
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_msvc2019_64'
+          #arch: 'win64_msvc2019_64'
       - name: Install openssl
         run: choco install openssl
       - name: Install Conan package manager
@@ -26,7 +26,11 @@ jobs:
           pip3 install wheel setuptools
           pip3 install conan
       - name: Install depedencies using Conan package manager
-        run: conan install -if build --build missing .
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=17 default
+          conan profile update settings.compiler.runtime=static default
+          conan install -if build --build missing .
       - name: Configure CMake
         run: cmake -S . -B build -DBUILD_SERVICE=OFF -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
