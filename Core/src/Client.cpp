@@ -2,6 +2,11 @@
 // Created by Tobias Hegemann on 26.10.21.
 //
 
+#include "Client.h"
+
+#include <utility>
+#include "utils/conversion.h"
+
 // AudioIO engine
 #ifdef USE_RT_AUDIO
 #include "audio/RtAudioIO.h"
@@ -14,11 +19,6 @@
 #include "miniaudio.h"
 #include "audio/MiniAudioIO.h"
 #endif
-
-#include "Client.h"
-
-#include <utility>
-#include "utils/conversion.h"
 
 Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
     api_client_(std::move(api_client)),
@@ -42,7 +42,7 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
       lock.unlock();
     }
     auto values_size = data.size() / 4;
-    float values[values_size];
+    auto* values = new float[values_size];
     deserialize(data.data(), data.size(), values);
     std::shared_lock lock(channels_mutex_);
 #ifdef USE_CIRCULAR_QUEUE
@@ -52,13 +52,14 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
       channels_[audio_track_id]->put(values[v]);
     }
 #endif
+    delete [] values;
     lock.unlock();  // May be useless here
   });
   attachHandlers();
   attachAudioHandlers();
 }
 
-void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count) {
+void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, const std::size_t frame_count) {
   // Write to channels
   if (channels_.count(audio_track_id) == 0) {
     std::unique_lock lock(channels_mutex_);
@@ -83,8 +84,8 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
   connection_service_->broadcastFloats(audio_track_id, data, frame_count);
 }
 void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, const std::size_t frame_count) {
-  float left[frame_count];
-  float right[frame_count];
+  auto left = new float[frame_count];
+  auto right = new float[frame_count];
   memset(left, 0, frame_count * sizeof(float));
   memset(right, 0, frame_count * sizeof(float));
 
@@ -123,6 +124,9 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
       out[output_channel] = &left[0];
     }
   }
+
+  //delete [] left;
+  //delete [] right;
 }
 void Client::attachHandlers() {
   api_client_->ready.connect([this](const DigitalStage::Api::Store *store) {
@@ -143,8 +147,8 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
                               std::size_t num_output_channels,
                               std::size_t frame_count) {
   // Mix to L / R
-  float left[frame_count];
-  float right[frame_count];
+  auto left = new float[frame_count];
+  auto right = new float[frame_count];
   memset(left, 0, frame_count * sizeof(float));
   memset(right, 0, frame_count * sizeof(float));
 
@@ -198,6 +202,9 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
       out[output_channel] = &left[0];
     }
   }
+
+  //delete [] left;
+  //delete [] right;
 }
 void Client::attachAudioHandlers() {
   audio_io_->onPlayback.connect(&Client::onPlaybackCallback, this);
