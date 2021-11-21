@@ -80,7 +80,7 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
   lock.unlock();
 
   // Send to webRTC
-  connection_service_->broadcast(audio_track_id, data, frame_count);
+  connection_service_->broadcastFloats(audio_track_id, data, frame_count);
 }
 void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, const std::size_t frame_count) {
   float left[frame_count];
@@ -152,7 +152,7 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   for (const auto &item: audio_tracks) {
     if (item.second) {
       // Send to webRTC
-      connection_service_->broadcast(item.first, item.second, frame_count);
+      connection_service_->broadcastFloats(item.first, item.second, frame_count);
 
       audio_renderer_->render(item.first, item.second, left, right, frame_count);
     } else {

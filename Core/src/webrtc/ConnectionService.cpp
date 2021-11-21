@@ -207,7 +207,7 @@ void ConnectionService::closePeerConnection(const std::string &stage_device_id) 
   peer_connections_.erase(stage_device_id);
   assert(!peer_connections_.count(stage_device_id));
 }
-void ConnectionService::broadcast(const std::string &audio_track_id, const std::byte *data, const std::size_t size) {
+void ConnectionService::broadcastBytes(const std::string &audio_track_id, const std::byte *data, const std::size_t size) {
   std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_);
   for (const auto &item: peer_connections_) {
     if (item.second) {
@@ -216,15 +216,14 @@ void ConnectionService::broadcast(const std::string &audio_track_id, const std::
   }
 }
 
-void ConnectionService::broadcast(const std::string &audio_track_id, const float *data, const std::size_t size) {
-  // float to std::byte
+void ConnectionService::broadcastFloats(const std::string &audio_track_id, const float *data, const std::size_t size) {
   std::size_t buffer_size = size * 4;
   std::byte buffer[buffer_size];
   serialize(data, size, buffer);
-  broadcast(audio_track_id, buffer, buffer_size);
+  broadcastBytes(audio_track_id, buffer, buffer_size);
 }
-void ConnectionService::broadcast(const std::string &audio_track_id, const float data) {
+void ConnectionService::broadcastFloat(const std::string &audio_track_id, const float data) {
   std::byte buffer[4];
   serializeFloat(data, buffer);
-  broadcast(audio_track_id, buffer, 4);
+  broadcastBytes(audio_track_id, buffer, 4);
 }
