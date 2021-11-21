@@ -8,11 +8,11 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: Checkout repository and submodules
         uses: actions/checkout@v2
         with:
           submodules: recursive
-
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
