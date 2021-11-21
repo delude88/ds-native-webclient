@@ -57,7 +57,6 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
 set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
 
-
 add_subdirectory(Core EXCLUDE_FROM_ALL)
 if (BUILD_SERVICE)
     add_subdirectory(Cli)

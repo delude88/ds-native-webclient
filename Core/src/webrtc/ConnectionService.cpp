@@ -218,7 +218,7 @@ void ConnectionService::broadcastBytes(const std::string &audio_track_id, const 
 
 void ConnectionService::broadcastFloats(const std::string &audio_track_id, const float *data, const std::size_t size) {
   std::size_t buffer_size = size * 4;
-  std::byte buffer[buffer_size];
+  auto buffer = new std::byte[buffer_size];
   serialize(data, size, buffer);
   broadcastBytes(audio_track_id, buffer, buffer_size);
 }
