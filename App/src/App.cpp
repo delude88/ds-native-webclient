@@ -31,7 +31,11 @@ void App::show() {
   // Try to auto sign in
   auto email = KeyStore::restoreEmail();
   if (email) {
+#if _WIN32
+    login_dialog_->setEmail(QString::fromStdWString(*email));
+#else
     login_dialog_->setEmail(QString::fromStdString(*email));
+#endif
     token_ = tryAutoLogin(*email);
   }
   if (!token_) {
@@ -73,7 +77,7 @@ void App::logIn(const QString &email, const QString &password) {
     auto stdPassword = email.toStdString();
 #endif
     auth_service_->signIn(strEmail, stdPassword)
-        .then([=](const std::string &token) {
+        .then([=](const utility::string_t &token) {
           token_ = token;
           KeyStore::storeEmail(strEmail);
           KeyStore::store({strEmail, stdPassword});
