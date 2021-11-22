@@ -237,10 +237,7 @@ else ()
             env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
             --verbose 0
             --no-compiler-runtime
-            --no-angle
-            --no-webkit2
             --no-quick-import
-            --no-translations
             --dir "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/" $<TARGET_FILE:${PROJECT_NAME}>
             COMMENT "Deploying Qt..."
             )
