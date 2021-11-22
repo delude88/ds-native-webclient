@@ -14,7 +14,7 @@ App::App()
       device_id_(std::to_string(deviceid::get())),
       tray_icon_(new TrayIcon()),
       api_client_(),
-      auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL)) {
+      auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(U(AUTH_URL))) {
   //QApplication::setQuitOnLastWindowClosed(false);
 
   connect(tray_icon_, SIGNAL(loginClicked()), login_dialog_, SLOT(show()));
@@ -22,8 +22,9 @@ App::App()
   connect(tray_icon_, SIGNAL(logoutClicked()), this, SLOT(logOut()));
   connect(tray_icon_, SIGNAL(openStageClicked()), this, SLOT(openStage()));
   connect(tray_icon_, SIGNAL(openSettingsClicked()), this, SLOT(openSettings()));
-  connect(login_dialog_, SIGNAL(login(QString, QString)), SLOT(logIn(QString, QString)));
-
+  // clang-format off
+  connect(login_dialog_, SIGNAL(login(QString,QString)), SLOT(logIn(QString,QString)));
+// clang-format on
 }
 
 void App::show() {
