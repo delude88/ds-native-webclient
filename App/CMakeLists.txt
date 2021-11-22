@@ -142,7 +142,7 @@ endif (APPLE)
 set_target_properties(${PROJECT_NAME} PROPERTIES
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
-        MACOSX_BUNDLE_BUNDLE_NAME App
+        MACOSX_BUNDLE_BUNDLE_NAME "Digital Stage Connector"
         MACOSX_BUNDLE_COPYRIGHT MIT
         MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
@@ -211,11 +211,11 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector")
 set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
-set(CPACK_COMPONENTS_ALL Runtime)
 
 if (UNIX)
     if (APPLE)
         # macOS
+        set(CPACK_COMPONENTS_ALL RUNTIME)
         set(CPACK_DMG_VOLUME_NAME "Install Connector")
         set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
         set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
@@ -224,6 +224,7 @@ if (UNIX)
         set(CPACK_GENERATOR "DragNDrop")
     else ()
         # Linux
+        set(CPACK_COMPONENTS_ALL RUNTIME LIBRARY RESOURCE)
         set(CPACK_GENERATOR "TGZ")
     endif ()
 else ()
