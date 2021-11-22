@@ -31,11 +31,7 @@ void App::show() {
   // Try to auto sign in
   auto email = KeyStore::restoreEmail();
   if (email) {
-#if _WIN32
-    login_dialog_->setEmail(QString::fromStdWString(*email));
-#else
-    login_dialog_->setEmail(QString::fromStdString(*email));
-#endif
+    login_dialog_->setEmail(*email);
     token_ = tryAutoLogin(*email);
   }
   if (!token_) {
@@ -50,14 +46,22 @@ void App::show() {
   }
 }
 
-std::optional<utility::string_t> App::tryAutoLogin(const utility::string_t &email) {
+std::optional<QString> App::tryAutoLogin(const QString &email) {
   // Try to log in using stored credentials
   auto credentials = KeyStore::restore(email);
   if (credentials) {
     // Try to get token
-    auto token = auth_service_->signInSync(credentials->email, credentials->password);
+#ifdef _WIN32
+    auto token = auth_service_->signInSync(credentials->email.toStdWString(), credentials->password.toStdWString());
+#else
+    auto token = auth_service_->signInSync(credentials->email.toStdString(), credentials->password.toStdString());
+#endif
     if (!token.empty()) {
-      return token;
+#ifdef _WIN32
+      return QString::fromStdWString(token);
+#else
+      return QString::fromStdString(token);
+#endif
     }
     if (!KeyStore::remove(email)) {
       PLOGE << "Could not reset credentials for " << email;
@@ -78,9 +82,13 @@ void App::logIn(const QString &email, const QString &password) {
 #endif
     auth_service_->signIn(strEmail, stdPassword)
         .then([=](const utility::string_t &token) {
-          token_ = token;
-          KeyStore::storeEmail(strEmail);
-          KeyStore::store({strEmail, stdPassword});
+#ifdef _WIN32
+          token_ = QString::fromStdWString(token);
+#else
+          token_ = QString::fromStdString(token);
+#endif
+          KeyStore::storeEmail(email);
+          KeyStore::store({email, password});
           // Show status menu, hide login and start
           tray_icon_->showStatusMenu();
           login_dialog_->hide();
@@ -96,7 +104,12 @@ void App::logOut() {
   tray_icon_->showLoginMenu();
   login_dialog_->setPassword("");
   if (token_) {
-    auth_service_->signOutSync(*token_);
+#ifdef _WIN32
+    auto token = token_->toStdWString();
+#else
+    auto token = token_->toStdString();
+#endif
+    auth_service_->signOutSync(token);
     token_ = std::nullopt;
   }
   login_dialog_->show();
@@ -129,7 +142,12 @@ void App::start() {
       stop();
     }
   });
-  api_client_->connect(*token_, initialDeviceInformation);
+#ifdef _WIN32
+  auto token = token_->toStdWString();
+#else
+  auto token = token_->toStdString();
+#endif
+  api_client_->connect(token, initialDeviceInformation);
 }
 void App::stop() {
   client_ = nullptr;

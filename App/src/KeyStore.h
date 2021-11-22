@@ -20,17 +20,17 @@ class KeyStore : QObject {
 
  public:
   struct Credentials {
-    utility::string_t email;
-    utility::string_t password;
+    QString email;
+    QString password;
   };
 
   explicit KeyStore(QObject *parent = nullptr);
 
   static bool store(const Credentials& credentials);
-  static std::optional<Credentials> restore(const utility::string_t& email) ;
-  [[nodiscard]] static bool remove(const utility::string_t& email) ;
+  static std::optional<Credentials> restore(const QString& email) ;
+  [[nodiscard]] static bool remove(const QString& email) ;
 
-  static std::optional<utility::string_t> restoreEmail();
-  static void storeEmail(const utility::string_t& email);
+  static std::optional<QString> restoreEmail();
+  static void storeEmail(const QString& email);
 };
 

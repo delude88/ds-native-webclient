@@ -29,12 +29,12 @@ class App : public QObject {
   void restart();
 
  private:
-  std::optional<utility::string_t> tryAutoLogin(const utility::string_t &email);
+  std::optional<QString> tryAutoLogin(const QString &email);
   void start();
   void stop();
 
   std::string device_id_;
-  std::optional<utility::string_t> token_;
+  std::optional<QString> token_;
   std::unique_ptr<DigitalStage::Auth::AuthService> auth_service_;
   std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<Client> client_;
