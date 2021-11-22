@@ -29,6 +29,7 @@ endif()
 #   Environment configuration
 #
 #################################################
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14" CACHE STRING "Minimum OS X deployment version" FORCE)
 set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
 set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
 set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
