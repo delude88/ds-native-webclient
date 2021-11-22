@@ -52,10 +52,12 @@ endif (NOT TARGET udp-discovery)
 if (NOT TARGET plog)
     find_package(plog REQUIRED)
 endif ()
-# QT6
-if (NOT TARGET Qt6)
-    find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
-endif (NOT TARGET Qt6)
+if (NOT TARGET Qt6 AND NOT TARGET Qt5)
+    find_package(Qt6 COMPONENTS Core Widgets LinguistTools)
+    if (NOT Qt6_FOUND)
+        find_package(Qt5 5.15 COMPONENTS Core Widgets LinguistTools REQUIRED)
+    endif (NOT Qt6_FOUND)
+endif (NOT TARGET Qt6 AND NOT TARGET Qt5)
 # Keychain
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 
@@ -71,10 +73,12 @@ qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
 set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
         PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
-qt_add_translations(${PROJECT_NAME} TS_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
+if (QT_VERSION GREATER_EQUAL 6)
+    qt_add_translations(${PROJECT_NAME} TS_FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
+            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
+endif (QT_VERSION GREATER_EQUAL 6)
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns)
     set_source_files_properties(${APP_ICON} PROPERTIES
@@ -103,12 +107,12 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         ${APP_ICON}
         ${QM_FILES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${Qt6_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Qt_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
         core
         DeviceId::DeviceId
-        Qt6::Widgets
+        Qt::Widgets
         keychain
         DigitalStage::AuthStatic
         )

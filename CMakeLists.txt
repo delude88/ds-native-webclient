@@ -36,7 +36,7 @@ set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss:/
 set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
 set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
 set(USE_RT_AUDIO ON CACHE BOOL "Use RtAudio as audio engine" FORCE)
-option(BUILD_APP "Build App (requires Qt6)" ON)
+option(BUILD_APP "Build App (requires Qt5 or Qt6)" ON)
 option(BUILD_SERVICE "Build headless service" ON)
 
 
