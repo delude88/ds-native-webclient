@@ -13,7 +13,6 @@ App::App()
     : login_dialog_(new LoginDialog()),
       device_id_(std::to_string(deviceid::get())),
       tray_icon_(new TrayIcon()),
-      key_store_(new KeyStore(this)),
       api_client_(),
       auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL)) {
   //QApplication::setQuitOnLastWindowClosed(false);
@@ -47,7 +46,7 @@ void App::show() {
   }
 }
 
-std::optional<std::string> App::tryAutoLogin(const std::string &email) {
+std::optional<utility::string_t> App::tryAutoLogin(const utility::string_t &email) {
   // Try to log in using stored credentials
   auto credentials = KeyStore::restore(email);
   if (credentials) {
@@ -66,11 +65,18 @@ std::optional<std::string> App::tryAutoLogin(const std::string &email) {
 void App::logIn(const QString &email, const QString &password) {
   login_dialog_->resetError();
   try {
-    auth_service_->signIn(email.toStdString(), password.toStdString())
+#ifdef _WIN32
+    auto strEmail = email.toStdWString();
+    auto stdPassword = email.toStdWString();
+#else
+    auto strEmail = email.toStdString();
+    auto stdPassword = email.toStdString();
+#endif
+    auth_service_->signIn(strEmail, stdPassword)
         .then([=](const std::string &token) {
           token_ = token;
-          KeyStore::storeEmail(email.toStdString());
-          KeyStore::store({email.toStdString(), password.toStdString()});
+          KeyStore::storeEmail(strEmail);
+          KeyStore::store({strEmail, stdPassword});
           // Show status menu, hide login and start
           tray_icon_->showStatusMenu();
           login_dialog_->hide();

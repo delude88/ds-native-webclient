@@ -6,6 +6,7 @@
 #include <QObject>
 #include <string>
 #include <optional>
+#include <cpprest/details/basic_types.h>
 
 #ifndef KEYSTORE_PACKAGE
 #define KEYSTORE_PACKAGE "org.digital-stage.client"
@@ -19,17 +20,17 @@ class KeyStore : QObject {
 
  public:
   struct Credentials {
-    std::string email;
-    std::string password;
+    utility::string_t email;
+    utility::string_t password;
   };
 
   explicit KeyStore(QObject *parent = nullptr);
 
   static bool store(const Credentials& credentials);
-  static std::optional<Credentials> restore(const std::string& email) ;
-  [[nodiscard]] static bool remove(const std::string& email) ;
+  static std::optional<Credentials> restore(const utility::string_t& email) ;
+  [[nodiscard]] static bool remove(const utility::string_t& email) ;
 
-  static std::optional<std::string> restoreEmail();
-  static void storeEmail(const std::string& email);
+  static std::optional<utility::string_t> restoreEmail();
+  static void storeEmail(const utility::string_t& email);
 };
 

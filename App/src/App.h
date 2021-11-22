@@ -39,7 +39,6 @@ class App : public QObject {
   std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<Client> client_;
 
-  KeyStore *key_store_;
   TrayIcon *tray_icon_;
   LoginDialog *login_dialog_;
 };

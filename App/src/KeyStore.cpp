@@ -18,7 +18,7 @@ bool KeyStore::store(const Credentials &credentials) {
   return true;
 }
 
-std::optional<KeyStore::Credentials> KeyStore::restore(const std::string &email) {
+std::optional<KeyStore::Credentials> KeyStore::restore(const utility::string_t &email) {
   keychain::Error error{};
   auto password = keychain::getPassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {
@@ -29,7 +29,7 @@ std::optional<KeyStore::Credentials> KeyStore::restore(const std::string &email)
   return Credentials{email, password};
 }
 
-bool KeyStore::remove(const std::string &email) {
+bool KeyStore::remove(const utility::string_t &email) {
   keychain::Error error{};
   keychain::deletePassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {
@@ -40,7 +40,7 @@ bool KeyStore::remove(const std::string &email) {
   return true;
 }
 
-std::optional<std::string> KeyStore::restoreEmail() {
+std::optional<utility::string_t> KeyStore::restoreEmail() {
   QSettings settings(KEYSTORE_PACKAGE, "Client");
   if (settings.contains("email")) {
     return settings.value("email", "").toString().toStdString();
@@ -48,7 +48,7 @@ std::optional<std::string> KeyStore::restoreEmail() {
   return std::nullopt;
 }
 
-void KeyStore::storeEmail(const std::string &email) {
+void KeyStore::storeEmail(const utility::string_t &email) {
   QSettings settings(KEYSTORE_PACKAGE, "Client");
   settings.setValue("email", QString::fromStdString(email));
 }
