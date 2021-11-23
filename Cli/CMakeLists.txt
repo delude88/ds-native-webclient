@@ -77,7 +77,7 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/RemoteAuthService.cpp
         )
 target_include_directories(${PROJECT_NAME}
-        PUBLIC
+        PRIVATE
         ${udp-discovery_INCLUDE_DIR}
         )
 target_link_libraries(${PROJECT_NAME}
@@ -101,13 +101,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}
 #   Installation
 #
 #################################################
+include(GNUInstallDirs)
 install(
         TARGETS ${PROJECT_NAME}
-        EXPORT "${TARGETS_EXPORT_NAME}"
-        BUNDLE DESTINATION . COMPONENT RUNTIME
-        RUNTIME DESTINATION bin COMPONENT RUNTIME
-        LIBRARY DESTINATION lib COMPONENT LIBRARY
-        LIBRARY DESTINATION share COMPONENT RESOURCE
+        BUNDLE DESTINATION . COMPONENT Runtime
+        RUNTIME DESTINATION bin COMPONENT Runtime
+        LIBRARY DESTINATION lib COMPONENT Library
+        ARCHIVE DESTINATION lib COMPONENT Library
+        RESOURCE DESTINATION share COMPONENT Resource
 )
 
 
@@ -127,19 +128,20 @@ set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
 
+set(CPACK_COMPONENTS_ALL RUNTIME LIBRARY RESOURCE)
+
 if (UNIX)
     if (APPLE)
-        set(CPACK_COMPONENTS_ALL RUNTIME)
+        set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-macOS")
         set(CPACK_GENERATOR "ZIP")
     else ()
-        set(CPACK_COMPONENTS_ALL RUNTIME LIBRARY RESOURCE)
         set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-linux")
-        set(CPACK_ARCHIVE_FILE_NAME "DigitalStage-${CMAKE_PROJECT_VERSION}-linux")
+        set(CPACK_ARCHIVE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-linux")
         include(InstallRequiredSystemLibraries)
-        set(CPACK_GENRATOR "TGZ")
+        set(CPACK_GENERATOR "TGZ")
     endif ()
 else ()
-    set(CPACK_COMPONENTS_ALL RUNTIME LIBRARY RESOURCE)
+    set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-windows")
     set(CPACK_GENERATOR "ZIP")
 endif ()
 

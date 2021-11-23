@@ -156,13 +156,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 #   Installation
 #
 #################################################
+include(GNUInstallDirs)
 install(
         TARGETS ${PROJECT_NAME}
-        EXPORT "${TARGETS_EXPORT_NAME}"
-        BUNDLE DESTINATION . COMPONENT RUNTIME
-        RUNTIME DESTINATION bin COMPONENT RUNTIME
-        LIBRARY DESTINATION lib COMPONENT LIBRARY
-        LIBRARY DESTINATION share COMPONENT RESOURCE
+        BUNDLE DESTINATION . COMPONENT Runtime
+        RUNTIME DESTINATION bin COMPONENT Runtime
+        LIBRARY DESTINATION lib COMPONENT Library
+        ARCHIVE DESTINATION lib COMPONENT Library
+        RESOURCE DESTINATION share COMPONENT Resource
 )
 if (CMAKE_BUILD_TYPE MATCHES Release)
     if (APPLE)
