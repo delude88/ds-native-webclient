@@ -37,3 +37,6 @@ void LoginDialog::resetError() {
 void LoginDialog::on_buttonSignIn_clicked() {
   login(getEmail(), getPassword());
 }
+void LoginDialog::setLoading(bool loading) {
+  ui->buttonSignIn->setDisabled(loading);
+}

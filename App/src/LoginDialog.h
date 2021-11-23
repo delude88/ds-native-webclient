@@ -18,6 +18,7 @@ class LoginDialog : public QDialog {
   QString getPassword();
 
  public slots:
+  void setLoading(bool loading);
   void setEmail(const QString &user);
   void setPassword(const QString &password);
   void setError(const QString &error);

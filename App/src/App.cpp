@@ -72,6 +72,7 @@ std::optional<QString> App::tryAutoLogin(const QString &email) {
 }
 
 void App::logIn(const QString &email, const QString &password) {
+  login_dialog_->setLoading(true);
   login_dialog_->resetError();
   try {
 #ifdef _WIN32
@@ -92,10 +93,12 @@ void App::logIn(const QString &email, const QString &password) {
           KeyStore::store({email, password});
           // Show status menu, hide login and start
           tray_icon_->showStatusMenu();
+          login_dialog_->setLoading(false);
           login_dialog_->hide();
           start();
         });
   } catch (std::exception &ex) {
+    login_dialog_->setLoading(false);
     login_dialog_->setError(ex.what());
   }
 }
