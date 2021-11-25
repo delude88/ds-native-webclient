@@ -84,6 +84,7 @@ class AudioRenderer {
   std::mutex mutex_;
 
   std::unique_ptr<AudioMixer<float>> audio_mixer_;
+  std::shared_ptr<DigitalStage::Api::Client::Token> token_;
 };
 
 #include "AudioRenderer.tpp"

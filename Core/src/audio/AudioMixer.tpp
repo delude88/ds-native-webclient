@@ -4,7 +4,7 @@
 
 template<class T>
 AudioMixer<T>::AudioMixer(std::shared_ptr<DigitalStage::Api::Client> client)
-    : client_(std::move(client)) {
+    : client_(std::move(client)), token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
   attachHandlers();
 }
 
@@ -34,14 +34,15 @@ template<class T>
 void AudioMixer<T>::attachHandlers() {
   // React to all changes of volume related entities and precalculate the resulting volume
   client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+    PLOGD << "ready";
     auto audioTracks = store->audioTracks.getAll();
     for (const auto &audio_track: audioTracks) {
       volume_map_[audio_track._id] = calculateVolume(audio_track, *store);
     }
-  });
+  }, token_);
   client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     volume_map_[audio_track._id] = calculateVolume(audio_track, *store);
-  });
+  }, token_);
   client_->audioTrackChanged.connect([this](const std::string &audio_track_id, const nlohmann::json &update,
                                             const DigitalStage::Api::Store *store) {
     if (update.contains("volume") || update.contains("muted")) {
@@ -49,16 +50,16 @@ void AudioMixer<T>::attachHandlers() {
       assert(audio_track);
       volume_map_[audio_track->_id] = calculateVolume(*audio_track, *store);
     }
-  });
+  }, token_);
   client_->audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *) {
     volume_map_.erase(audio_track._id);
-  });
+  }, token_);
   client_->customAudioTrackVolumeAdded.connect([this](const CustomAudioTrackVolume &custom_volume,
                                                       const DigitalStage::Api::Store *store) {
     auto audio_track = store->audioTracks.get(custom_volume.audioTrackId);
     assert(audio_track);
     volume_map_[custom_volume._id] = calculateVolume(*audio_track, *store);
-  });
+  }, token_);
   client_->customAudioTrackVolumeChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                                         const DigitalStage::Api::Store *store) {
     if (update.contains("volume") || update.contains("muted")) {
@@ -68,13 +69,13 @@ void AudioMixer<T>::attachHandlers() {
       assert(audio_track);
       volume_map_[audio_track->_id] = calculateVolume(*audio_track, *store);
     }
-  });
+  }, token_);
   client_->customAudioTrackVolumeRemoved.connect([this](const CustomAudioTrackVolume &custom_volume,
                                                         const DigitalStage::Api::Store *store) {
     auto audio_track = store->audioTracks.get(custom_volume.audioTrackId);
     assert(audio_track);
     volume_map_[audio_track->_id] = calculateVolume(*audio_track, *store);
-  });
+  }, token_);
   client_->stageDeviceChanged.connect([this](const std::string &stage_device_id, const nlohmann::json &update,
                                              const DigitalStage::Api::Store *store) {
     if (update.contains("volume") || update.contains("muted")) {
@@ -85,7 +86,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customStageDeviceVolumeAdded.connect([this](const CustomStageDeviceVolume &custom_volume,
                                                        const DigitalStage::Api::Store *store) {
     for (const auto &audio_track: store->audioTracks.getAll()) {
@@ -93,7 +94,7 @@ void AudioMixer<T>::attachHandlers() {
         volume_map_[audio_track._id] = calculateVolume(audio_track, *store);
       }
     }
-  });
+  }, token_);
   client_->customStageDeviceVolumeChanged.connect([this](const std::string &custom_stage_device_volume_id,
                                                          const nlohmann::json &update,
                                                          const DigitalStage::Api::Store *store) {
@@ -107,7 +108,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customStageDeviceVolumeRemoved.connect([this](const CustomStageDeviceVolume &custom_volume,
                                                          const DigitalStage::Api::Store *store) {
     for (const auto &audio_track: store->audioTracks.getAll()) {
@@ -115,7 +116,7 @@ void AudioMixer<T>::attachHandlers() {
         volume_map_[audio_track._id] = calculateVolume(audio_track, *store);
       }
     }
-  });
+  }, token_);
   client_->stageMemberChanged.connect([this](const std::string &stage_member_id, const nlohmann::json &update,
                                              const DigitalStage::Api::Store *store) {
     if (update.contains("volume") || update.contains("muted")) {
@@ -126,7 +127,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customStageMemberVolumeAdded.connect([this](const CustomStageMemberVolume &custom_volume,
                                                        const DigitalStage::Api::Store *store) {
     for (const auto &audio_track: store->audioTracks.getAll()) {
@@ -134,7 +135,7 @@ void AudioMixer<T>::attachHandlers() {
         volume_map_[audio_track._id] = calculateVolume(audio_track, *store);
       }
     }
-  });
+  }, token_);
   client_->customStageMemberVolumeChanged.connect([this](const std::string &custom_stage_member_volume_id,
                                                          const nlohmann::json &update,
                                                          const DigitalStage::Api::Store *store) {
@@ -148,7 +149,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customStageMemberVolumeRemoved.connect([this](const CustomStageMemberVolume &custom_volume,
                                                          const DigitalStage::Api::Store *store) {
     for (const auto &audio_track: store->audioTracks.getAll()) {
@@ -156,7 +157,7 @@ void AudioMixer<T>::attachHandlers() {
         volume_map_[audio_track._id] = calculateVolume(audio_track, *store);
       }
     }
-  });
+  }, token_);
   client_->groupChanged.connect([this](const std::string &group_id, const nlohmann::json &update,
                                        const DigitalStage::Api::Store *store) {
     if (update.contains("volume") || update.contains("muted")) {
@@ -169,7 +170,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customGroupVolumeAdded.connect([this](const CustomGroupVolume &custom_volume,
                                                  const DigitalStage::Api::Store *store) {
     for (const auto &stage_member: store->getStageMembersByGroup(custom_volume.groupId)) {
@@ -179,7 +180,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customGroupVolumeChanged.connect([this](const std::string &custom_group_volume_id,
                                                    const nlohmann::json &update,
                                                    const DigitalStage::Api::Store *store) {
@@ -195,7 +196,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->customGroupVolumeRemoved.connect([this](const CustomGroupVolume &custom_volume,
                                                    const DigitalStage::Api::Store *store) {
     for (const auto &stage_member: store->getStageMembersByGroup(custom_volume.groupId)) {
@@ -205,7 +206,7 @@ void AudioMixer<T>::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
 }
 
 template<class T>
@@ -275,6 +276,7 @@ std::pair<T, bool> AudioMixer<T>::calculateVolume(const AudioTrack &audio_track,
   onGainChanged(audio_track._id, pair);
   return pair;
 }
+
 template<class T>
 std::optional<VolumeInfo<T>> AudioMixer<T>::getGain(const std::string &audio_track_id) const {
   if (volume_map_.count(audio_track_id)) {

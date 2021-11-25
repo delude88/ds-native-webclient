@@ -9,11 +9,13 @@ AudioIO::AudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
       num_devices_(0),
       watching_device_updates_(false),
-      published_channels_() {
+      published_channels_(),
+      token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
   attachHandlers();
 }
 
 void AudioIO::attachHandlers() {
+  PLOGD << "Attaching handlers";
   client_->ready.connect([this](const DigitalStage::Api::Store *store) {
     PLOGD << "ready";
     auto local_device = store->getLocalDevice();
@@ -52,12 +54,12 @@ void AudioIO::attachHandlers() {
         }
       }
       // Also start live device update watcher
-      //watchDeviceUpdates();
+      watchDeviceUpdates();
     }
-  });
+  }, token_);
   client_->disconnected.connect([this](bool normal_exit) {
     stopWatchingDeviceUpdates();
-  });
+  }, token_);
   client_->audioDriverSelected.connect([this](std::optional<std::string> audio_driver,
                                               const DigitalStage::Api::Store *store) {
     if (store->isReady() && audio_driver && !audio_driver->empty()) {
@@ -78,7 +80,7 @@ void AudioIO::attachHandlers() {
         PLOGE << "Local device not available when ready";
       }
     }
-  });
+  }, token_);
   client_->soundCardChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                            const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
@@ -106,7 +108,7 @@ void AudioIO::attachHandlers() {
         PLOGE << "Local device not available when ready";
       }
     }
-  });
+  }, token_);
   client_->deviceChanged.connect([this](const std::string &id, const nlohmann::json &update,
                                         const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
@@ -168,7 +170,7 @@ void AudioIO::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackAdded";
@@ -184,7 +186,7 @@ void AudioIO::attachHandlers() {
         mutex_.unlock();
       }
     }
-  });
+  }, token_);
   client_->audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackRemoved";
@@ -198,7 +200,7 @@ void AudioIO::attachHandlers() {
         mutex_.unlock();
       }
     }
-  });
+  }, token_);
 }
 
 void AudioIO::publishChannel(int channel) {
@@ -237,6 +239,7 @@ void AudioIO::unPublishAll() {
   }
 }
 AudioIO::~AudioIO() {
+  token_ = nullptr; // Don't listen to the unpublished event
   PLOGI << "Unpublish all";
   unPublishAll();
   stopWatchingDeviceUpdates();

@@ -18,7 +18,7 @@
 
 int main(int argc, char *argv[]) {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::debug, &consoleAppender);
+  plog::init(plog::info, &consoleAppender);
 
 #ifdef __APPLE__
   // Special macOS routine (get microphone access rights)

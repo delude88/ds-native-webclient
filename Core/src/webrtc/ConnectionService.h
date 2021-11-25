@@ -40,6 +40,8 @@ class ConnectionService {
   std::shared_mutex peer_connections_mutex_;
 
   rtc::Configuration configuration_;
+
+  std::shared_ptr<DigitalStage::Api::Client::Token> token_;
 };
 
 #endif //CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_

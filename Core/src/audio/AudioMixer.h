@@ -18,7 +18,6 @@ template<class T> using VolumeInfo = std::pair<T /* volume */, bool /* muted */>
 template<class T>
 class AudioMixer {
  public:
-
   explicit AudioMixer(std::shared_ptr<DigitalStage::Api::Client> client);
 
   void applyGain(const std::string &audio_track_id, T *data, std::size_t frame_count);
@@ -34,6 +33,7 @@ class AudioMixer {
 
   std::unordered_map<std::string, std::pair<T, bool>> volume_map_;
   std::shared_ptr<DigitalStage::Api::Client> client_;
+  std::shared_ptr<DigitalStage::Api::Client::Token> token_;
 };
 
 #include "AudioMixer.tpp"

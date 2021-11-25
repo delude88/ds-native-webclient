@@ -76,4 +76,5 @@ class AudioIO {
   std::atomic<bool> watching_device_updates_;
   std::thread device_watcher_;
   std::atomic<std::size_t> num_devices_;
+  std::shared_ptr<DigitalStage::Api::Client::Token> token_;
 };

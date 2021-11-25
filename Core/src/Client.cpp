@@ -130,6 +130,7 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
 }
 void Client::attachHandlers() {
   api_client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+    PLOGD << "ready";
     auto local_device = store->getLocalDevice();
     if (local_device) {
       changeReceiverSize(local_device->buffer);
