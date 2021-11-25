@@ -7,13 +7,16 @@
 #include <optional>
 
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
-    : client_(std::move(client)), configuration_(rtc::Configuration()) {
+    : client_(std::move(client)),
+      configuration_(rtc::Configuration()),
+      token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
   attachHandlers();
 }
 
 void ConnectionService::attachHandlers() {
   PLOGD << "attachHandlers()";
   client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+    PLOGD << "ready";
     auto turn_urls = store->getTurnServers();
     if (!turn_urls.empty()) {
       auto turn_user = store->getTurnUsername();
@@ -23,7 +26,9 @@ void ConnectionService::attachHandlers() {
           std::string delimiter = ":";
           auto host = turn_url.substr(0, turn_url.find(delimiter));
           auto port = turn_url.substr(turn_url.find(delimiter));
-          configuration_.iceServers.emplace_back(rtc::IceServer(host, port, *turn_user, *turn_secret));
+          PLOGD << "emblace";
+          //configuration_.iceServers.emplace_back(host, port, *turn_user, *turn_secret);
+          //configuration_.iceServers.push_back(rtc::IceServer(host, port, *turn_user, *turn_secret));
           PLOGI << "Using turn server:" << *turn_user << ":" << *turn_secret << "@" << host << ":" << port;
         }
       }
@@ -31,15 +36,17 @@ void ConnectionService::attachHandlers() {
       PLOGI << "Using public google STUN servers as fallback";
       configuration_.iceServers.emplace_back("stun:stun.l.google.com:19302");
     }
+    PLOGD << "ready middle";
     onStageChanged();
-  });
-  client_->stageJoined.connect([this](const ID_TYPE &, const std::optional<ID_TYPE>&,
+    PLOGD << "ready end";
+  }, token_);
+  client_->stageJoined.connect([this](const ID_TYPE &, const std::optional<ID_TYPE> &,
                                       const DigitalStage::Api::Store *store) {
     onStageChanged();
-  });
+  }, token_);
   client_->stageLeft.connect([this](const DigitalStage::Api::Store *store) {
     onStageChanged();
-  });
+  }, token_);
   client_->stageDeviceAdded.connect([this](const StageDevice &device, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
@@ -56,7 +63,7 @@ void ConnectionService::attachHandlers() {
         createPeerConnection(device._id, *local_stage_device_id);
       }
     }
-  });
+  }, token_);
   client_->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                              const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
@@ -86,7 +93,7 @@ void ConnectionService::attachHandlers() {
         }
       }
     }
-  });
+  }, token_);
   client_->p2pOffer.connect([this](const P2POffer &offer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(offer.to == *local_stage_device_id);
@@ -104,7 +111,7 @@ void ConnectionService::attachHandlers() {
     }
     assert(peer_connections_[offer.from]);
     peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
-  });
+  }, token_);
   client_->p2pAnswer.connect([this](const P2PAnswer &answer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
@@ -113,7 +120,7 @@ void ConnectionService::attachHandlers() {
     if (peer_connections_.count(answer.from)) {
       peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
     }
-  });
+  }, token_);
   client_->iceCandidate.connect([this](const IceCandidate &ice, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(ice.to == *local_stage_device_id);
@@ -122,7 +129,7 @@ void ConnectionService::attachHandlers() {
     if (ice.iceCandidate && peer_connections_.count(ice.from)) {
       peer_connections_.at(ice.from)->addRemoteIceCandidate(*ice.iceCandidate);
     }
-  });
+  }, token_);
 }
 
 void ConnectionService::onStageChanged() {
@@ -146,7 +153,9 @@ void ConnectionService::onStageChanged() {
             }
             PLOGI << "Found existing native stage device " << item._id;
 #endif
+            PLOGD << "Request token";
             std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
+            PLOGD << "GOT token";
             if (item.active) {
               // Active
               if (!peer_connections_.count(item._id)) {
