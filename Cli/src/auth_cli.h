@@ -31,9 +31,9 @@ std::string authenticate_user() {
   do {
     auto credentials = sign_in();
     auto receivedToken = service->signInSync(credentials.first, credentials.second);
-    if (!receivedToken.empty()) {
-      AuthIO::writeToken(receivedToken);
-      return receivedToken;
+    if (receivedToken.has_value()) {
+      AuthIO::writeToken(*receivedToken);
+      return *receivedToken;
     }
   } while (true);
 }

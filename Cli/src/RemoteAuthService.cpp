@@ -36,14 +36,11 @@ void RemoteAuthService::stop() {
 void RemoteAuthService::init() {
   auto token = AuthIO::readToken();
   if (!token.empty()) {
-    auth_service_->verifyToken(token)
-        .then([&token, this](bool accepted) {
-          if (accepted) {
-            AuthIO::writeToken(token);
-            token_ = token;
-            onLogin(token);
-          }
-        });
+    if (auth_service_->verifyTokenSync(token)) {
+      AuthIO::writeToken(token);
+      token_ = token;
+      onLogin(token);
+    }
   }
 }
 
@@ -57,12 +54,12 @@ void RemoteAuthService::handlePost(const web::http::http_request &message) {
       if (json.has_field("email") && json.has_field("password")) {
         auto email = json["email"].as_string();
         auto password = json["password"].as_string();
-        auth_service_->signIn(email, password)
-            .then([this](const std::string &token) {
-              AuthIO::writeToken(token);
-              token_ = token;
-              onLogin(token);
-            });
+        auto token = auth_service_->signInSync(email, password);
+        if (token.has_value()) {
+          AuthIO::writeToken(*token);
+          token_ = token;
+          onLogin(*token);
+        }
       }
     } else if (path == "logout") {
       logout();

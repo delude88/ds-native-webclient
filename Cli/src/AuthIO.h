@@ -3,6 +3,7 @@
 //
 #pragma once
 #include <iostream>
+#include <fstream>
 
 class AuthIO {
  public:

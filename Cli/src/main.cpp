@@ -43,7 +43,7 @@ void sig_handler(int s) {
 
 int main(int, char *[]) {
   static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::info, &consoleAppender);
+  plog::init(plog::debug, &consoleAppender);
 
 #ifdef POSIX
   // What to do for WIN32 here?
