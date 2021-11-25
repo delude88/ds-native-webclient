@@ -112,12 +112,12 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
     if (audio_track.type == "native") {
       PLOGI << "Found an existing native audio_track";
 #endif
-      audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
-      audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
-      audio_tracks_[audio_track._id]->DisableNearFieldEffect();
-      audio_tracks_[audio_track._id]->EnableAnechoicProcess();
-      audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
-      setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
+    audio_tracks_[audio_track._id] = core_->CreateSingleSourceDSP();
+    audio_tracks_[audio_track._id]->SetSpatializationMode(Binaural::TSpatializationMode::HighQuality);
+    audio_tracks_[audio_track._id]->DisableNearFieldEffect();
+    audio_tracks_[audio_track._id]->EnableAnechoicProcess();
+    audio_tracks_[audio_track._id]->EnableDistanceAttenuationAnechoic();
+    setAudioTrackPosition(audio_track._id, calculatePosition(audio_track, *store));
 #ifdef USE_ONLY_NATIVE_DEVICES
     } else {
       PLOGW << "Ignoring existing but non-native audio track";
@@ -172,7 +172,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
         }
       }
     });
-    client_->stageJoined.connect([this](const ID_TYPE &stage_id, const ID_TYPE &,
+    client_->stageJoined.connect([this](const ID_TYPE &stage_id, const optional<ID_TYPE> &,
                                         const DigitalStage::Api::Store *store) {
       if (store->isReady()) {
         PLOGD << "stageJoined";
@@ -697,32 +697,32 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
   // Calculate coordinates
   double x = custom_stage_device_position ? custom_stage_device_position->x : stage_device.x;
   x += custom_stage_member_position ? custom_stage_member_position->x : stage_member->x;
-  if(group) {
+  if (group) {
     x += custom_group_position ? custom_group_position->x : group->x;
   }
   double y = custom_stage_device_position ? custom_stage_device_position->y : stage_device.y;
   y += custom_stage_member_position ? custom_stage_member_position->y : stage_member->y;
-  if(group) {
+  if (group) {
     y += custom_group_position ? custom_group_position->y : group->y;
   }
   double z = custom_stage_device_position ? custom_stage_device_position->z : stage_device.z;
   z += custom_stage_member_position ? custom_stage_member_position->z : stage_member->z;
-  if(group) {
+  if (group) {
     z += custom_group_position ? custom_group_position->z : group->z;
   }
   double rX = custom_stage_device_position ? custom_stage_device_position->rX : stage_device.rX;
   rX += custom_stage_member_position ? custom_stage_member_position->rX : stage_member->rX;
-  if(group) {
+  if (group) {
     rX += custom_group_position ? custom_group_position->rX : group->rX;
   }
   double rY = custom_stage_device_position ? custom_stage_device_position->rY : stage_device.rY;
   rY += custom_stage_member_position ? custom_stage_member_position->rY : stage_member->rY;
-  if(group) {
+  if (group) {
     rY += custom_group_position ? custom_group_position->rY : group->rY;
   }
   double rZ = custom_stage_device_position ? custom_stage_device_position->rZ : stage_device.rZ;
   rZ += custom_stage_member_position ? custom_stage_member_position->rZ : stage_member->rZ;
-  if(group) {
+  if (group) {
     rZ += custom_group_position ? custom_group_position->rZ : group->rZ;
   }
 

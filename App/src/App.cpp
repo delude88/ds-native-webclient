@@ -8,13 +8,13 @@
 #include "App.h"
 #include "KeyStore.h"
 #include <DigitalStage/Api/Client.h>
+#include <plog/Log.h>
 
 App::App()
     : login_dialog_(new LoginDialog()),
       device_id_(std::to_string(deviceid::get())),
       tray_icon_(new TrayIcon()),
-      api_client_(),
-      auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(U(AUTH_URL))) {
+      auth_service_(std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL)) {
   //QApplication::setQuitOnLastWindowClosed(false);
 
   connect(tray_icon_, SIGNAL(loginClicked()), login_dialog_, SLOT(show()));
@@ -24,7 +24,7 @@ App::App()
   connect(tray_icon_, SIGNAL(openSettingsClicked()), this, SLOT(openSettings()));
   // clang-format off
   connect(login_dialog_, SIGNAL(login(QString,QString)), SLOT(logIn(QString,QString)));
-// clang-format on
+  // clang-format on
 }
 
 void App::show() {
@@ -35,7 +35,7 @@ void App::show() {
     login_dialog_->setEmail(*email);
     token_ = tryAutoLogin(*email);
   }
-  if (!token_) {
+  if (!token_.has_value()) {
     // Show login menu and dialog
     tray_icon_->showLoginMenu();
     login_dialog_->show();
@@ -52,17 +52,9 @@ std::optional<QString> App::tryAutoLogin(const QString &email) {
   auto credentials = KeyStore::restore(email);
   if (credentials) {
     // Try to get token
-#ifdef _WIN32
-    auto token = auth_service_->signInSync(credentials->email.toStdWString(), credentials->password.toStdWString());
-#else
     auto token = auth_service_->signInSync(credentials->email.toStdString(), credentials->password.toStdString());
-#endif
-    if (!token.empty()) {
-#ifdef _WIN32
-      return QString::fromStdWString(token);
-#else
-      return QString::fromStdString(token);
-#endif
+    if (token.has_value()) {
+      return QString::fromStdString(*token);
     }
     if (!KeyStore::remove(email)) {
       PLOGE << "Could not reset credentials for " << email;
@@ -75,28 +67,19 @@ void App::logIn(const QString &email, const QString &password) {
   login_dialog_->setLoading(true);
   login_dialog_->resetError();
   try {
-#ifdef _WIN32
-    auto strEmail = email.toStdWString();
-    auto stdPassword = email.toStdWString();
-#else
     auto strEmail = email.toStdString();
     auto stdPassword = email.toStdString();
-#endif
-    auth_service_->signIn(strEmail, stdPassword)
-        .then([=](const utility::string_t &token) {
-#ifdef _WIN32
-          token_ = QString::fromStdWString(token);
-#else
-          token_ = QString::fromStdString(token);
-#endif
-          KeyStore::storeEmail(email);
-          KeyStore::store({email, password});
-          // Show status menu, hide login and start
-          tray_icon_->showStatusMenu();
-          login_dialog_->setLoading(false);
-          login_dialog_->hide();
-          start();
-        });
+    auto token = auth_service_->signInSync(strEmail, stdPassword);
+    if (token.has_value()) {
+      token_ = QString::fromStdString(*token);
+    }
+    KeyStore::storeEmail(email);
+    KeyStore::store({email, password});
+    // Show status menu, hide login and start
+    tray_icon_->showStatusMenu();
+    login_dialog_->setLoading(false);
+    login_dialog_->hide();
+    start();
   } catch (std::exception &ex) {
     login_dialog_->setLoading(false);
     login_dialog_->setError(ex.what());
@@ -107,12 +90,8 @@ void App::logOut() {
   stop();
   tray_icon_->showLoginMenu();
   login_dialog_->setPassword("");
-  if (token_) {
-#ifdef _WIN32
-    auto token = token_->toStdWString();
-#else
+  if (token_.has_value()) {
     auto token = token_->toStdString();
-#endif
     auth_service_->signOutSync(token);
     token_ = std::nullopt;
   }
@@ -120,11 +99,12 @@ void App::logOut() {
 }
 
 void App::start() {
-  if (!token_) {
+  PLOGI << "Starting";
+  if (!token_.has_value()) {
     throw std::logic_error("No token available");
   }
 
-  api_client_ = std::make_unique<DigitalStage::Api::Client>(API_URL);
+  api_client_ = std::make_shared<DigitalStage::Api::Client>(API_URL);
   client_ = std::make_unique<Client>(api_client_);// Describe this device
   nlohmann::json initialDeviceInformation;
   // - always use a UUID when you want Digital Stage to remember this device and its settings
@@ -143,21 +123,21 @@ void App::start() {
   // And finally connect with the token and device description
   api_client_->disconnected.connect([=](bool expected) {
     if (!expected) {
+      PLOGE << "Disconnected unexpected - calling stop()";
       stop();
     }
   });
-#ifdef _WIN32
-  auto token = token_->toStdWString();
-#else
   auto token = token_->toStdString();
-#endif
+  PLOGE << "Connecting ...";
   api_client_->connect(token, initialDeviceInformation);
 }
 void App::stop() {
+  PLOGE << "Stopping";
   client_ = nullptr;
   api_client_ = nullptr;
 }
 void App::restart() {
+  PLOGE << "Restarting";
   stop();
   start();
 }

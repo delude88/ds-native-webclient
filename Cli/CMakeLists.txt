@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(cli LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
@@ -38,12 +38,6 @@ set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to sett
 #
 #################################################
 # Casablanca aka cpprestsdk
-if (NOT TARGET cpprestsdk)
-    find_package(cpprestsdk REQUIRED)
-endif (NOT TARGET cpprestsdk)
-if (NOT TARGET OpenSSL)
-    find_package(OpenSSL REQUIRED)
-endif (NOT TARGET OpenSSL)
 if (NOT TARGET DigitalStageAuth)
     find_package(DigitalStage REQUIRED)
 endif (NOT TARGET DigitalStageAuth)
@@ -85,8 +79,6 @@ target_link_libraries(${PROJECT_NAME}
         core
         DeviceId::DeviceId
         udp-discovery
-        cpprestsdk::cpprest
-        OpenSSL::Crypto
         DigitalStage::Auth
         )
 target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
@@ -146,4 +138,3 @@ else ()
 endif ()
 
 include(CPack)
-

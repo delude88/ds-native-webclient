@@ -4,6 +4,7 @@
 
 #include "ConnectionService.h"
 #include "../utils/conversion.h"
+#include <optional>
 
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)), configuration_(rtc::Configuration()) {
@@ -32,7 +33,7 @@ void ConnectionService::attachHandlers() {
     }
     onStageChanged();
   });
-  client_->stageJoined.connect([this](const ID_TYPE &, const ID_TYPE &,
+  client_->stageJoined.connect([this](const ID_TYPE &, const std::optional<ID_TYPE>&,
                                       const DigitalStage::Api::Store *store) {
     onStageChanged();
   });
@@ -207,7 +208,9 @@ void ConnectionService::closePeerConnection(const std::string &stage_device_id) 
   peer_connections_.erase(stage_device_id);
   assert(!peer_connections_.count(stage_device_id));
 }
-void ConnectionService::broadcastBytes(const std::string &audio_track_id, const std::byte *data, const std::size_t size) {
+void ConnectionService::broadcastBytes(const std::string &audio_track_id,
+                                       const std::byte *data,
+                                       const std::size_t size) {
   std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_);
   for (const auto &item: peer_connections_) {
     if (item.second) {
