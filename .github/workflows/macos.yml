@@ -23,7 +23,7 @@ jobs:
           version: '6.2.1'
       - name: Install depedencies using brew
         run: |
-          brew install nlohmann-json cpprestsdk openssl eigen cereal
+          brew install cpprestsdk openssl eigen cereal
       - name: Configure CMake
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"

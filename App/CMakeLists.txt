@@ -217,7 +217,7 @@ set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
 if (UNIX)
     if (APPLE)
         # macOS
-        set(CPACK_COMPONENTS_ALL RUNTIME)
+        set(CPACK_COMPONENTS_ALL Runtime)
         set(CPACK_DMG_VOLUME_NAME "Install Connector")
         set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
         set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
@@ -237,12 +237,14 @@ else ()
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/"
             COMMAND "${CMAKE_COMMAND}" -E
             env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
             --verbose 0
             --no-compiler-runtime
             --no-quick-import
-            --dir "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/" $<TARGET_FILE:${PROJECT_NAME}>
+            #--dir "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/" $<TARGET_FILE:${PROJECT_NAME}>
+            --dir "${CMAKE_CURRENT_BINARY_DIR}" $<TARGET_FILE:${PROJECT_NAME}>
             COMMENT "Deploying Qt..."
             )
     install(
