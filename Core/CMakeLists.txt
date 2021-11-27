@@ -151,7 +151,7 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 #
 #################################################
 target_link_libraries(${PROJECT_NAME}
-        PRIVATE
+        PUBLIC
         DigitalStage::ApiStatic
         cpprestsdk::cpprest
         OpenSSL::Crypto

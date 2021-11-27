@@ -27,7 +27,7 @@ class ConnectionService {
   void broadcastBytes(const std::string &audio_track_id, const std::byte *data, size_t size);
   void broadcastFloats(const std::string &audio_track_id, const float *data, size_t size);
 
-  Pal::sigslot::signal<std::string, std::vector<std::byte>> onData;
+  sigslot::signal<std::string, std::vector<std::byte>> onData;
  private:
   void attachHandlers();
   void onStageChanged();

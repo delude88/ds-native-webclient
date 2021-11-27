@@ -17,8 +17,8 @@ class RemoteAuthService {
   void start();
   void stop();
 
-  Pal::sigslot::signal<std::string> onLogin;
-  Pal::sigslot::signal<> onLogout;
+  sigslot::signal<std::string> onLogin;
+  sigslot::signal<> onLogout;
  private:
   void init();
 

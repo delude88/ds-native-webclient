@@ -16,17 +16,17 @@ class AudioIO {
   explicit AudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
   virtual ~AudioIO();
 
-  Pal::sigslot::signal<
+  sigslot::signal<
       /* audio_track_id */ std::string,
       /* input */ const float *,
       /* frame_count */ std::size_t>
       onCapture;
-  Pal::sigslot::signal<
+  sigslot::signal<
       /* output */ float **,
                    std::size_t /* num_output_channels */,
       /* frame_count */ std::size_t>
       onPlayback;
-  Pal::sigslot::signal<
+  sigslot::signal<
       /* audio_tracks */ const std::unordered_map<std::string /* audio_track_id */, float *> &,
       /* output */ float **,
       /* num_output_channels */ std::size_t,

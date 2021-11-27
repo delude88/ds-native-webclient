@@ -24,7 +24,7 @@ class AudioMixer {
   T applyGain(const std::string &audio_track_id, T data);
   std::optional<VolumeInfo<T>> getGain(const std::string &audio_track_id) const;
 
-  Pal::sigslot::signal<std::string, std::pair<T, bool>> onGainChanged;
+  sigslot::signal<std::string, std::pair<T, bool>> onGainChanged;
  private:
   void attachHandlers();
   std::pair<T, bool> calculateVolume(const DigitalStage::Types::AudioTrack &audio_track,
