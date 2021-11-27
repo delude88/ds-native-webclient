@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+# REQUIREMENTS
+if (USE_IX_WEBSOCKET)
+    find_package(ixwebsocket REQUIRED)
+else ()
+    find_package(cpprestsdk REQUIRED)
+endif ()
+
+set_and_check(DIGITALSTAGE_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
+
+check_required_components("@PROJECT_NAME@")

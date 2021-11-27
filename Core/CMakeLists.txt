@@ -151,13 +151,24 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 #
 #################################################
 target_link_libraries(${PROJECT_NAME}
-        PUBLIC
+        PRIVATE
         DigitalStage::ApiStatic
         cpprestsdk::cpprest
         OpenSSL::Crypto
-        Threads::Threads
         3dtiAudioToolkitStatic
+        plog
+        Threads::Threads
         LibDataChannel::LibDataChannelStatic
         ${PROJECT_NAME}-resources
-        plog
         )
+
+
+#################################################
+#
+#   Installation
+#
+#################################################
+#export(
+#        TARGETS ${PROJECT_NAME}
+#        NAMESPACE ${PROJECT_NAME}::
+#        FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")

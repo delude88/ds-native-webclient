@@ -86,6 +86,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME "ds-client")
 
 
 #################################################

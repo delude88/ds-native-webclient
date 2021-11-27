@@ -140,6 +140,7 @@ endif (APPLE)
 #
 #################################################
 set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME "Digital Stage Connector"
         BUNDLE True
         MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
         MACOSX_BUNDLE_BUNDLE_NAME "Digital Stage Connector"
