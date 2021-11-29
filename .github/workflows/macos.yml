@@ -21,9 +21,11 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           version: '6.2.1'
-      - name: Install depedencies using brew
+      - name: Install depedencies using conan
         run: |
-          brew install cpprestsdk openssl eigen cereal
+          pip3 install wheel setuptools
+          pip3 install conan
+          conan install -if build --build missing .
       - name: Configure CMake
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
