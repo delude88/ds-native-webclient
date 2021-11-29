@@ -626,6 +626,5 @@ build-macos
 /*.tar.gz
 /*.app
 /*.zip
+/*.dmg
 aqtinstall.log
-
-*.dmg
