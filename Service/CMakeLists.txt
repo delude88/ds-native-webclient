@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(cli LANGUAGES CXX)
+project(DigitalStageConnectorService LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
@@ -37,7 +37,9 @@ set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to sett
 #   Dependencies
 #
 #################################################
-# Casablanca aka cpprestsdk
+if (NOT TARGET DigitalStageConnectorCore)
+    find_package(DigitalStageConnectorCore REQUIRED)
+endif (NOT TARGET DigitalStageConnectorCore)
 if (NOT TARGET DigitalStageAuth)
     find_package(DigitalStage REQUIRED)
 endif (NOT TARGET DigitalStageAuth)
@@ -76,7 +78,7 @@ target_include_directories(${PROJECT_NAME}
         )
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        core
+        DigitalStageConnectorCore
         DeviceId::DeviceId
         udp-discovery
         DigitalStage::Auth
@@ -87,7 +89,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_NAME "ds-client")
+        OUTPUT_NAME "ds-service")
 
 
 #################################################
@@ -111,13 +113,14 @@ install(
 #   Pack
 #
 #################################################
-set(CPACK_PACKAGE_NAME "Digital Stage Connector")
+set(CPACK_OUTPUT_CONFIG_FILE  "${CMAKE_BINARY_DIR}/CPackConfigService.cmake")
+set(CPACK_PACKAGE_NAME "Digital Stage Connector Service")
 set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
 set(CPACK_PACKAGE_DESCRIPTION "Background service to connect with Digital Stage via P2P")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Background service to connect with Digital Stage via P2P")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
 set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector Service")
 set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)

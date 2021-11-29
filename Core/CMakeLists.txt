@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(core VERSION 0.1 LANGUAGES CXX)
+project(DigitalStageConnectorCore VERSION 0.1 LANGUAGES CXX)
 
 
 #################################################
@@ -168,7 +168,7 @@ target_link_libraries(${PROJECT_NAME}
 #   Installation
 #
 #################################################
-#export(
-#        TARGETS ${PROJECT_NAME}
-#        NAMESPACE ${PROJECT_NAME}::
-#        FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")
+export(
+        TARGETS ${PROJECT_NAME} 3dtiAudioToolkitStatic datachannel-static ${PROJECT_NAME}-resources usrsctp juice-static cmrc-base
+        NAMESPACE ${PROJECT_NAME}::
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")

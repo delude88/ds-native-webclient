@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(app LANGUAGES CXX)
+project(DigitalStageConnectorApp LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
@@ -9,15 +9,6 @@ if (NOT WIN32)
 endif ()
 set(CMAKE_PROJECT_VERSION "0.0.1")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/../cmake/modules)
-include(TestBigEndian)
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-if (IS_BIG_ENDIAN)
-    add_compile_definitions(BIG_ENDIAN)
-    message(STATUS "BIG_ENDIAN")
-else ()
-    add_compile_definitions(LITTLE_ENDIAN)
-    message(STATUS "LITTLE_ENDIAN")
-endif ()
 
 
 #################################################
@@ -38,6 +29,9 @@ set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to sett
 #
 #################################################
 # DeviceId - Get unique device ID
+if (NOT TARGET DigitalStageConnectorCore)
+    find_package(DigitalStageConnectorCore REQUIRED)
+endif (NOT TARGET DigitalStageConnectorCore)
 if (NOT TARGET DeviceId)
     find_package(DeviceId REQUIRED)
 endif (NOT TARGET DeviceId)
@@ -53,10 +47,7 @@ if (NOT TARGET plog)
     find_package(plog REQUIRED)
 endif ()
 if (NOT TARGET Qt6 AND NOT TARGET Qt5)
-    find_package(Qt6 COMPONENTS Core Widgets LinguistTools)
-    if (NOT Qt6_FOUND)
-        find_package(Qt5 5.15 COMPONENTS Core Widgets LinguistTools REQUIRED)
-    endif (NOT Qt6_FOUND)
+    find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
 endif (NOT TARGET Qt6 AND NOT TARGET Qt5)
 # Keychain
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
@@ -67,32 +58,39 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 #   Configure artifact
 #
 #################################################
-add_executable(${PROJECT_NAME} MACOSX_BUNDLE)
+set(target ${PROJECT_NAME})
+add_executable(${target} MACOSX_BUNDLE)
 qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
 set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
         PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
 if (QT_VERSION GREATER_EQUAL 6)
-    qt_add_translations(${PROJECT_NAME} TS_FILES
+    qt_add_translations(${target} TS_FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
             ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
+    set_target_properties(${target} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 endif (QT_VERSION GREATER_EQUAL 6)
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns)
     set_source_files_properties(${APP_ICON} PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
 endif (APPLE)
-set_property(TARGET ${PROJECT_NAME} PROPERTY AUTOMOC ON)
-set_property(TARGET ${PROJECT_NAME} PROPERTY AUTORCC ON)
-set_property(TARGET ${PROJECT_NAME} PROPERTY AUTOUIC ON)
-target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
-target_sources(${PROJECT_NAME}
+set_target_properties(${target} PROPERTIES
+        AUTOMOC ON
+        AUTORCC ON
+        AUTOUIC ON
+        AUTORCC_OPTIONS "--compress;9"
+        )
+target_compile_definitions(${target}
+        PRIVATE
+        SIGNUP_URL="${SIGNUP_URL}"
+        AUTH_URL="${AUTH_URL}"
+        API_URL="${API_URL}"
+        STAGE_URL="${STAGE_URL}"
+        SETTINGS_URL="${SETTINGS_URL}"
+        )
+target_sources(${target}
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/App.h
@@ -107,10 +105,10 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         ${APP_ICON}
         ${QM_FILES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${Qt_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}
+target_include_directories(${target} PRIVATE ${Qt_INCLUDE_DIRS})
+target_link_libraries(${target}
         PRIVATE
-        core
+        DigitalStageConnectorCore
         DeviceId::DeviceId
         Qt::Widgets
         keychain
@@ -120,13 +118,13 @@ if (APPLE)
     enable_language(OBJC)
     find_library(CORE_FOUNDATION Foundation)
     find_library(AV_FOUNDATION AVFoundation)
-    target_sources(${PROJECT_NAME}
+    target_sources(${target}
             PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.mm
             ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/macos_internal.h
             )
-    target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${target}
             PRIVATE
             ${CORE_FOUNDATION}
             ${AV_FOUNDATION}
@@ -136,131 +134,170 @@ endif (APPLE)
 
 ################################################
 #
-#   Bundling
+#   Installation 'n' Bundling
 #
 #################################################
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_NAME "Digital Stage Connector"
-        BUNDLE True
-        MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
-        MACOSX_BUNDLE_BUNDLE_NAME "Digital Stage Connector"
-        MACOSX_BUNDLE_COPYRIGHT MIT
-        MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
-        MACOSX_BUNDLE_ICON_FILE appicon.icns
-        )
-
-
-#################################################
-#
-#   Installation
-#
-#################################################
-include(GNUInstallDirs)
-install(
-        TARGETS ${PROJECT_NAME}
-        BUNDLE DESTINATION . COMPONENT Runtime
-        RUNTIME DESTINATION bin COMPONENT Runtime
-        LIBRARY DESTINATION lib COMPONENT Library
-        ARCHIVE DESTINATION lib COMPONENT Library
-        RESOURCE DESTINATION share COMPONENT Resource
-)
-if (CMAKE_BUILD_TYPE MATCHES Release)
-    if (APPLE)
-        find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
-        # First use macdeployqt to bundle the qt libs, but do NOT sign yet
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/../.."
-                -always-overwrite
-                COMMENT "Running macdeployqt..."
-                )
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND
-                ${CMAKE_INSTALL_NAME_TOOL}
-                -change
-                "@rpath/libkeychain.dylib"
-                "@executable_path/../Frameworks/libkeychain.dylib"
-                "$<TARGET_FILE:${PROJECT_NAME}>"
-                COMMENT "Fixing libkeychain rpath"
-                VERBATIM
-                )
-        install(CODE "
-            include(BundleUtilities)
-            #message(STATUS \"Fixing bundle\")
-            #fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/Digital Stage Connector.app\" \"\" \"$<TARGET_FILE_DIR:${PROJECT_NAME}>/../plugins\")
-            message(STATUS \"Signing bundle\")
-            execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/Digital Stage Connector.app\")"
-                DESTINATION .
-                COMPONENT Runtime)
-    endif (APPLE)
-endif ()
-
-
-#################################################
-#
-#   Pack
-#
-#################################################
-set(CPACK_PACKAGE_NAME "Digital Stage Connector")
+set(BUNDLE_NAME "Digital Stage Connector")
+set(INSTALLER_NAME "Install Connector")
+set_target_properties(${target} PROPERTIES OUTPUT_NAME ${BUNDLE_NAME})
+set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfigApp.cmake")
+set(OUTPUT_NAME ${BUNDLE_NAME})
 set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
-set(CPACK_PACKAGE_DESCRIPTION "Background service to connect with Digital Stage via P2P")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Background service to connect with Digital Stage via P2P")
-set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
-set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector")
-set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
-
-if (UNIX)
-    if (APPLE)
-        # macOS
-        set(CPACK_COMPONENTS_ALL Runtime)
-        set(CPACK_DMG_VOLUME_NAME "Install Connector")
-        set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
-        set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
-        set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-        set(CPACK_SOURCE_STRIP_FILES "")
-        set(CPACK_GENERATOR "DragNDrop")
-    else ()
-        # Linux
-        set(CPACK_COMPONENTS_ALL RUNTIME LIBRARY RESOURCE)
-        set(CPACK_GENERATOR "TGZ")
-    endif ()
-else ()
+set(CPACK_PACKAGE_NAME ${INSTALLER_NAME})
+set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@googlemail.com")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_PACKAGE_INSTALL_DIRECTORY ${BUNDLE_NAME})
+set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}")
+set(CPACK_PACKAGE_EXECUTABLES "${PROJECT_NAME}" ${BUNDLE_NAME})
+set(CPACK_CREATE_DESKTOP_LINKS "${BUNDLE_NAME}")
+if (WIN32)
     # Windows
-    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
-    set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
-    include(InstallRequiredSystemLibraries)
+    install(TARGETS ${target} RUNTIME DESTINATION bin)
+    set_target_properties(${target}
+            PROPERTIES
+            CMAKE_WIN32_EXECUTABLE ON)
+    # Bundle Library Files
+    if (CMAKE_BUILD_TYPE_UPPER STREQUAL "DEBUG")
+        set(WINDEPLOYQT_ARGS --debug)
+    else ()
+        set(WINDEPLOYQT_ARGS --release)
+    endif ()
+
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/"
+    add_custom_command(TARGET ${target} POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/winqt/"
             COMMAND "${CMAKE_COMMAND}" -E
             env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
+            ${WINDEPLOYQT_ARGS}
             --verbose 0
             --no-compiler-runtime
-            --no-quick-import
-            #--dir "${CMAKE_CURRENT_BINARY_DIR}/qtDeploy/" $<TARGET_FILE:${PROJECT_NAME}>
-            --dir "${CMAKE_CURRENT_BINARY_DIR}" $<TARGET_FILE:${PROJECT_NAME}>
+            --no-angle
+            --no-opengl-sw
+            --dir "${CMAKE_CURRENT_BINARY_DIR}/winqt/"
+            $<TARGET_FILE:${target}>
             COMMENT "Deploying Qt..."
             )
-    install(
-            DIRECTORY "${CMAKE_BINARY_DIR}/qtDeploy/"
-            DESTINATION .
-    )
-    set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\Digital Stage Connector.exe")
-    set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} Digital Stage Connector")
-    set(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.digital-stage.org")
-    set(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.digital-stage.org")
-    set(CPACK_NSIS_CONTACT "tobias.hegemann@digital-stage.com")
-    set(CPACK_NSIS_MODIFY_PATH ON)
-    set(CPACK_GENERATOR "ZIP;NSIS")
-    set(CPACK_GENERATOR "NSIS")
-endif (UNIX)
-
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/winqt/" DESTINATION bin)
+    set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+    include(InstallRequiredSystemLibraries)
+elseif (APPLE)
+    # Apple
+    set(CMAKE_MACOSX_BUNDLE ON)
+    set(CMAKE_MACOSX_RPATH ON)
+    install(TARGETS ${target} BUNDLE DESTINATION .
+            RUNTIME DESTINATION .)
+    set_target_properties(${target}
+            PROPERTIES
+            CMAKE_MACOSX_BUNDLE ON
+            BUNDLE True
+            MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
+            MACOSX_BUNDLE_BUNDLE_NAME ${INSTALLER_NAME}
+            MACOSX_BUNDLE_COPYRIGHT MIT
+            MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
+            MACOSX_BUNDLE_ICON_FILE appicon.icns)
+    find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
+    # First use macdeployqt to bundle the qt libs, but do NOT sign yet
+    add_custom_command(TARGET ${target} POST_BUILD
+            COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+            "$<TARGET_FILE_DIR:${target}>/../.."
+            -always-overwrite
+            COMMENT "Running macdeployqt..."
+            )
+    if (CODESIGN_CERTIFICATE_NAME)
+        install(CODE "
+            message(STATUS \"Signing bundle\")
+            execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${}.app\")"
+                DESTINATION .)
+    endif (CODESIGN_CERTIFICATE_NAME)
+    set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
+    set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
+    set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
+    set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
+    set(CPACK_GENERATOR "DragNDrop")
+elseif (UNIX)
+    # Linux
+    install(TARGETS ${target} RUNTIME DESTINATION bin)
+    # Debian
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${PROJECT_URL}")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+    find_program(LINUXDEPLOY_EXECUTABLE linuxdeploy linuxdeploy-x86_64.AppImage HINTS "${_qt_bin_dir}")
+    if (LINUXDEPLOY_EXECUTABLE)
+        if (CMAKE_VERSION VERSION_LESS 3.13)
+            linuxdeployqt("${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/Linux/AppImage" "share/applications/example.desktop")
+        else ()
+            set(CPACK_GENERATOR "External;${CPACK_GENERATOR}")
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CPackLinuxDeployQt.cmake.in "${CMAKE_BINARY_DIR}/CPackExternal.cmake")
+            set(CPACK_EXTERNAL_PACKAGE_SCRIPT "${CMAKE_BINARY_DIR}/CPackExternal.cmake")
+        endif ()
+    endif ()
+endif ()
+if (CMAKE_BUILD_TYPE_UPPER MATCHES "^(DEBUG|RELWITHDEBINFO)$")
+    set(CPACK_STRIP_FILES FALSE)
+else ()
+    set(CPACK_STRIP_FILES TRUE)
+endif ()
 include(CPack)
 
 
+#################################################
+#
+#   Additional routines
+#
+#################################################
+option(CMake_RUN_CLANG_TIDY "Run clang-tidy with the compiler." OFF)
+if (CMake_RUN_CLANG_TIDY)
+    if (CMake_SOURCE_DIR STREQUAL CMake_BINARY_DIR)
+        message(FATAL_ERROR "CMake_RUN_CLANG_TIDY requires an out-of-source build!")
+    endif ()
+    find_program(CLANG_TIDY_COMMAND NAMES clang-tidy)
+    if (NOT CLANG_TIDY_COMMAND)
+        message(WARNING "CMake_RUN_CLANG_TIDY is ON but clang-tidy is not found!")
+        set(CMAKE_CXX_CLANG_TIDY "" CACHE STRING "" FORCE)
+    else ()
+        set(CLANG_TIDY_CHECKS "-*,modernize-*")
+        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};-checks=${CLANG_TIDY_CHECKS};-header-filter='${CMAKE_SOURCE_DIR}/src/*'")
+    endif ()
+
+    # Create a preprocessor definition that depends on .clang-tidy content so
+    # the compile command will change when .clang-tidy changes.  This ensures
+    # that a subsequent build re-runs clang-tidy on all sources even if they
+    # do not otherwise need to be recompiled.  Nothing actually uses this
+    # definition.  We add it to targets on which we run clang-tidy just to
+    # get the build dependency on the .clang-tidy file.
+    file(SHA1 ${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy clang_tidy_sha1)
+    set(CLANG_TIDY_DEFINITIONS "CLANG_TIDY_SHA1=${clang_tidy_sha1}")
+    unset(clang_tidy_sha1)
+
+endif ()
+
+option(CMake_RUN_IWYU "Run include-what-you-use with the compiler." OFF)
+if (CMake_RUN_IWYU)
+    find_program(IWYU_COMMAND NAMES include-what-you-use iwyu)
+    if (NOT IWYU_COMMAND)
+        message(WARNING "CMake_RUN_IWYU is ON but include-what-you-use is not found!")
+    else ()
+        set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE
+                "${IWYU_COMMAND};-Xiwyu;--mapping_file=${CMake_SOURCE_DIR}/Utilities/IWYU/mapping.imp;-w")
+        list(APPEND CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${CMake_IWYU_OPTIONS})
+    endif ()
+endif ()
+
+# Clazy is a Qt oriented code checker based on clang framework. Krazy's little brother.
+set(CMake_RUN_CLAZY OFF CACHE BOOL "Add clazy check for builds")
+if (ENABLE_CLAZY)
+    find_program(CLAZY_EXECUTABLE NAMES clazy PATHS /usr/local/llvm/bin /usr/local/bin /opt/clazy/bin)
+    if (CLAZY_EXECUTABLE)
+        message(STATUS "clazy found: ${CLAZY_EXECUTABLE}")
+    else ()
+        message(AUTHOR_WARNING "clazy not found.")
+    endif ()
+endif ()

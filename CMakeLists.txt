@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(clients VERSION 0.0.2 LANGUAGES CXX)
+project(DigitalStageConnector VERSION 0.0.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
@@ -16,9 +16,9 @@ if (APPLE)
 endif (APPLE)
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake OPTIONAL)
-if(COMMAND conan_basic_setup)
+if (COMMAND conan_basic_setup)
     conan_basic_setup()
-endif()
+endif ()
 
 
 #################################################
@@ -42,6 +42,7 @@ option(BUILD_SERVICE "Build headless service" ON)
 #
 #################################################
 set(NO_WEBSOCKET ON CACHE BOOL "" FORCE)
+set(NO_MEDIA ON CACHE BOOL "" FORCE)
 set(NO_TESTS ON CACHE BOOL "" FORCE)
 set(NO_EXAMPLES ON CACHE BOOL "" FORCE)
 if (UNIX AND NOT APPLE)
@@ -56,7 +57,7 @@ set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
 
 add_subdirectory(Core EXCLUDE_FROM_ALL)
 if (BUILD_SERVICE)
-    add_subdirectory(Cli)
+    add_subdirectory(Service)
 endif (BUILD_SERVICE)
 if (BUILD_APP)
     add_subdirectory(App)
