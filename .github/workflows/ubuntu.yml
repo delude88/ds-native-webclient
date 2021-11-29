@@ -36,11 +36,11 @@ jobs:
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle with CPack
-        run: cpack --config build/CPackConfigApp.cmake
+        run: cpack --config build/CPackConfigApp.cmake -B build
       - name: Publish archive
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "*.tar.gz"
+          artifacts: "build/*.tar.gz"
           bodyFile: "HOWTO.md"
           commit: "main"
           tag: "Nightly"
