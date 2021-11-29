@@ -239,6 +239,16 @@ elseif (UNIX)
         endif ()
     endif ()
 endif ()
+# Icons
+set(icon.path icons/hicolor/64x64/apps)
+set(icon.files ${CMAKE_CURRENT_LIST_DIR}}/assets/icon-64x64.png)
+set(iconsvg.path icons/hicolor/scalable/apps)
+set(iconsvg.files ${CMAKE_CURRENT_LIST_DIR}}/assets/icon.svg)
+foreach (items IN ITEMS icon iconsvg)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${${items}.files}
+            DESTINATION share/${${items}.path}
+            PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+endforeach ()
 if (CMAKE_BUILD_TYPE_UPPER MATCHES "^(DEBUG|RELWITHDEBINFO)$")
     set(CPACK_STRIP_FILES FALSE)
 else ()
