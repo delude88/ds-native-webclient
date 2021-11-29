@@ -7,4 +7,4 @@ conan install -if build --build missing .
 set PATH=%PATH%;%cd%\Qt\6.2.1\msvc2019_64\lib\cmake
 cmake -S . -B build -DBUILD_SERVICE=OFF -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release --parallel
-cpack --config build/CPackConfig.cmake -B build
+cpack --config build/CPackConfigApp.cmake -B build

@@ -145,6 +145,7 @@ set(OUTPUT_NAME ${BUNDLE_NAME})
 set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
 set(CPACK_PACKAGE_NAME ${INSTALLER_NAME})
 set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@googlemail.com")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/delude88")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
@@ -153,8 +154,8 @@ set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_PACKAGE_INSTALL_DIRECTORY ${BUNDLE_NAME})
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}")
-set(CPACK_PACKAGE_EXECUTABLES "${PROJECT_NAME}" ${BUNDLE_NAME})
-set(CPACK_CREATE_DESKTOP_LINKS "${BUNDLE_NAME}")
+set(CPACK_PACKAGE_EXECUTABLES "${OUTPUT_NAME}" "${OUTPUT_NAME}")
+set(CPACK_CREATE_DESKTOP_LINKS "${OUTPUT_NAME}")
 if (WIN32)
     # Windows
     install(TARGETS ${target} RUNTIME DESTINATION bin)
@@ -187,7 +188,7 @@ if (WIN32)
 elseif (APPLE)
     # Apple
     set(CMAKE_MACOSX_BUNDLE ON)
-    set(CMAKE_MACOSX_RPATH ON)
+    #set(CMAKE_MACOSX_RPATH ON)
     install(TARGETS ${target} BUNDLE DESTINATION .
             RUNTIME DESTINATION .)
     set_target_properties(${target}
@@ -195,7 +196,7 @@ elseif (APPLE)
             CMAKE_MACOSX_BUNDLE ON
             BUNDLE True
             MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
-            MACOSX_BUNDLE_BUNDLE_NAME ${INSTALLER_NAME}
+            MACOSX_BUNDLE_BUNDLE_NAME ${BUNDLE_NAME}
             MACOSX_BUNDLE_COPYRIGHT MIT
             MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
@@ -207,15 +208,19 @@ elseif (APPLE)
             COMMAND "${MACDEPLOYQT_EXECUTABLE}"
             "$<TARGET_FILE_DIR:${target}>/../.."
             -always-overwrite
-            COMMENT "Running macdeployqt..."
+            -verbose=2
+            -sign-for-notarization=${CODESIGN_CERTIFICATE_NAME}
+            COMMENT "Running macdeployqt.."
+            VERBATIM
             )
-    if (CODESIGN_CERTIFICATE_NAME)
-        install(CODE "
-            message(STATUS \"Signing bundle\")
-            execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${}.app\")"
-                DESTINATION .)
-        set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-    endif (CODESIGN_CERTIFICATE_NAME)
+    include(InstallRequiredSystemLibraries)
+    #if (CODESIGN_CERTIFICATE_NAME)
+        #install(CODE "
+        #    message(STATUS \"Signing bundle\")
+        #    execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}.app\")"
+        #        DESTINATION .)
+        #set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
+    #endif (CODESIGN_CERTIFICATE_NAME)
     set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
     set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
@@ -241,9 +246,9 @@ elseif (UNIX)
 endif ()
 # Icons
 set(icon.path icons/hicolor/64x64/apps)
-set(icon.files ${CMAKE_CURRENT_LIST_DIR}}/assets/icon-64x64.png)
+set(icon.files assets/icon-64x64.png)
 set(iconsvg.path icons/hicolor/scalable/apps)
-set(iconsvg.files ${CMAKE_CURRENT_LIST_DIR}}/assets/icon.svg)
+set(iconsvg.files assets/logo.svg)
 foreach (items IN ITEMS icon iconsvg)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${${items}.files}
             DESTINATION share/${${items}.path}
