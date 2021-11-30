@@ -58,7 +58,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 #
 #################################################
 set(target ${PROJECT_NAME})
-add_executable(${target} MACOSX_BUNDLE)
+add_executable(${target})
 qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
@@ -145,7 +145,7 @@ set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
 set(CPACK_PACKAGE_NAME ${INSTALLER_NAME})
 set(CPACK_PACKAGE_FILE_NAME ${INSTALLER_NAME})
 set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@googlemail.com")
-set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/delude88")
+set(CPACK_PACKAGE_HOMEPAGE_URL ${PROJECT_HOMEPAGE_URL})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
@@ -156,9 +156,13 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY ${BUNDLE_NAME})
 set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CPACK_PACKAGE_EXECUTABLES "${OUTPUT_NAME}" "${OUTPUT_NAME}")
 set(CPACK_CREATE_DESKTOP_LINKS "${OUTPUT_NAME}")
+
+
 if (WIN32)
     # Windows
-    install(TARGETS ${target} RUNTIME DESTINATION bin)
+    install(TARGETS ${target}
+            RUNTIME DESTINATION bin COMPONENT App
+            )
     set_target_properties(${target}
             PROPERTIES
             CMAKE_WIN32_EXECUTABLE ON)
@@ -187,14 +191,16 @@ if (WIN32)
     include(InstallRequiredSystemLibraries)
 elseif (APPLE)
     # Apple
+    install(TARGETS ${target}
+            BUNDLE DESTINATION . COMPONENT App
+            RUNTIME DESTINATION . COMPONENT App
+            )
     set(CMAKE_MACOSX_BUNDLE ON)
     #set(CMAKE_MACOSX_RPATH ON)
-    install(TARGETS ${target} BUNDLE DESTINATION .
-            RUNTIME DESTINATION .)
     set_target_properties(${target}
             PROPERTIES
             CMAKE_MACOSX_BUNDLE ON
-            BUNDLE True
+            MACOSX_BUNDLE True
             MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
             MACOSX_BUNDLE_BUNDLE_NAME ${BUNDLE_NAME}
             MACOSX_BUNDLE_COPYRIGHT MIT
@@ -231,11 +237,12 @@ elseif (APPLE)
     set(CPACK_GENERATOR "DragNDrop")
 elseif (UNIX)
     # Linux
-    install(TARGETS ${target} RUNTIME DESTINATION bin)
-    # Debian
+    install(TARGETS ${target}
+            RUNTIME DESTINATION bin COMPONENT App
+            )
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
     set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
-    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${PROJECT_URL}")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${PROJECT_HOMEPAGE_URL}")
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
     find_program(LINUXDEPLOY_EXECUTABLE linuxdeploy linuxdeploy-x86_64.AppImage HINTS "${_qt_bin_dir}")
     if (LINUXDEPLOY_EXECUTABLE)
@@ -263,6 +270,8 @@ if (CMAKE_BUILD_TYPE_UPPER MATCHES "^(DEBUG|RELWITHDEBINFO)$")
 else ()
     set(CPACK_STRIP_FILES TRUE)
 endif ()
+set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+set(CPACK_COMPONENTS_ALL App)
 include(CPack)
 
 

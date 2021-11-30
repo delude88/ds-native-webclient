@@ -80,7 +80,7 @@ target_link_libraries(${PROJECT_NAME}
         DigitalStageConnectorCore
         DeviceId::DeviceId
         udp-discovery
-        DigitalStage::Auth
+        DigitalStage::AuthStatic
         )
 target_compile_definitions(${PROJECT_NAME} PRIVATE SIGNUP_URL="${SIGNUP_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE AUTH_URL="${AUTH_URL}")
@@ -88,7 +88,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_NAME "ds-connector")
+        OUTPUT_NAME "ds-connector"
+        )
 
 
 #################################################
@@ -96,13 +97,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 #   Installation
 #
 #################################################
-include(GNUInstallDirs)
 install(
         TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION bin COMPONENT Runtime
-        LIBRARY DESTINATION lib COMPONENT Library
-        ARCHIVE DESTINATION lib COMPONENT Library
-        RESOURCE DESTINATION share COMPONENT Resource
+        RUNTIME DESTINATION bin COMPONENT Service
+        LIBRARY DESTINATION lib COMPONENT Service
+        ARCHIVE DESTINATION lib COMPONENT Service
+        RESOURCE DESTINATION share COMPONENT Service
 )
 
 
@@ -125,24 +125,19 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector Service")
 set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
-
-set(CPACK_COMPONENTS_ALL Runtime Library Resource)
-
 if (WIN32)
     # Windows
     set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-win64")
-    include(InstallRequiredSystemLibraries)
-    set(CPACK_GENERATOR "ZIP")
 elseif (APPLE)
     # Apple
     set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-macOS")
-    include(InstallRequiredSystemLibraries)
-    set(CPACK_GENERATOR "ZIP")
 elseif (UNIX)
     # Linux
     set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-linux")
-    include(InstallRequiredSystemLibraries)
-    set(CPACK_GENERATOR "ZIP")
 endif ()
-
+set(CPACK_ARCHIVE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
+include(InstallRequiredSystemLibraries)
+set(CPACK_GENERATOR "ZIP")
+set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+set(CPACK_COMPONENTS_ALL Service)
 include(CPack)

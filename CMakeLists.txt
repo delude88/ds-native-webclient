@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.20)
 find_package(Git)
 if (GIT_EXECUTABLE)
     execute_process(
-            COMMAND ${GIT_EXECUTABLE} describe --tags --match "v[0-9]*"
+            COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0 --match "v[0-9]*"
             WORKING_DIRECTORY .
             OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
             RESULT_VARIABLE GIT_DESCRIBE_ERROR_CODE
@@ -43,6 +43,7 @@ endif ()
 #   Environment configuration
 #
 #################################################
+set(PROJECT_HOMEPAGE_URL "https://github.com/delude88")
 set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
 set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
 set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")

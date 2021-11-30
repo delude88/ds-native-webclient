@@ -33,7 +33,7 @@ jobs:
       - name: Configure CMake
         env:
           CMAKE_PREFIX_PATH: ${{env.Qt6_Dir}}
-        run: cmake -S . -B build -DBUILD_SERVICE=OFF -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle App
