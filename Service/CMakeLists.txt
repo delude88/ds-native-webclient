@@ -88,7 +88,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE API_URL="${API_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE STAGE_URL="${STAGE_URL}")
 target_compile_definitions(${PROJECT_NAME} PRIVATE SETTINGS_URL="${SETTINGS_URL}")
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_NAME "ds-service")
+        OUTPUT_NAME "ds-connector")
 
 
 #################################################
@@ -99,7 +99,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 include(GNUInstallDirs)
 install(
         TARGETS ${PROJECT_NAME}
-        BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
         LIBRARY DESTINATION lib COMPONENT Library
         ARCHIVE DESTINATION lib COMPONENT Library
@@ -112,32 +111,37 @@ install(
 #   Pack
 #
 #################################################
-set(CPACK_OUTPUT_CONFIG_FILE  "${CMAKE_BINARY_DIR}/CPackConfigService.cmake")
+set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfigService.cmake")
 set(CPACK_PACKAGE_NAME "Digital Stage Connector Service")
 set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
 set(CPACK_PACKAGE_DESCRIPTION "Background service to connect with Digital Stage via P2P")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Background service to connect with Digital Stage via P2P")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.digital-stage.org")
 set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@digital-stage.org")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "Digital Stage Connector Service")
 set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_LIST_DIR}/assets/logo.png)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
 
-set(CPACK_COMPONENTS_ALL RUNTIME LIBRARY RESOURCE)
+set(CPACK_COMPONENTS_ALL Runtime Library Resource)
 
-if (UNIX)
-    if (APPLE)
-        set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-macOS")
-        set(CPACK_GENERATOR "ZIP")
-    else ()
-        set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-linux")
-        set(CPACK_ARCHIVE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-linux")
-        include(InstallRequiredSystemLibraries)
-        set(CPACK_GENERATOR "TGZ")
-    endif ()
-else ()
-    set(CPACK_PACKAGE_FILE_NAME "DigitalStageConnectorService-${CMAKE_PROJECT_VERSION}-windows")
+if (WIN32)
+    # Windows
+    set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-win64")
+    include(InstallRequiredSystemLibraries)
+    set(CPACK_GENERATOR "ZIP")
+elseif (APPLE)
+    # Apple
+    set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-macOS")
+    include(InstallRequiredSystemLibraries)
+    set(CPACK_GENERATOR "ZIP")
+elseif (UNIX)
+    # Linux
+    set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-linux")
+    include(InstallRequiredSystemLibraries)
     set(CPACK_GENERATOR "ZIP")
 endif ()
 

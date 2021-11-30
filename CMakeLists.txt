@@ -1,24 +1,22 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(DigitalStageConnector LANGUAGES CXX)
-
-# Get version from git
+# Version from git
 find_package(Git)
-if(GIT_EXECUTABLE)
-    get_filename_component(SRC_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
-    # Generate a git-describe version string from Git repository tags
+if (GIT_EXECUTABLE)
     execute_process(
-            COMMAND ${GIT_EXECUTABLE} describe --tags --dirty --match "v*"
-            WORKING_DIRECTORY ${SRC_DIR}
+            COMMAND ${GIT_EXECUTABLE} describe --tags --match "v[0-9]*"
+            WORKING_DIRECTORY .
             OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
             RESULT_VARIABLE GIT_DESCRIBE_ERROR_CODE
             OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    if(NOT GIT_DESCRIBE_ERROR_CODE)
-        set(DigitalStageConnectorApp_VERSION ${GIT_DESCRIBE_VERSION})
-    endif()
-endif()
-message("Using version ${DigitalStageConnectorApp_VERSION}")
+    if (NOT GIT_DESCRIBE_ERROR_CODE)
+        string(SUBSTRING ${GIT_DESCRIBE_VERSION} 1 -1 VERSION)
+        set(CMAKE_PROJECT_VERSION ${VERSION})
+    endif ()
+endif ()
+project(DigitalStageConnector VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES CXX)
+message(STATUS "Building Digital Stage Connector ${CMAKE_PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

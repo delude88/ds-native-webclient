@@ -14,5 +14,7 @@ if [ "$1" != "noprepare" ]; then
 fi
 # Build
 cmake --build build --config Release --parallel
-# Pack
+# Pack app
 cpack --config build/CPackConfigApp.cmake -B build
+# Pack service
+cpack --config build/CPackConfigService.cmake -B build

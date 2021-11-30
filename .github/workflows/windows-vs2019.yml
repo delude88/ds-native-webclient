@@ -36,14 +36,14 @@ jobs:
         run: cmake -S . -B build -DBUILD_SERVICE=OFF -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
         run: cmake --build build --config Release
-      - name: Bundle with CPack
+      - name: Bundle App
         run: cpack --config build/CPackConfigApp.cmake -B build
+      - name: Bundle Service
+        run: cpack --config build/CPackConfigService.cmake -B build
       - name: Publish installer
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/*.exe"
           bodyFile: "HOWTO.md"
-          commit: "main"
-          tag: "Nightly"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}

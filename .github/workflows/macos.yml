@@ -31,14 +31,24 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
       - name: Build with CMake
         run: cmake --build build --config Release
-      - name: Bundle with CPack
+      - name: Bundle App
         run: cpack --config build/CPackConfigApp.cmake -B build
+      - name: Bundle Service
+        run: cpack --config build/CPackConfigService.cmake -B build
+      - name: Notarize App bundle
+        uses: devbotsxyz/xcode-notarize@v1
+        with:
+          product-path: "build/Install Connector.dmg"
+          appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
+          appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
+      - name: Staple App bundle
+        uses: devbotsxyz/xcode-staple@v1
+        with:
+          product-path: "build/Install Connector.dmg"
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/*.dmg"
+          artifacts: "build/Install*.dmg,build/Headless-Connector-*.zip"
           bodyFile: "HOWTO.md"
-          commit: "main"
-          tag: "Nightly"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}

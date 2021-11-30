@@ -33,16 +33,14 @@ jobs:
           conan install -if build .
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-      - name: Build with CMake
-        run: cmake --build build --config Release
-      - name: Bundle with CPack
+      - name: Bundle App
         run: cpack --config build/CPackConfigApp.cmake -B build
+      - name: Bundle Service
+        run: cpack --config build/CPackConfigService.cmake -B build
       - name: Publish archive
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/*.tar.gz"
+          artifacts: "build/*.tar.gz,build/*.sh,build/*.tar.Z"
           bodyFile: "HOWTO.md"
-          commit: "main"
-          tag: "Nightly"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
