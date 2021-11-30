@@ -41,7 +41,7 @@ jobs:
       - name: Publish archive
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/*.tar.gz,build/*.sh,build/*.tar.Z,build/Headless-Connector-*.zip"
+          artifacts: "build/*.deb,build/*.AppImage"
           bodyFile: "HOWTO.md"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}

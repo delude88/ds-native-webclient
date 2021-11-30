@@ -39,13 +39,14 @@ jobs:
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: "build/Install Connector.dmg"
+          product-path: "build/Install_Connector.dmg"
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
+          primary-bundle-id: de.tobiashegemann.digital-stage.app
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: "build/Install Connector.dmg"
+          product-path: "build/Install_Connector.dmg"
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:

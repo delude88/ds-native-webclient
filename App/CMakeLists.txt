@@ -137,7 +137,7 @@ endif (APPLE)
 #
 #################################################
 set(BUNDLE_NAME "Digital Stage Connector")
-set(INSTALLER_NAME "Install Connector")
+set(INSTALLER_NAME "Install-Connector")
 set_target_properties(${target} PROPERTIES OUTPUT_NAME ${BUNDLE_NAME})
 set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfigApp.cmake")
 set(OUTPUT_NAME ${BUNDLE_NAME})
@@ -161,7 +161,7 @@ set(CPACK_CREATE_DESKTOP_LINKS "${OUTPUT_NAME}")
 if (WIN32)
     # Windows
     install(TARGETS ${target}
-            RUNTIME DESTINATION bin COMPONENT App
+            RUNTIME DESTINATION bin COMPONENT ${target}
             )
     set_target_properties(${target}
             PROPERTIES
@@ -192,8 +192,8 @@ if (WIN32)
 elseif (APPLE)
     # Apple
     install(TARGETS ${target}
-            BUNDLE DESTINATION . COMPONENT App
-            RUNTIME DESTINATION . COMPONENT App
+            BUNDLE DESTINATION . COMPONENT ${target}
+            RUNTIME DESTINATION . COMPONENT ${target}
             )
     set(CMAKE_MACOSX_BUNDLE ON)
     #set(CMAKE_MACOSX_RPATH ON)
@@ -237,13 +237,28 @@ elseif (APPLE)
     set(CPACK_GENERATOR "DragNDrop")
 elseif (UNIX)
     # Linux
+    # Debian package
+    include(GNUInstallDirs)
     install(TARGETS ${target}
-            RUNTIME DESTINATION bin COMPONENT App
+            RUNTIME DESTINATION bin COMPONENT ${target}
             )
+    set(CPACK_PACKAGE_CONTACT "tobias.hegemann@digital-stage.org")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tobias Hegemann <${CPACK_PACKAGE_CONTACT}>")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
     set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${PROJECT_HOMEPAGE_URL}")
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+    set(CPACK_STRIP_FILES YES)
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS YES)
+    set(
+            CPACK_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS
+            OWNER_READ OWNER_WRITE OWNER_EXECUTE
+            GROUP_READ GROUP_EXECUTE
+            WORLD_READ WORLD_EXECUTE
+    )
+    set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+    set(CPACK_DEB_COMPONENT_INSTALL YES)
+    set(CPACK_GENERATOR "DEB")
+    # App Image
     find_program(LINUXDEPLOY_EXECUTABLE linuxdeploy linuxdeploy-x86_64.AppImage HINTS "${_qt_bin_dir}")
     if (LINUXDEPLOY_EXECUTABLE)
         if (CMAKE_VERSION VERSION_LESS 3.13)
@@ -271,7 +286,7 @@ else ()
     set(CPACK_STRIP_FILES TRUE)
 endif ()
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
-set(CPACK_COMPONENTS_ALL App)
+set(CPACK_COMPONENTS_ALL ${target})
 include(CPack)
 
 
