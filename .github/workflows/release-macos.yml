@@ -1,8 +1,9 @@
-name: macOS 10.15
+name: Release for macOS 10.15
 
 on:
   push:
-    branches: [ main, development ]
+    tags:
+      - '*'
 
 jobs:
   build:
