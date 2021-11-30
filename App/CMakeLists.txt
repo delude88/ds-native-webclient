@@ -7,7 +7,6 @@ if (NOT WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
-set(CMAKE_PROJECT_VERSION "0.0.1")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/../cmake/modules)
 
 
@@ -204,23 +203,27 @@ elseif (APPLE)
             MACOSX_BUNDLE_ICON_FILE appicon.icns)
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
     # First use macdeployqt to bundle the qt libs, but do NOT sign yet
-    add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-            "$<TARGET_FILE_DIR:${target}>/../.."
-            -always-overwrite
-            -verbose=2
-            -sign-for-notarization=${CODESIGN_CERTIFICATE_NAME}
-            COMMENT "Running macdeployqt.."
-            VERBATIM
-            )
+    if (CODESIGN_CERTIFICATE_NAME)
+        add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+                "$<TARGET_FILE_DIR:${target}>/../.."
+                -always-overwrite
+                -verbose=1
+                -sign-for-notarization=${CODESIGN_CERTIFICATE_NAME}
+                COMMENT "Running macdeployqt with signing enabled.."
+                VERBATIM
+                )
+    else ()
+        add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+                "$<TARGET_FILE_DIR:${target}>/../.."
+                -always-overwrite
+                -verbose=1
+                COMMENT "Running macdeployqt.."
+                VERBATIM
+                )
+    endif ()
     include(InstallRequiredSystemLibraries)
-    #if (CODESIGN_CERTIFICATE_NAME)
-        #install(CODE "
-        #    message(STATUS \"Signing bundle\")
-        #    execute_process(COMMAND codesign --force --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}.app\")"
-        #        DESTINATION .)
-        #set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-    #endif (CODESIGN_CERTIFICATE_NAME)
     set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
     set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
