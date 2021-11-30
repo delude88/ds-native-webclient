@@ -46,7 +46,7 @@ jobs:
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: "build/Install_Connector.dmg"
+          product-path: "build/Install-Connector.dmg"
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:
