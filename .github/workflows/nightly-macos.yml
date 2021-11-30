@@ -1,0 +1,49 @@
+name: Nighly for macOS 10.15
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '*.*'
+
+jobs:
+  build:
+    runs-on: macos-10.15
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install codesign certificates
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.CODESIGN_CERTIFICATE }}
+          p12-password: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.2.1'
+      - name: Install depedencies using conan
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan
+          conan install -if build --build missing .
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+      - name: Build with CMake
+        run: cmake --build build --config Release
+      - name: Bundle App
+        run: cpack --config build/CPackConfigApp.cmake -B build
+      - name: Bundle Service
+        run: cpack --config build/CPackConfigService.cmake -B build
+      - name: Publish bundle
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/Install*.dmg,build/Headless-Connector-*.zip"
+          bodyFile: "HOWTO.md"
+          commit: "main"
+          tag: "Nightly"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}

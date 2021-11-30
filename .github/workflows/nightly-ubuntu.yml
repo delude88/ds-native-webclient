@@ -1,0 +1,51 @@
+name: Nighly for Ubuntu 20.04
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Update apt source
+        run: sudo apt-get update
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install Conan package manager
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan
+      - name: Install apt packages for Qt6
+        run: sudo apt-get -y install build-essential libgl1-mesa-dev libxkbcommon-dev libfontconfig-dev # libglu1-mesa-dev libvulkan-dev libx11-xcb-dev
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.2.1'
+      - name: Install linux related project dependencies using apt
+        run: sudo apt-get -y install libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
+      - name: Install general project dependencies using Conan package manager
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan install -if build .
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Bundle App
+        run: cpack --config build/CPackConfigApp.cmake -B build
+      - name: Bundle Service
+        run: cpack --config build/CPackConfigService.cmake -B build
+      - name: Publish archive
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/*.deb,build/*.AppImage"
+          bodyFile: "HOWTO.md"
+          commit: "main"
+          tag: "Nightly"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}

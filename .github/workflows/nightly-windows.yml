@@ -1,0 +1,52 @@
+name: Nighly for Windows
+
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '*.*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.2.1'
+          host: "windows"
+          target: "desktop"
+          arch: "win64_msvc2019_64"
+          dir: "${{github.workspace}}/qt/"
+          install-deps: "true"
+
+      - name: Install Conan package manager
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan
+      - name: Install depedencies using Conan package manager
+        run: |
+          conan install -if build --build missing .
+      - name: Configure CMake
+        env:
+          CMAKE_PREFIX_PATH: ${{env.Qt6_Dir}}
+        run: cmake -S . -B build -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF
+      - name: Build with CMake
+        run: cmake --build build --config Release
+      - name: Bundle App
+        run: cpack --config build/CPackConfigApp.cmake -B build
+      - name: Publish installer
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/*.exe,build/*.zip"
+          bodyFile: "HOWTO.md"
+          commit: "main"
+          tag: "Nightly"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
