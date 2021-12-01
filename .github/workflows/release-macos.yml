@@ -39,7 +39,7 @@ jobs:
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: "build/Install_Connector.dmg"
+          product-path: "build/Install-Connector.dmg"
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
           primary-bundle-id: de.tobiashegemann.digital-stage.app
@@ -50,7 +50,7 @@ jobs:
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/Install*.dmg,build/Headless-Connector-*.zip"
+          artifacts: "build/*.dmg,build/*.zip"
           bodyFile: "HOWTO.md"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}

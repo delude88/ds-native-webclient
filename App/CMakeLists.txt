@@ -315,7 +315,7 @@ if (CMake_RUN_CLANG_TIDY)
     # do not otherwise need to be recompiled.  Nothing actually uses this
     # definition.  We add it to targets on which we run clang-tidy just to
     # get the build dependency on the .clang-tidy file.
-    file(SHA1 ${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy clang_tidy_sha1)
+    file(SHA1 ${CMAKE_CURRENT_LIST_DIR}/../.clang-tidy clang_tidy_sha1)
     set(CLANG_TIDY_DEFINITIONS "CLANG_TIDY_SHA1=${clang_tidy_sha1}")
     unset(clang_tidy_sha1)
 

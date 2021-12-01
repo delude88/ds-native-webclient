@@ -41,7 +41,7 @@ jobs:
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/Install*.dmg,build/Headless-Connector-*.zip"
+          artifacts: "build/*.dmg,build/*.zip"
           bodyFile: "HOWTO.md"
           commit: "main"
           tag: "Nightly"
