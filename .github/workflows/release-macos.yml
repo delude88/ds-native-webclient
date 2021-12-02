@@ -39,8 +39,6 @@ jobs:
       - name: Sign bundle
         run:  |
           codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/Install-Connector.dmg
-      - name: Verify bundle
-        run: spctl -a -t open -vvv --context context:primary-signature build/Install-Connector.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
