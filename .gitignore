@@ -628,3 +628,4 @@ build-macos
 /*.zip
 /*.dmg
 aqtinstall.log
+*.7z

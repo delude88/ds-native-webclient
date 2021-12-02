@@ -3,4 +3,4 @@
 //
 #pragma once
 
-bool check_access();
+auto check_access() -> bool;

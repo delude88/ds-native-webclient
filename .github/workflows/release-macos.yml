@@ -36,21 +36,26 @@ jobs:
         run: cpack --config build/CPackConfigApp.cmake -B build
       - name: Bundle Service
         run: cpack --config build/CPackConfigService.cmake -B build
+      - name: Sign bundle
+        run:  |
+          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/Install-Connector.dmg
+      - name: Verify bundle
+        run: spctl -a -t open -vvv --context context:primary-signature build/Install-Connector.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: "build/Install_Connector.dmg"
+          product-path: "build/Install-Connector.dmg"
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
           primary-bundle-id: de.tobiashegemann.digital-stage.app
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: "build/Install_Connector.dmg"
+          product-path: "build/Install-Connector.dmg"
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/Install*.dmg,build/Headless-Connector-*.zip"
+          artifacts: "build/*.dmg,build/*.zip"
           bodyFile: "HOWTO.md"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}

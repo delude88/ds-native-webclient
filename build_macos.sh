@@ -18,3 +18,5 @@ cmake --build build --config Release --parallel
 cpack --config build/CPackConfigApp.cmake -B build
 # Pack service
 cpack --config build/CPackConfigService.cmake -B build
+codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/Install-Connector.dmg
+spctl -a -t open -vvv --context context:primary-signature build/Install-Connector.dmg
