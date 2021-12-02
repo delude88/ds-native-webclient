@@ -13,10 +13,11 @@ if [ "$1" != "noprepare" ]; then
   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_MODULE_PATH=./build/Qt6/6.2.1/macos/lib/cmake -DQt6_DIR=./build/Qt6/6.2.1/macos/lib/cmake/Qt6 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
-cmake --build build --config Release --parallel
+#cmake --build build --config Release --parallel --target DigitalStageConnectorApp
+cmake --build build --config Release --target DigitalStageConnectorApp
 # Pack app
 cpack --config build/CPackConfigApp.cmake -B build
 # Pack service
-cpack --config build/CPackConfigService.cmake -B build
+# cpack --config build/CPackConfigService.cmake -B build
 codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/Install-Connector.dmg
 spctl -a -t open -vvv --context context:primary-signature build/Install-Connector.dmg

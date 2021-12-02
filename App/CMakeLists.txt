@@ -64,12 +64,10 @@ qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
 set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
         PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
-if (QT_VERSION GREATER_EQUAL 6)
-    qt_add_translations(${target} TS_FILES
-            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
-            ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-    set_target_properties(${target} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
-endif (QT_VERSION GREATER_EQUAL 6)
+qt_add_translations(${target} TS_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
+        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
+set_target_properties(${target} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
 if (APPLE)
     set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns)
     set_source_files_properties(${APP_ICON} PROPERTIES
@@ -104,12 +102,13 @@ target_sources(${target}
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         ${APP_ICON}
         ${QM_FILES})
-target_include_directories(${target} PRIVATE ${Qt_INCLUDE_DIRS})
+target_include_directories(${target} PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${target}
         PRIVATE
         DigitalStageConnectorCore
         DeviceId::DeviceId
-        Qt::Widgets
+        Qt6::Core
+        Qt6::Widgets
         keychain
         DigitalStage::AuthStatic
         )
@@ -196,7 +195,7 @@ elseif (APPLE)
             RUNTIME DESTINATION . COMPONENT ${target}
             )
     set(CMAKE_MACOSX_BUNDLE ON)
-    #set(CMAKE_MACOSX_RPATH ON)
+    set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${target}
             PROPERTIES
             CMAKE_MACOSX_BUNDLE ON
@@ -210,19 +209,8 @@ elseif (APPLE)
             MACOSX_BUNDLE_ICON_FILE appicon.icns)
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
     # First use macdeployqt to bundle the qt libs, but do NOT sign yet
-    if (CODESIGN_CERTIFICATE_NAME)
-        add_custom_command(TARGET ${target} POST_BUILD
-                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE_DIR:${target}>/../.."
-                -always-overwrite
-                -verbose=1
-                -sign-for-notarization=${CODESIGN_CERTIFICATE_NAME}
-                COMMENT "Running macdeployqt with signing enabled.."
-                VERBATIM
-                )
-        set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-    else ()
-        add_custom_command(TARGET ${target} POST_BUILD
+    if(FALSE)
+    add_custom_command(TARGET ${target} POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:${target}>/../.."
                 -always-overwrite
@@ -230,7 +218,15 @@ elseif (APPLE)
                 COMMENT "Running macdeployqt.."
                 VERBATIM
                 )
-    endif ()
+    endif()
+    if (CODESIGN_CERTIFICATE_NAME)
+        # Now codesign
+        install(CODE "
+            message(STATUS \"Code-Signing bundle\")
+            execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${INSTALLER_NAME}.app\")"
+                DESTINATION .)
+        set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
+    endif (CODESIGN_CERTIFICATE_NAME)
     include(InstallRequiredSystemLibraries)
     set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
