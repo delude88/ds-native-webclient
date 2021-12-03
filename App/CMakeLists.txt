@@ -45,9 +45,11 @@ endif (NOT TARGET udp-discovery)
 if (NOT TARGET plog)
     find_package(plog REQUIRED)
 endif ()
-if (NOT TARGET Qt6 AND NOT TARGET Qt5)
-    find_package(Qt6 COMPONENTS Core Widgets LinguistTools REQUIRED)
-endif (NOT TARGET Qt6 AND NOT TARGET Qt5)
+if (NOT TARGET wxWidgets)
+    set(wxWidgets_USE_STATIC ON)
+    find_package(wxWidgets COMPONENTS core REQUIRED)
+    include(${wxWidgets_USE_FILE})
+endif (NOT TARGET wxWidgets)
 # Keychain
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 
@@ -58,27 +60,20 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 #
 #################################################
 set(target ${PROJECT_NAME})
-qt_add_executable(${target})
-qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
-set_source_files_properties(DigitalStage_de.ts DigitalStage_fr.ts
-        PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/i18n")
-qt_add_translations(${target} TS_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
-        ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
+add_executable(${target})
 set_target_properties(${target} PROPERTIES OUTPUT_NAME "Digital Stage Connector")
-if (APPLE)
-    set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns)
-    set_source_files_properties(${APP_ICON} PROPERTIES
-            MACOSX_PACKAGE_LOCATION "Resources")
-endif (APPLE)
-set_target_properties(${target} PROPERTIES
-        AUTOMOC ON
-        AUTORCC ON
-        AUTOUIC ON
-        AUTORCC_OPTIONS "--compress;9"
+set(RESOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/splash.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full.png
         )
+if (APPLE)
+    list(APPEND ${RESOURCES}
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon@2x.png
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full@2x.png)
+    set_source_files_properties(${RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+endif (APPLE)
 target_compile_definitions(${target}
         PRIVATE
         SIGNUP_URL="${SIGNUP_URL}"
@@ -89,25 +84,25 @@ target_compile_definitions(${target}
         )
 target_sources(${target}
         PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/App.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/App.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/TrayIcon.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/TrayIcon.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/TaskBarIcon.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/TaskBarIcon.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/LoginDialog.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/LoginDialog.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/LoginDialog.ui
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KeyStore.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KeyStore.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
-        ${APP_ICON}
-        ${QM_FILES})
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/forms/UI.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/forms/UI.cpp
+        ${RESOURCES}
+        ${APP_ICON})
 #target_include_directories(${target} PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${target}
         PRIVATE
         DigitalStageConnectorCore
         DeviceId::DeviceId
-        Qt6::Widgets
+        ${wxWidgets_LIBRARIES}
         keychain
         DigitalStage::AuthStatic
         )
@@ -193,9 +188,7 @@ elseif (APPLE)
             BUNDLE DESTINATION . COMPONENT ${target}
             RUNTIME DESTINATION . COMPONENT ${target}
             )
-    set(CMAKE_MACOSX_BUNDLE ON)
-    #set(CMAKE_MACOSX_RPATH ON)
-    set(CMAKE_SKIP_RPATH ON)
+    set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${target}
             PROPERTIES
             CMAKE_MACOSX_BUNDLE ON

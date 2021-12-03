@@ -3,10 +3,8 @@
 //
 #pragma once
 
-#include <QObject>
 #include <string>
 #include <optional>
-#include <cpprest/details/basic_types.h>
 
 #ifndef KEYSTORE_PACKAGE
 #define KEYSTORE_PACKAGE "org.digital-stage.client"
@@ -14,23 +12,25 @@
 #ifndef KEYSTORE_SERVICE
 #define KEYSTORE_SERVICE "auth"
 #endif
+#ifndef EMAIL_IDENTIFIER
+#define EMAIL_IDENTIFIER "org.digital-stage.client.email"
+#endif
 
-class KeyStore : QObject {
- Q_OBJECT
+class KeyStore {
 
  public:
   struct Credentials {
-    QString email;
-    QString password;
+    std::string email;
+    std::string password;
   };
 
-  explicit KeyStore(QObject *parent = nullptr);
+  explicit KeyStore();
 
   static bool store(const Credentials& credentials);
-  static std::optional<Credentials> restore(const QString& email) ;
-  [[nodiscard]] static bool remove(const QString& email) ;
+  static std::optional<Credentials> restore(const std::string& email) ;
+  [[nodiscard]] static bool remove(const std::string& email) ;
 
-  static std::optional<QString> restoreEmail();
-  static void storeEmail(const QString& email);
+  static std::optional<std::string> restoreEmail();
+  static void storeEmail(const std::string& email);
 };
 

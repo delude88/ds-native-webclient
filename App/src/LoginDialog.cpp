@@ -1,42 +1,37 @@
 #include "LoginDialog.h"
-#include "ui_LoginDialog.h"
 
-LoginDialog::LoginDialog(QWidget *parent, Qt::WindowFlags f)
-    : QDialog(parent, f), ui(new Ui::LoginDialog) {
-  ui->setupUi(this);
+LoginDialog::LoginDialog(wxWindow *parent) : UILoginDialog(parent) {
+  error_message_->Hide();
 }
 
-LoginDialog::~LoginDialog() {
-  delete ui;
+LoginDialog::~LoginDialog() = default;
+
+void LoginDialog::setEmail(const std::string &email) {
+  email_entry_->SetValue(email);
 }
 
-void LoginDialog::setEmail(const QString &email) {
-  ui->emailEdit->setText(email);
+void LoginDialog::setPassword(const std::string &password) {
+  password_entry_->SetValue(password);
 }
 
-void LoginDialog::setPassword(const QString &password) {
-  ui->passwordEdit->setText(password);
+std::string LoginDialog::getEmail() const {
+  return email_entry_->GetValue().ToStdString();
 }
 
-QString LoginDialog::getEmail() {
-  return ui->emailEdit->text();
+std::string LoginDialog::getPassword() const {
+  return password_entry_->GetValue().ToStdString();
 }
 
-QString LoginDialog::getPassword() {
-  return ui->passwordEdit->text();
-}
-
-void LoginDialog::setError(const QString &error) {
-  ui->labelError->setText(error);
+void LoginDialog::setError(const std::string &error) {
+  error_message_->SetLabel(error);
+  error_message_->Show();
 }
 
 void LoginDialog::resetError() {
-  ui->labelError->setText("");
+  error_message_->Hide();
+  error_message_->SetLabel("");
 }
 
-void LoginDialog::on_buttonSignIn_clicked() {
-  login(getEmail(), getPassword());
-}
 void LoginDialog::setLoading(bool loading) {
-  ui->buttonSignIn->setDisabled(loading);
+  login_button_->Enable(!loading);
 }

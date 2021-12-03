@@ -6,7 +6,7 @@
 #include <QCoreApplication>
 #include <QAction>
 
-TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent) {
+TrayIcon::TrayIcon() : QSystemTrayIcon(parent) {
   QIcon icon = QIcon(":/assets/icon.png");
   icon.setIsMask(true);
   this->setIcon(icon);

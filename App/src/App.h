@@ -3,42 +3,50 @@
 //
 #pragma once
 
-#include <QObject>
-
-#include "LoginDialog.h"
-#include "TrayIcon.h"
-#include "KeyStore.h"
+// Std
 #include <optional>
 #include <string>
 
+// Logger
+#include <plog/Init.h>
+#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Appenders/ConsoleAppender.h>
+
+// wxWidgets
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
+#include <wx/app.h>
+#include "LoginDialog.h"
+#include "TaskBarIcon.h"
+#include "KeyStore.h"
+
+// Core
 #include <Client.h>
 #include <DigitalStage/Auth/AuthService.h>
 
-class App : public QObject {
- Q_OBJECT
-
+class App : public wxApp {
  public:
-  App();
-  void show();
+  bool OnInit() override;
 
- private slots:
-  void logIn(const QString &email, const QString &password);
+ private:
+  void logIn(const std::string &email, const std::string &password);
   void logOut();
   static void openStage();
   void openSettings();
   void restart();
 
- private:
-  std::optional<QString> tryAutoLogin(const QString &email);
+  std::optional<std::string> tryAutoLogin(const std::string &email);
   void start();
   void stop();
 
   std::string device_id_;
-  std::optional<QString> token_;
+  std::optional<std::string> token_;
   std::unique_ptr<DigitalStage::Auth::AuthService> auth_service_;
   std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<Client> client_;
 
-  TrayIcon *tray_icon_;
+  TaskBarIcon *tray_icon_;
   LoginDialog *login_dialog_;
 };

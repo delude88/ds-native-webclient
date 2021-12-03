@@ -1,37 +1,20 @@
-#ifndef LOGINDIALOG_H
-#define LOGINDIALOG_H
+#pragma once
 
-#include <QDialog>
+#include "forms/UI.h"
 
-namespace Ui {
-class LoginDialog;
-}
-
-class LoginDialog : public QDialog {
- Q_OBJECT
+class LoginDialog : public UILoginDialog {
 
  public:
-  explicit LoginDialog(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
-  ~LoginDialog() override;
+  explicit LoginDialog(wxWindow* parent = nullptr);
+  ~LoginDialog();
 
-  QString getEmail();
-  QString getPassword();
+  std::string getEmail() const;
+  std::string getPassword() const;
 
- public slots:
-  void setLoading(bool loading);
-  void setEmail(const QString &user);
-  void setPassword(const QString &password);
-  void setError(const QString &error);
+  void setLoading(bool
+                  loading);
+  void setEmail(const std::string &user);
+  void setPassword(const std::string &password);
+  void setError(const std::string &error);
   void resetError();
-
- protected slots:
-  void on_buttonSignIn_clicked();
-
- signals:
-  void login(const QString &email, const QString &password);
-
- private:
-  Ui::LoginDialog *ui;
 };
-
-#endif // LOGINDIALOG_H

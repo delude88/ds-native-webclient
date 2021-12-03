@@ -1,15 +1,18 @@
-#include <QApplication>
-#include <QMessageBox>
-#include <QSystemTrayIcon>
-#include <QTimer>
-#include <QTranslator>
-#include <QSplashScreen>
-
 #ifdef __APPLE__
 #include "utils/macos.h"
 #endif
 
-#include "App.h"
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
+
+#include <wx/taskbar.h>
+#include <wx/splash.h>
+#include <wx/stdpaths.h>
+
+
+
 
 // Logger
 #include <plog/Init.h>
@@ -27,29 +30,22 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  QApplication qApplication(argc, argv);
-
-  if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-    QMessageBox::critical(nullptr, QObject::tr("Systray"),
-                          QObject::tr("I couldn't detect any system tray "
-                                      "on this system."));
+  if (!wxTaskBarIcon::IsAvailable()) {
+    wxMessageBox("Error", "I couldn't detect any system tray on this system.", wxCANCEL);
     return 1;
   }
 
-  QTranslator translator;
-  if (translator.load(QLocale(), QLatin1String("DigitalStage"),
-                      QLatin1String("_"), QLatin1String(":/i18n"))) {
-    QCoreApplication::installTranslator(&translator);
-  }
+  wxEntry(argc, argv);
 
-  QPixmap pixmap(":/assets/splash.png");
-  QSplashScreen splash(pixmap);
-  splash.show();
-  QTimer::singleShot(1000, &splash,
-                     &QWidget::close); // keep displayed for 5 seconds
-
-  App app;
-  app.show();
-
-  return QApplication::exec();
+  wxImage::AddHandler(new wxXPMHandler);
+  wxBitmap bitmap(wxStandardPaths::Get().GetResourcesDir() + "/splash.png");
+  auto *splash = new wxSplashScreen(bitmap,
+                                    wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
+                                    2500,
+                                    nullptr,
+                                    wxID_ANY,
+                                    wxDefaultPosition,
+                                    wxDefaultSize,
+                                    wxFRAME_NO_TASKBAR | wxSIMPLE_BORDER | wxSTAY_ON_TOP);
+  wxYield();
 }
