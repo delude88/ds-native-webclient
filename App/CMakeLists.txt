@@ -58,7 +58,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
 #
 #################################################
 set(target ${PROJECT_NAME})
-add_executable(${target})
+qt_add_executable(${target})
 qt_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_de.ts
         ${CMAKE_CURRENT_SOURCE_DIR}/i18n/DigitalStage_fr.ts)
@@ -102,12 +102,11 @@ target_sources(${target}
         ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
         ${APP_ICON}
         ${QM_FILES})
-target_include_directories(${target} PRIVATE ${Qt6_INCLUDE_DIRS})
+#target_include_directories(${target} PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${target}
         PRIVATE
         DigitalStageConnectorCore
         DeviceId::DeviceId
-        Qt6::Core
         Qt6::Widgets
         keychain
         DigitalStage::AuthStatic
@@ -195,7 +194,8 @@ elseif (APPLE)
             RUNTIME DESTINATION . COMPONENT ${target}
             )
     set(CMAKE_MACOSX_BUNDLE ON)
-    set(CMAKE_MACOSX_RPATH ON)
+    #set(CMAKE_MACOSX_RPATH ON)
+    set(CMAKE_SKIP_RPATH ON)
     set_target_properties(${target}
             PROPERTIES
             CMAKE_MACOSX_BUNDLE ON
@@ -209,24 +209,26 @@ elseif (APPLE)
             MACOSX_BUNDLE_ICON_FILE appicon.icns)
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
     # First use macdeployqt to bundle the qt libs, but do NOT sign yet
-    if(FALSE)
-    add_custom_command(TARGET ${target} POST_BUILD
+    if (CODESIGN_CERTIFICATE_NAME)
+        add_custom_command(TARGET ${target} POST_BUILD
                 COMMAND "${MACDEPLOYQT_EXECUTABLE}"
                 "$<TARGET_FILE_DIR:${target}>/../.."
                 -always-overwrite
                 -verbose=1
+                -appstore-compliant
+                -sign-for-notarization=${CODESIGN_CERTIFICATE_NAME}
                 COMMENT "Running macdeployqt.."
                 VERBATIM
                 )
-    endif()
-    if (CODESIGN_CERTIFICATE_NAME)
+    endif ()
+    if (FALSE)
         # Now codesign
         install(CODE "
             message(STATUS \"Code-Signing bundle\")
             execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${INSTALLER_NAME}.app\")"
                 DESTINATION .)
         set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-    endif (CODESIGN_CERTIFICATE_NAME)
+    endif ()
     include(InstallRequiredSystemLibraries)
     set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)

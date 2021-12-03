@@ -20,10 +20,9 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.CODESIGN_CERTIFICATE }}
           p12-password: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
-      - name: Install Qt6
-        uses: jurplel/install-qt-action@v2
-        with:
-          version: '6.2.1'
+      - name: Install Qt6 using brew
+        run: |
+          brew install qt@6
       - name: Install depedencies using conan
         run: |
           pip3 install wheel setuptools
