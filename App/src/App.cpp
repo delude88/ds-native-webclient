@@ -106,8 +106,6 @@ bool App::OnInit() {
   dock_icon_->closeClicked.connect([this]() { login_dialog_->Close(true); });
 #endif
 
-  return true;
-  /*
   // Try to auto sign in
   auto email = KeyStore::restoreEmail();
   if (email) {
@@ -131,7 +129,7 @@ bool App::OnInit() {
     //login_dialog_->Hide();
     start();
   }
-  return true;*/
+  return true;
 }
 
 std::optional<std::string> App::tryAutoLogin(const std::string &email) {
