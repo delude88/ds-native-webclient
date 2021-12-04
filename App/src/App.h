@@ -60,5 +60,8 @@ class App : public wxApp {
   std::unique_ptr<Client> client_;
 
   TaskBarIcon *tray_icon_;
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+  TaskBarIcon *dock_icon_;
+#endif
   LoginDialog *login_dialog_;
 };

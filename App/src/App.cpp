@@ -80,6 +80,9 @@ bool App::OnInit() {
   }
 
   tray_icon_ = new TaskBarIcon();
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+  dock_icon_ = new TaskBarIcon(wxTBI_DOCK);
+#endif
   tray_icon_->loginClicked.connect([this]() { login_dialog_->SetFocus(); });
   tray_icon_->restartClicked.connect([this]() { restart(); });
   tray_icon_->openStageClicked.connect([]() { openStage(); });

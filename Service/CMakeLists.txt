@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(DigitalStageConnectorService LANGUAGES CXX)
+project(service LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
@@ -113,7 +113,6 @@ install(
 #
 #################################################
 set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfigService.cmake")
-set(CPACK_PACKAGE_NAME "Digital Stage Connector Service")
 set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
 set(CPACK_PACKAGE_DESCRIPTION "Background service to connect with Digital Stage via P2P")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Background service to connect with Digital Stage via P2P")
@@ -128,15 +127,11 @@ set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
 if (WIN32)
     # Windows - unsupported right now
-    set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-win64")
-    set(CPACK_ARCHIVE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
     include(InstallRequiredSystemLibraries)
     set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
     set(CPACK_GENERATOR "ZIP")
 elseif (APPLE)
     # Apple
-    set(CPACK_PACKAGE_FILE_NAME "Headless-Connector-${CMAKE_PROJECT_VERSION}-macOS")
-    set(CPACK_ARCHIVE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
     include(InstallRequiredSystemLibraries)
     set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
     set(CPACK_GENERATOR "ZIP")

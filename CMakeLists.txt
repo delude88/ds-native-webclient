@@ -15,7 +15,7 @@ if (GIT_EXECUTABLE)
         set(CMAKE_PROJECT_VERSION ${VERSION})
     endif ()
 endif ()
-project(DigitalStageConnector VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES CXX)
+project(digital-stage-connector VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES CXX)
 message(STATUS "Building Digital Stage Connector ${CMAKE_PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)

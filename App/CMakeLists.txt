@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(DigitalStageConnectorApp LANGUAGES CXX)
+project(app LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (NOT WIN32)
@@ -130,13 +130,9 @@ endif (APPLE)
 #
 #################################################
 set(BUNDLE_NAME "Digital Stage Connector")
-set(INSTALLER_NAME "Install-Connector")
 set_target_properties(${target} PROPERTIES OUTPUT_NAME ${BUNDLE_NAME})
 set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfigApp.cmake")
-set(OUTPUT_NAME ${BUNDLE_NAME})
 set(CPACK_PACKAGE_VENDOR "Tobias Hegemann")
-set(CPACK_PACKAGE_NAME ${INSTALLER_NAME})
-set(CPACK_PACKAGE_FILE_NAME ${INSTALLER_NAME})
 set(CPACK_PACKAGE_CONTACT "Tobias Hegemann <tobias.hegemann@googlemail.com")
 set(CPACK_PACKAGE_HOMEPAGE_URL ${PROJECT_HOMEPAGE_URL})
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
@@ -154,9 +150,9 @@ install(TARGETS ${target}
         BUNDLE DESTINATION . COMPONENT ${target}
         RUNTIME DESTINATION . COMPONENT ${target}
         )
+set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME})
 
 if (WIN32)
-    set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
     # Windows
     set_target_properties(${target}
             PROPERTIES
@@ -168,7 +164,6 @@ if (WIN32)
         fixup_bundle(\"${APPS}\" \"\" \"\")"
             COMPONENT ${target})
 elseif (APPLE)
-    set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}.app)
     # Apple
     set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${target}
@@ -188,15 +183,16 @@ elseif (APPLE)
         install(CODE "
             include(BundleUtilities)
             message(STATUS \"Fixup\")
-            fixup_bundle(\"${APPS}\" \"\" \"\")
+            fixup_bundle(\"${APPS}.app\" \"\" \"\")
             message(STATUS \"Code-Signing bundle\")
-            execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}\")"
+            execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
                 COMPONENT ${target})
-        set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
+        #set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
+        #set(CPACK_BUNDLE_APPLE_CODESIGN_PARAMETER "--force --deep --options runtime")
     else ()
         install(CODE "
         include(BundleUtilities)
-            fixup_bundle(\"${APPS}\" \"\" \"\")"
+            fixup_bundle(\"${APPS}.app\" \"\" \"\")"
                 COMPONENT ${target})
     endif (CODESIGN_CERTIFICATE_NAME)
     include(InstallRequiredSystemLibraries)
@@ -205,7 +201,6 @@ elseif (APPLE)
     set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
     set(CPACK_GENERATOR "DragNDrop")
 elseif (UNIX)
-    set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
     # Linux
     # Debian package
     include(GNUInstallDirs)
