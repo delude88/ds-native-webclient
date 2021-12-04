@@ -150,44 +150,26 @@ set(CPACK_PACKAGE_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CPACK_PACKAGE_EXECUTABLES "${OUTPUT_NAME}" "${OUTPUT_NAME}")
 set(CPACK_CREATE_DESKTOP_LINKS "${OUTPUT_NAME}")
 
+install(TARGETS ${target}
+        BUNDLE DESTINATION . COMPONENT ${target}
+        RUNTIME DESTINATION . COMPONENT ${target}
+        )
 
 if (WIN32)
+    set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
     # Windows
-    install(TARGETS ${target}
-            RUNTIME DESTINATION bin COMPONENT ${target}
-            )
     set_target_properties(${target}
             PROPERTIES
             CMAKE_WIN32_EXECUTABLE ON)
-    # Bundle Library Files
-    if (CMAKE_BUILD_TYPE_UPPER STREQUAL "DEBUG")
-        set(WINDEPLOYQT_ARGS --debug)
-    else ()
-        set(WINDEPLOYQT_ARGS --release)
-    endif ()
-
-    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
-    add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_CURRENT_BINARY_DIR}/winqt/"
-            COMMAND "${CMAKE_COMMAND}" -E
-            env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
-            ${WINDEPLOYQT_ARGS}
-            --verbose 0
-            --no-compiler-runtime
-            --no-opengl-sw
-            --dir "${CMAKE_CURRENT_BINARY_DIR}/winqt/"
-            $<TARGET_FILE:${target}>
-            COMMENT "Deploying Qt..."
-            )
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/winqt/" DESTINATION bin)
     set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
     include(InstallRequiredSystemLibraries)
+    install(CODE "
+        include(BundleUtilities)
+        fixup_bundle(\"${APPS}\" \"\" \"\")"
+            COMPONENT ${target})
 elseif (APPLE)
+    set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}.app)
     # Apple
-    install(TARGETS ${target}
-            BUNDLE DESTINATION . COMPONENT ${target}
-            RUNTIME DESTINATION . COMPONENT ${target}
-            )
     set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${target}
             PROPERTIES
@@ -200,34 +182,30 @@ elseif (APPLE)
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
             MACOSX_BUNDLE_ICON_FILE appicon.icns)
-    find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${_qt_bin_dir}")
     # First use macdeployqt to bundle the qt libs, but do NOT sign yet
     if (CODESIGN_CERTIFICATE_NAME)
-        add_custom_command(TARGET ${target} POST_BUILD
-                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                "$<TARGET_FILE_DIR:${target}>/../.."
-                -always-overwrite
-                -verbose=1
-                -appstore-compliant
-                -sign-for-notarization=${CODESIGN_CERTIFICATE_NAME}
-                COMMENT "Running macdeployqt.."
-                VERBATIM
-                )
-    endif ()
-    if (FALSE)
         # Now codesign
         install(CODE "
+            include(BundleUtilities)
+            message(STATUS \"Fixup\")
+            fixup_bundle(\"${APPS}\" \"\" \"\")
             message(STATUS \"Code-Signing bundle\")
-            execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\${CMAKE_INSTALL_PREFIX}/${INSTALLER_NAME}.app\")"
-                DESTINATION .)
+            execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}\")"
+                COMPONENT ${target})
         set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-    endif ()
+    else ()
+        install(CODE "
+        include(BundleUtilities)
+            fixup_bundle(\"${APPS}\" \"\" \"\")"
+                COMPONENT ${target})
+    endif (CODESIGN_CERTIFICATE_NAME)
     include(InstallRequiredSystemLibraries)
     set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
     set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
     set(CPACK_GENERATOR "DragNDrop")
 elseif (UNIX)
+    set(APPS \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${BUNDLE_NAME}${CMAKE_EXECUTABLE_SUFFIX})
     # Linux
     # Debian package
     include(GNUInstallDirs)
@@ -251,28 +229,12 @@ elseif (UNIX)
     set(CPACK_DEB_COMPONENT_INSTALL YES)
     set(CPACK_GENERATOR "DEB")
     # App Image
-    find_program(LINUXDEPLOY_EXECUTABLE linuxdeploy linuxdeploy-x86_64.AppImage HINTS "${_qt_bin_dir}")
-    if (LINUXDEPLOY_EXECUTABLE)
-        if (CMAKE_VERSION VERSION_LESS 3.13)
-            linuxdeployqt("${CPACK_PACKAGE_DIRECTORY}/_CPack_Packages/Linux/AppImage" "share/applications/example.desktop")
-        else ()
-            set(CPACK_GENERATOR "External;${CPACK_GENERATOR}")
-            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CPackLinuxDeployQt.cmake.in "${CMAKE_BINARY_DIR}/CPackExternal.cmake")
-            set(CPACK_EXTERNAL_PACKAGE_SCRIPT "${CMAKE_BINARY_DIR}/CPackExternal.cmake")
-        endif ()
-    endif ()
+    install(CODE "
+        include(BundleUtilities)
+            fixup_bundle(\"${APPS}\" \"\" \"\")"
+            COMPONENT ${target})
 endif ()
-# Icons
-set(icon.path icons/hicolor/64x64/apps)
-set(icon.files assets/icon-64x64.png)
-set(iconsvg.path icons/hicolor/scalable/apps)
-set(iconsvg.files assets/logo.svg)
-foreach (items IN ITEMS icon iconsvg)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${${items}.files}
-            DESTINATION share/${${items}.path}
-            PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
-endforeach ()
-if (CMAKE_BUILD_TYPE_UPPER MATCHES "^(DEBUG|RELWITHDEBINFO)$")
+if (CMAKE_BUILD_TYPE_UPPER MATCHES "^ (DEBUG|RELWITHDEBINFO) $")
     set(CPACK_STRIP_FILES FALSE)
 else ()
     set(CPACK_STRIP_FILES TRUE)
@@ -332,6 +294,6 @@ if (ENABLE_CLAZY)
     if (CLAZY_EXECUTABLE)
         message(STATUS "clazy found: ${CLAZY_EXECUTABLE}")
     else ()
-        message(AUTHOR_WARNING "clazy not found.")
+        message(AUTHOR_WARNING "clazy not found. ")
     endif ()
 endif ()

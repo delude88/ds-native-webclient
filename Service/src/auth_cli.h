@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <DigitalStage/Auth/AuthService.h>
+#include <plog/Log.h>
 #include "AuthIO.h"
 
 std::pair<std::string, std::string> sign_in() {
@@ -30,10 +31,12 @@ std::string authenticate_user() {
   std::cout << "Don't have an account? Go get one at " << SIGNUP_URL << std::endl << std::endl;
   do {
     auto credentials = sign_in();
-    auto receivedToken = service->signInSync(credentials.first, credentials.second);
-    if (receivedToken.has_value()) {
-      AuthIO::writeToken(*receivedToken);
-      return *receivedToken;
+    try {
+      auto received_token = service->signInSync(credentials.first, credentials.second);
+      AuthIO::writeToken(received_token);
+      return received_token;
+    } catch (DigitalStage::Auth::AuthError &error) {
+      PLOGE << error.getCode() << ": " << error.what();
     }
   } while (true);
 }

@@ -54,11 +54,14 @@ void RemoteAuthService::handlePost(const web::http::http_request &message) {
       if (json.has_field("email") && json.has_field("password")) {
         auto email = json["email"].as_string();
         auto password = json["password"].as_string();
-        auto token = auth_service_->signInSync(email, password);
-        if (token.has_value()) {
-          AuthIO::writeToken(*token);
+        try {
+          auto token = auth_service_->signInSync(email, password);
+          AuthIO::writeToken(token);
           token_ = token;
-          onLogin(*token);
+          onLogin(token);
+        } catch (DigitalStage::Auth::AuthError &error) {
+          token_ = std::nullopt;
+          PLOGE << error.getCode() << ": " << error.what();
         }
       }
     } else if (path == "logout") {
