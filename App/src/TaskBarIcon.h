@@ -17,8 +17,6 @@ class TaskBarIcon : public wxTaskBarIcon {
   explicit TaskBarIcon() : isLoggedIn_(false)
 #endif
   {
-    auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon@2x.png", wxBITMAP_TYPE_PNG);
-    this->SetIcon(icon);
   }
   virtual ~TaskBarIcon();
 

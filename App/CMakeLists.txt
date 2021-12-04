@@ -70,6 +70,7 @@ set(RESOURCES
 if (APPLE)
     list(APPEND RESOURCES
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.png
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon@2x.png
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full@2x.png)
     set_source_files_properties(${RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
@@ -84,7 +85,6 @@ target_compile_definitions(${target}
         )
 target_sources(${target}
         PUBLIC
-        #${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/App.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/App.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/TaskBarIcon.h

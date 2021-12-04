@@ -3,7 +3,11 @@
 
 LoginDialog::LoginDialog(wxWindow *parent) : UILoginFrame(parent, wxID_ANY) {
   error_message_->Hide();
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+  auto logo = wxBitmap(wxStandardPaths::Get().GetResourcesDir() + "/logo-full@2x.png", wxBITMAP_TYPE_PNG);
+#else
   auto logo = wxBitmap(wxStandardPaths::Get().GetResourcesDir() + "/logo-full.png", wxBITMAP_TYPE_PNG);
+#endif
   logo_->SetBitmap(logo);
 }
 

@@ -19,10 +19,6 @@
 
 wxIMPLEMENT_APP(App);
 
-Frame::Frame() : wxFrame(nullptr, wxID_ANY, "You should never see me") {
-  tray_icon_ = new TaskBarIcon();
-}
-
 bool App::OnInit() {
   static plog::ConsoleAppender<plog::TxtFormatter> console_appender;
   plog::init(plog::debug, &console_appender);
@@ -42,6 +38,16 @@ bool App::OnInit() {
   if (!wxApp::OnInit())
     return false;
 
+  if (!wxTaskBarIcon::IsAvailable()) {
+    wxMessageBox
+        (
+            "There appears to be no system tray support in your current environment.",
+            "Error",
+            wxOK | wxICON_EXCLAMATION
+        );
+    return false;
+  }
+
   wxInitAllImageHandlers();
 
   wxApp::SetExitOnFrameDelete(true);
@@ -55,15 +61,6 @@ bool App::OnInit() {
   });
   SetTopWindow(login_dialog_);
 
-  if (!wxTaskBarIcon::IsAvailable()) {
-    wxMessageBox
-        (
-            "There appears to be no system tray support in your current environment.",
-            "Error",
-            wxOK | wxICON_EXCLAMATION
-        );
-    return false;
-  }
 
   // Show splash screen
   wxBitmap bitmap;
@@ -79,10 +76,14 @@ bool App::OnInit() {
 #endif
   }
 
+  // Tray icon
   tray_icon_ = new TaskBarIcon();
 #if defined(__WXOSX__) && wxOSX_USE_COCOA
-  dock_icon_ = new TaskBarIcon(wxTBI_DOCK);
+  auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon@2x.png", wxBITMAP_TYPE_PNG);
+#else
+  auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon.png", wxBITMAP_TYPE_PNG);
 #endif
+  tray_icon_->SetIcon(icon);
   tray_icon_->loginClicked.connect([this]() { login_dialog_->SetFocus(); });
   tray_icon_->restartClicked.connect([this]() { restart(); });
   tray_icon_->openStageClicked.connect([]() { openStage(); });
@@ -91,6 +92,22 @@ bool App::OnInit() {
   tray_icon_->logoutClicked.connect([this]() { logOut(); });
   tray_icon_->closeClicked.connect([this]() { login_dialog_->Close(true); });
 
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+  // Dock icon
+  dock_icon_ = new TaskBarIcon(wxTBI_DOCK);
+  auto dock_icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/appicon.png", wxBITMAP_TYPE_PNG);
+  dock_icon_->SetIcon(dock_icon);
+  dock_icon_->loginClicked.connect([this]() { login_dialog_->SetFocus(); });
+  dock_icon_->restartClicked.connect([this]() { restart(); });
+  dock_icon_->openStageClicked.connect([]() { openStage(); });
+  dock_icon_->openSettingsClicked.connect([this]() { openSettings(); });
+  //dock_icon_->addBoxClicked.connect([this](){ });
+  dock_icon_->logoutClicked.connect([this]() { logOut(); });
+  dock_icon_->closeClicked.connect([this]() { login_dialog_->Close(true); });
+#endif
+
+  return true;
+  /*
   // Try to auto sign in
   auto email = KeyStore::restoreEmail();
   if (email) {
@@ -100,15 +117,21 @@ bool App::OnInit() {
   if (!token_.has_value()) {
     // Show login menu and dialog
     tray_icon_->showLoginMenu();
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+    dock_icon_->showLoginMenu();
+#endif
     login_dialog_->Show(true);
   } else {
     // Show status menu, hide login and start
     tray_icon_->showStatusMenu();
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+    dock_icon_->showStatusMenu();
+#endif
     login_dialog_->Show(false);
     //login_dialog_->Hide();
     start();
   }
-  return true;
+  return true;*/
 }
 
 std::optional<std::string> App::tryAutoLogin(const std::string &email) {
@@ -139,6 +162,9 @@ void App::logIn(const std::string &email, const std::string &password) {
     KeyStore::store({email, password});
     // Show status menu, hide login and start
     tray_icon_->showStatusMenu();
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+    dock_icon_->showStatusMenu();
+#endif
     login_dialog_->setLoading(false);
     login_dialog_->Hide();
     start();
@@ -154,6 +180,9 @@ void App::logIn(const std::string &email, const std::string &password) {
 void App::logOut() {
   stop();
   tray_icon_->showLoginMenu();
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+  dock_icon_->showLoginMenu();
+#endif
   login_dialog_->setPassword("");
   if (token_.has_value()) {
     auth_service_->signOutSync(*token_);
