@@ -30,6 +30,8 @@ jobs:
           conan install -if build .
       - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build with CMake
+        run: cmake --build build --config Release
       - name: Bundle App
         run: cpack --config build/CPackConfigApp.cmake -B build
       - name: Bundle Service

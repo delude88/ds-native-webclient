@@ -21,8 +21,8 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/sizer.h>
-#include <wx/hyperlink.h>
 #include <wx/button.h>
+#include <wx/hyperlink.h>
 #include <wx/panel.h>
 #include <wx/menu.h>
 #include <wx/frame.h>
@@ -45,9 +45,9 @@ class UILoginFrame : public wxFrame
 		wxStaticText* password_label_;
 		wxTextCtrl* password_entry_;
 		wxStaticText* error_message_;
+		wxButton* login_button_;
 		wxStaticText* signup_hint_;
 		wxHyperlinkCtrl* signup_link_;
-		wxButton* login_button_;
 		wxMenuBar* m_menubar1;
 
 		// Virtual event handlers, override them in your derived class

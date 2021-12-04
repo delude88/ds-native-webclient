@@ -66,19 +66,18 @@ bool App::OnInit() {
   }
 
   // Show splash screen
-  /*
-  auto splash_bitmap = wxBitmap(wxStandardPaths::Get().GetResourcesDir() + "/splash.png", wxBITMAP_TYPE_PNG);
-  auto *splash = new wxSplashScreen(splash_bitmap,
-                                    wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
-                                    2500,
-                                    nullptr,
-                                    wxID_ANY,
-                                    wxDefaultPosition,
-                                    wxDefaultSize,
-                                    wxFRAME_NO_TASKBAR | wxSIMPLE_BORDER | wxSTAY_ON_TOP);
-  wxYield();
-  wxSleep(2);
-  splash->Destroy();*/
+  wxBitmap bitmap;
+  if (bitmap.LoadFile(wxStandardPaths::Get().GetResourcesDir() + "/splash.png", wxBITMAP_TYPE_PNG)) {
+    PLOGI << "splash";
+    new wxSplashScreen(bitmap,
+                       wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
+                       2500, nullptr, wxID_ANY,
+                       wxDefaultPosition, wxDefaultSize,
+                       wxSIMPLE_BORDER | wxSTAY_ON_TOP);
+#if !defined(__WXGTK20__)
+    wxYield();
+#endif
+  }
 
   tray_icon_ = new TaskBarIcon();
   tray_icon_->loginClicked.connect([this]() { login_dialog_->SetFocus(); });
@@ -92,20 +91,18 @@ bool App::OnInit() {
   // Try to auto sign in
   auto email = KeyStore::restoreEmail();
   if (email) {
-    PLOGI << "Have email" << *email;
     login_dialog_->setEmail(*email);
     token_ = tryAutoLogin(*email);
-  } else {
-    PLOGI << "Have NO email" << *email;
   }
   if (!token_.has_value()) {
     // Show login menu and dialog
     tray_icon_->showLoginMenu();
-    login_dialog_->Show();
+    login_dialog_->Show(true);
   } else {
     // Show status menu, hide login and start
     tray_icon_->showStatusMenu();
-    login_dialog_->Hide();
+    login_dialog_->Show(false);
+    //login_dialog_->Hide();
     start();
   }
   return true;

@@ -26,8 +26,11 @@ UILoginFrame::UILoginFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	logo_ = new wxStaticBitmap( m_panel1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer41->Add( logo_, 0, wxALL|wxEXPAND, 5 );
 
+	wxBoxSizer* action_sizer_;
+	action_sizer_ = new wxBoxSizer( wxVERTICAL );
 
-	bSizer41->Add( 0, 0, 1, wxEXPAND, 5 );
+
+	action_sizer_->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	wxFlexGridSizer* credentials_sizer_;
 	credentials_sizer_ = new wxFlexGridSizer( 2, 2, 0, 0 );
@@ -46,14 +49,11 @@ UILoginFrame::UILoginFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	password_label_->Wrap( -1 );
 	credentials_sizer_->Add( password_label_, 0, wxALL, 5 );
 
-	password_entry_ = new wxTextCtrl( m_panel1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	password_entry_ = new wxTextCtrl( m_panel1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD );
 	credentials_sizer_->Add( password_entry_, 0, wxALL|wxEXPAND, 5 );
 
 
-	bSizer41->Add( credentials_sizer_, 1, wxEXPAND, 5 );
-
-	wxBoxSizer* action_sizer_;
-	action_sizer_ = new wxBoxSizer( wxVERTICAL );
+	action_sizer_->Add( credentials_sizer_, 1, wxEXPAND, 5 );
 
 	error_message_ = new wxStaticText( m_panel1, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
 	error_message_->Wrap( -1 );
@@ -61,6 +61,14 @@ UILoginFrame::UILoginFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	error_message_->SetForegroundColour( wxColour( 251, 2, 7 ) );
 
 	action_sizer_->Add( error_message_, 0, wxALL|wxEXPAND, 5 );
+
+	login_button_ = new wxButton( m_panel1, wxID_ANY, wxT("Anmelden"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	login_button_->SetDefault();
+	action_sizer_->Add( login_button_, 0, wxALIGN_CENTER|wxALL, 5 );
+
+
+	action_sizer_->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer4;
 	bSizer4 = new wxBoxSizer( wxHORIZONTAL );
@@ -70,18 +78,17 @@ UILoginFrame::UILoginFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	bSizer4->Add( signup_hint_, 0, wxALL, 5 );
 
 	signup_link_ = new wxHyperlinkCtrl( m_panel1, wxID_ANY, wxT("Registriere Dich hier"), wxT("https://dev.dstage.org/account/signup"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE );
+
+	signup_link_->SetHoverColour( wxColour( 87, 121, 217 ) );
+	signup_link_->SetNormalColour( wxColour( 242, 5, 68 ) );
+	signup_link_->SetVisitedColour( wxColour( 242, 5, 68 ) );
 	signup_link_->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, true, wxEmptyString ) );
-	signup_link_->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
+	signup_link_->SetForegroundColour( wxColour( 235, 0, 53 ) );
 
 	bSizer4->Add( signup_link_, 0, wxALL, 5 );
 
 
-	action_sizer_->Add( bSizer4, 1, wxEXPAND, 5 );
-
-	login_button_ = new wxButton( m_panel1, wxID_ANY, wxT("Anmelden"), wxDefaultPosition, wxDefaultSize, 0 );
-
-	login_button_->SetDefault();
-	action_sizer_->Add( login_button_, 0, wxALIGN_CENTER|wxALL, 5 );
+	action_sizer_->Add( bSizer4, 1, wxALIGN_CENTER|wxALL, 5 );
 
 
 	bSizer41->Add( action_sizer_, 1, wxEXPAND, 5 );
@@ -91,9 +98,6 @@ UILoginFrame::UILoginFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	m_panel1->Layout();
 	bSizer41->Fit( m_panel1 );
 	container_sizer_->Add( m_panel1, 1, wxEXPAND | wxALL, 5 );
-
-
-	container_sizer_->Add( 0, 0, 1, wxEXPAND, 5 );
 
 
 	this->SetSizer( container_sizer_ );
