@@ -13,11 +13,15 @@
 #include <wx/taskbar.h>
 #include <wx/splash.h>
 #include <wx/stdpaths.h>
-#include <wx/imagpng.h>
+#include <wx/utils.h>
 #include <wx/file.h>
 #include <wx/image.h>
 
 wxIMPLEMENT_APP(App);
+
+Frame::Frame() : wxFrame(nullptr, wxID_ANY, "You should never see me") {
+  tray_icon_ = new TaskBarIcon();
+}
 
 bool App::OnInit() {
   static plog::ConsoleAppender<plog::TxtFormatter> console_appender;
@@ -38,8 +42,18 @@ bool App::OnInit() {
   if (!wxApp::OnInit())
     return false;
 
-  //wxImage::AddHandler(new wxPNGHandler);
   wxInitAllImageHandlers();
+
+  wxApp::SetExitOnFrameDelete(true);
+  auto *menubar = new wxMenuBar;
+  wxMenuBar::MacSetCommonMenuBar(menubar);
+
+  // Login Dialog (also our main frame)
+  login_dialog_ = new LoginDialog(nullptr);
+  login_dialog_->onLoginClicked.connect([this](const std::string &email, const std::string &password) {
+    logIn(email, password);
+  });
+  SetTopWindow(login_dialog_);
 
   if (!wxTaskBarIcon::IsAvailable()) {
     wxMessageBox
@@ -51,12 +65,10 @@ bool App::OnInit() {
     return false;
   }
 
-  login_dialog_ = new LoginDialog();
-  tray_icon_ = new TaskBarIcon();
-
   // Show splash screen
-  /*assert(wxFile::Exists(wxStandardPaths::Get().GetResourcesDir() + "/splash.png"));
-  auto *splash = new wxSplashScreen(wxBitmap(wxStandardPaths::Get().GetResourcesDir() + "/splash.png", wxBITMAP_TYPE_PNG_RESOURCE),
+  /*
+  auto splash_bitmap = wxBitmap(wxStandardPaths::Get().GetResourcesDir() + "/splash.png", wxBITMAP_TYPE_PNG);
+  auto *splash = new wxSplashScreen(splash_bitmap,
                                     wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
                                     2500,
                                     nullptr,
@@ -64,13 +76,27 @@ bool App::OnInit() {
                                     wxDefaultPosition,
                                     wxDefaultSize,
                                     wxFRAME_NO_TASKBAR | wxSIMPLE_BORDER | wxSTAY_ON_TOP);
-  wxYield();*/
+  wxYield();
+  wxSleep(2);
+  splash->Destroy();*/
+
+  tray_icon_ = new TaskBarIcon();
+  tray_icon_->loginClicked.connect([this]() { login_dialog_->SetFocus(); });
+  tray_icon_->restartClicked.connect([this]() { restart(); });
+  tray_icon_->openStageClicked.connect([]() { openStage(); });
+  tray_icon_->openSettingsClicked.connect([this]() { openSettings(); });
+  //tray_icon_->addBoxClicked.connect([this](){ });
+  tray_icon_->logoutClicked.connect([this]() { logOut(); });
+  tray_icon_->closeClicked.connect([this]() { login_dialog_->Close(true); });
 
   // Try to auto sign in
   auto email = KeyStore::restoreEmail();
   if (email) {
+    PLOGI << "Have email" << *email;
     login_dialog_->setEmail(*email);
     token_ = tryAutoLogin(*email);
+  } else {
+    PLOGI << "Have NO email" << *email;
   }
   if (!token_.has_value()) {
     // Show login menu and dialog
@@ -90,12 +116,14 @@ std::optional<std::string> App::tryAutoLogin(const std::string &email) {
   auto credentials = KeyStore::restore(email);
   if (credentials) {
     // Try to get token
-    auto token = auth_service_->signInSync(credentials->email, credentials->password);
-    if (token.has_value()) {
-      return *token;
-    }
-    if (!KeyStore::remove(email)) {
-      PLOGE << "Could not reset credentials for " << email;
+    try {
+      token_ = auth_service_->signInSync(credentials->email, credentials->password);
+      return token_;
+    } catch (DigitalStage::Auth::AuthError &error) {
+      login_dialog_->setError(std::to_string(error.getCode()) + ": " + error.what());
+      if (!KeyStore::remove(email)) {
+        PLOGE << "Could not reset credentials for " << email;
+      }
     }
   }
   return std::nullopt;
@@ -105,6 +133,7 @@ void App::logIn(const std::string &email, const std::string &password) {
   login_dialog_->setLoading(true);
   login_dialog_->resetError();
   try {
+    PLOGI << "Login";
     token_ = auth_service_->signInSync(email, password);
     KeyStore::storeEmail(email);
     KeyStore::store({email, password});
@@ -113,6 +142,9 @@ void App::logIn(const std::string &email, const std::string &password) {
     login_dialog_->setLoading(false);
     login_dialog_->Hide();
     start();
+  } catch (DigitalStage::Auth::AuthError &ex) {
+    login_dialog_->setLoading(false);
+    login_dialog_->setError(std::to_string(ex.getCode()) + ": " + ex.what());
   } catch (std::exception &ex) {
     login_dialog_->setLoading(false);
     login_dialog_->setError(ex.what());

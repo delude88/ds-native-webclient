@@ -53,7 +53,7 @@ void TrayIcon::showStatusMenu() {
 
 void TrayIcon::showLoginMenu() {
   auto menu = new QMenu();
-  auto viewLoginAction = new QAction(tr("Login"), this);
+  auto view_login_action = new QAction(tr("Login"), this);
   menu->addAction(viewLoginAction);
   connect(viewLoginAction, &QAction::triggered, [=]() {
     emit loginClicked();

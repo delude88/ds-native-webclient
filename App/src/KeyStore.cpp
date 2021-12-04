@@ -1,12 +1,11 @@
 #include "KeyStore.h"
 #include <iostream>
-#include <wx/sysopt.h>
 
 #include <keychain/keychain.h>
-
-KeyStore::KeyStore() = default;
+#include <plog/Log.h>
 
 auto KeyStore::store(const Credentials &credentials) -> bool {
+  PLOGI << "store";
   keychain::Error error{};
   keychain::setPassword(KEYSTORE_PACKAGE,
                         KEYSTORE_SERVICE,
@@ -22,6 +21,7 @@ auto KeyStore::store(const Credentials &credentials) -> bool {
 }
 
 auto KeyStore::restore(const std::string &email) -> std::optional<KeyStore::Credentials> {
+  PLOGI << "restore";
   keychain::Error error{};
   auto password = keychain::getPassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {
@@ -33,6 +33,7 @@ auto KeyStore::restore(const std::string &email) -> std::optional<KeyStore::Cred
 }
 
 auto KeyStore::remove(const std::string &email) -> bool {
+  PLOGI << "remove";
   keychain::Error error{};
   keychain::deletePassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {
@@ -44,12 +45,20 @@ auto KeyStore::remove(const std::string &email) -> bool {
 }
 
 auto KeyStore::restoreEmail() -> std::optional<std::string> {
-  if (wxSystemOptions::HasOption(EMAIL_IDENTIFIER)) {
-    return wxSystemOptions::GetOption(EMAIL_IDENTIFIER).ToStdString();
+  PLOGI << "restoreEmail " << EMAIL_IDENTIFIER;
+  auto* config = new wxConfig(KEYSTORE_PACKAGE);
+  if (config->HasEntry("email")) {
+    auto value = config->Read("email").ToStdString();
+    delete config;
+    return value;
   }
+  delete config;
   return std::nullopt;
 }
 
 void KeyStore::storeEmail(const std::string &email) {
-  wxSystemOptions::SetOption(EMAIL_IDENTIFIER, email);
+  PLOGI << "storeEmail" << email;
+  auto* config = new wxConfig(KEYSTORE_PACKAGE);
+  config->Write("email", wxString(email));
+  delete config;
 }

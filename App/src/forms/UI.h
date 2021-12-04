@@ -23,19 +23,22 @@
 #include <wx/sizer.h>
 #include <wx/hyperlink.h>
 #include <wx/button.h>
-#include <wx/dialog.h>
+#include <wx/panel.h>
+#include <wx/menu.h>
+#include <wx/frame.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Class UILoginDialog
+/// Class UILoginFrame
 ///////////////////////////////////////////////////////////////////////////////
-class UILoginDialog : public wxDialog
+class UILoginFrame : public wxFrame
 {
 	private:
 
 	protected:
+		wxPanel* m_panel1;
 		wxStaticBitmap* logo_;
 		wxStaticText* email_label_;
 		wxTextCtrl* email_entry_;
@@ -45,6 +48,7 @@ class UILoginDialog : public wxDialog
 		wxStaticText* signup_hint_;
 		wxHyperlinkCtrl* signup_link_;
 		wxButton* login_button_;
+		wxMenuBar* m_menubar1;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void onLogin( wxCommandEvent& event ) { event.Skip(); }
@@ -52,9 +56,9 @@ class UILoginDialog : public wxDialog
 
 	public:
 
-		UILoginDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Anmeldung"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 428,280 ), long style = wxDEFAULT_DIALOG_STYLE );
+		UILoginFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Digital Stage Connector"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,305 ), long style = wxCAPTION|wxCLOSE_BOX|wxFRAME_NO_TASKBAR|wxSTAY_ON_TOP|wxTAB_TRAVERSAL );
 
-		~UILoginDialog();
+		~UILoginFrame();
 
 };
 

@@ -1,12 +1,12 @@
 #pragma once
 
 #include "forms/UI.h"
+#include <sigslot/signal.hpp>
 
-class LoginDialog : public UILoginDialog {
-
+class LoginDialog : public UILoginFrame {
  public:
-  explicit LoginDialog(wxWindow* parent = nullptr);
-  ~LoginDialog();
+  explicit LoginDialog(wxWindow *parent = nullptr);
+  ~LoginDialog() override;
 
   std::string getEmail() const;
   std::string getPassword() const;
@@ -17,4 +17,8 @@ class LoginDialog : public UILoginDialog {
   void setPassword(const std::string &password);
   void setError(const std::string &error);
   void resetError();
+
+  sigslot::signal<std::string, std::string> onLoginClicked;
+ protected:
+  void onLogin(wxCommandEvent &event) override;
 };

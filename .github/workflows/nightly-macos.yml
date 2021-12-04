@@ -20,9 +20,9 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.CODESIGN_CERTIFICATE }}
           p12-password: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
-      - name: Install Qt6 using brew
+      - name: Install wxwidgets using brew
         run: |
-          brew install qt@6
+          brew install wxwidgets
       - name: Install depedencies using conan
         run: |
           pip3 install wheel setuptools

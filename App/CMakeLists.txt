@@ -68,7 +68,7 @@ set(RESOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full.png
         )
 if (APPLE)
-    list(APPEND ${RESOURCES}
+    list(APPEND RESOURCES
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon@2x.png
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full@2x.png)

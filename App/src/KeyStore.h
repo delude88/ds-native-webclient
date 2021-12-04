@@ -5,6 +5,7 @@
 
 #include <string>
 #include <optional>
+#include <wx/config.h>
 
 #ifndef KEYSTORE_PACKAGE
 #define KEYSTORE_PACKAGE "org.digital-stage.client"
@@ -24,13 +25,11 @@ class KeyStore {
     std::string password;
   };
 
-  explicit KeyStore();
-
-  static bool store(const Credentials& credentials);
-  static std::optional<Credentials> restore(const std::string& email) ;
-  [[nodiscard]] static bool remove(const std::string& email) ;
+  static bool store(const Credentials &credentials);
+  static std::optional<Credentials> restore(const std::string &email);
+  [[nodiscard]] static bool remove(const std::string &email);
 
   static std::optional<std::string> restoreEmail();
-  static void storeEmail(const std::string& email);
+  static void storeEmail(const std::string &email);
 };
 

@@ -26,6 +26,18 @@
 #include <Client.h>
 #include <DigitalStage/Auth/AuthService.h>
 
+class Frame : public wxFrame {
+ public:
+  Frame();
+
+  virtual ~Frame() {
+    delete tray_icon_;
+  }
+
+ public:
+  TaskBarIcon *tray_icon_;
+};
+
 class App : public wxApp {
  public:
   bool OnInit() override;
