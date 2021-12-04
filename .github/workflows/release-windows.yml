@@ -14,15 +14,32 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+
+      - name: Install Ninja
+        run: |
+          choco install ninja
+      - name: Cache wxWidgets
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-wxWidgets
         with:
-          version: '6.2.1'
-          host: "windows"
-          target: "desktop"
-          arch: "win64_msvc2019_64"
-          dir: "${{github.workspace}}/qt/"
-          install-deps: "true"
+          path: wxWidgets-${{env.WXVERSION}}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-2
+      # multi-job compilation is broken in wxWidgets, see https://trac.wxwidgets.org/ticket/19029
+      # compiling wxWidgets via cmake works, but the result isn't detected by cmake any more.
+      - name: Compile wxWidgets
+        run: |
+          if (Test-Path wxWidgets-${{env.WXVERSION}}) { echo "wxWidgets already present"} else {
+             Invoke-WebRequest -Uri https://github.com/wxWidgets/wxWidgets/releases/download/v${{env.WXVERSION}}/wxWidgets-${{env.WXVERSION}}.zip -OutFile wxWidgets-${{env.WXVERSION}}.zip
+             Expand-Archive -LiteralPath wxWidgets-${{env.WXVERSION}}.zip -DestinationPath wxWidgets-${{env.WXVERSION}}
+             cd wxWidgets-${{env.WXVERSION}}
+             cd build
+             cd msw
+             mingw32-make -f makefile.gcc SHELL=cmd.exe SHARED=0 BUILD=release
+             cd ..
+             cd ..
+             cd ..
+          }
 
       - name: Install Conan package manager
         run: |
@@ -34,7 +51,8 @@ jobs:
       - name: Configure CMake
         env:
           CMAKE_PREFIX_PATH: ${{env.Qt6_Dir}}
-        run: cmake -S . -B build -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF
+        run: |
+          cmake -S . -B build -DUSE_GNUTLS=0 -DCMAKE_BUILD_TYPE=Release -DBUILD_SERVICE=OFF -DwxWidgets_ROOT_DIR="../../wxWidgets-${{env.WXVERSION}}" -DwxWidgets_LIB_DIR="../../wxWidgets-${{env.WXVERSION}}/lib/gcc_lib" -DwxWidgets_CONFIGURATION=mswu -DwxWidgets_USE_DEBUG=false -DwxWidgets_USE_UNICODE=true -DwxWidgets_USE_STATIC=true
       - name: Build with CMake
         run: cmake --build build --config Release
       - name: Bundle App
