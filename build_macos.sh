@@ -5,15 +5,14 @@ if [ "$1" != "noprepare" ]; then
   git submodule update --init --recursive
   pip3 install wheel setuptools
   pip3 install conan
-  # Install wxwidgets
-  brew install wxwidgets
-  # Instal other dependencies using conan
+
+  # Install other dependencies using conan
   conan install -if build --build missing .
   # Configure
   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
-cmake --build build --config Release --parallel
+cmake --build build --config Release
 # Pack app
 cpack --config build/CPackConfigApp.cmake -B build
 # Pack service

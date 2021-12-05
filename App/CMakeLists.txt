@@ -46,9 +46,10 @@ if (NOT TARGET plog)
     find_package(plog REQUIRED)
 endif ()
 if (NOT TARGET wxWidgets)
-    set(wxWidgets_USE_STATIC ON)
-    find_package(wxWidgets COMPONENTS core REQUIRED)
-    include(${wxWidgets_USE_FILE})
+    set(wxBUILD_SHARED OFF)
+    set(wxUSE_STL ON)
+    set(wxBUILD_PRECOMP ON)
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/wxWidgets EXCLUDE_FROM_ALL)
 endif (NOT TARGET wxWidgets)
 # Keychain
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/keychain EXCLUDE_FROM_ALL)
@@ -102,7 +103,8 @@ target_link_libraries(${target}
         PRIVATE
         DigitalStageConnectorCore
         DeviceId::DeviceId
-        ${wxWidgets_LIBRARIES}
+        wx::core
+        wx::base
         keychain
         DigitalStage::AuthStatic
         )
@@ -185,7 +187,7 @@ elseif (APPLE)
             message(STATUS \"Fixup\")
             fixup_bundle(\"${APPS}.app\" \"\" \"\")
             message(STATUS \"Code-Signing bundle\")
-            execute_process(COMMAND codesign --force --deep --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
+            execute_process(COMMAND codesign --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
                 COMPONENT ${target})
         #set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
         #set(CPACK_BUNDLE_APPLE_CODESIGN_PARAMETER "--force --deep --options runtime")
@@ -196,7 +198,6 @@ elseif (APPLE)
                 COMPONENT ${target})
     endif (CODESIGN_CERTIFICATE_NAME)
     include(InstallRequiredSystemLibraries)
-    set(CPACK_DMG_VOLUME_NAME ${CPACK_PACKAGE_NAME})
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
     set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
     set(CPACK_GENERATOR "DragNDrop")

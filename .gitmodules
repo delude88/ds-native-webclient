@@ -25,3 +25,6 @@
 [submodule "App/deps/keychain"]
 	path = App/deps/keychain
 	url = https://github.com/delude88/keychain
+[submodule "App/deps/wxWidgets"]
+	path = App/deps/wxWidgets
+	url = https://github.com/wxWidgets/wxWidgets.git

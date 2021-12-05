@@ -20,6 +20,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
+      - name: Get current version (without leading v)
+        run: echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:11})
       - name: Install codesign certificates
         uses: apple-actions/import-codesign-certs@v1
         with:
@@ -43,22 +45,23 @@ jobs:
         run: cpack --config build/CPackConfigService.cmake -B build
 
       - name: Rename to nighly
-        run: mv bin/digital-stage-connector-*.dmg bin/digital-stage-connector-nightly-Darwin.dmg
-
+        run: |
+          mv build/digital-stage-connector-${RELEASE_VERSION}-Darwin-app.dmg build/digital-stage-connector-nightly-Darwin-app.dmg
+          mv build/digital-stage-connector-${RELEASE_VERSION}-Darwin-service.dmg build/digital-stage-connector-nightly-Darwin-service.dmg
       - name: Sign bundle
         run: |
-          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-nightly-Darwin.dmg
+          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-nightly-Darwin-app.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: "build/digital-stage-connector-nightly-Darwin.dmg"
+          product-path: "build/digital-stage-connector-nightly-Darwin-app.dmg"
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
           primary-bundle-id: de.tobiashegemann.digital-stage.app
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: "build/digital-stage-connector-nightly-Darwin.dmg"
+          product-path: "build/digital-stage-connector-nightly-Darwin-app.dmg"
 
       - name: Publish bundle
         uses: ncipollo/release-action@v1

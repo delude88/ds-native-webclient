@@ -22,7 +22,7 @@ jobs:
           pip3 install wheel setuptools
           pip3 install conan
       - name: Install linux related project dependencies using apt
-        run: sudo apt-get -y install build-essential libwxgtk3.0-gtk3-dev gettext libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
+        run: sudo apt-get -y install build-essential gettext libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
       - name: Install general project dependencies using Conan package manager
         run: |
           conan profile new default --detect
@@ -39,7 +39,7 @@ jobs:
       - name: Publish archive
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/*.deb,build/*.AppImage"
+          artifacts: "build/*.deb,build/*.zip"
           bodyFile: "HOWTO.md"
           commit: "main"
           tag: "Nightly"
