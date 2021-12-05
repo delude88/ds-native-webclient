@@ -63,7 +63,7 @@ jobs:
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/*.dmg,build/*.zip"
+          artifacts: "build/*.dmg,build/*.pkg"
           bodyFile: "HOWTO.md"
           commit: "main"
           tag: "Nightly"

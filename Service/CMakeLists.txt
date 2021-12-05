@@ -98,14 +98,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 #
 #################################################
 include(GNUInstallDirs)
-install(
-        TARGETS ${PROJECT_NAME}
-        EXPORT "${PROJECT_NAME}Targets"
+install(TARGETS ${PROJECT_NAME}
         COMPONENT ${PROJECT_NAME}
-        #PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
-        #INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
+        )
 
 #################################################
 #
@@ -127,14 +122,27 @@ set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_LIST_DIR}/../LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_LIST_DIR}/../README.md)
 if (WIN32)
     # Windows - unsupported right now
+    install(TARGETS ${PROJECT_NAME}
+            RUNTIME DESTINATION . COMPONENT ${PROJECT_NAME}
+            )
     include(InstallRequiredSystemLibraries)
     set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
     set(CPACK_GENERATOR "ZIP")
 elseif (APPLE)
     # Apple
     include(InstallRequiredSystemLibraries)
-    set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
-    set(CPACK_GENERATOR "ZIP")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../HOWTO.md ${CMAKE_CURRENT_BINARY_DIR}/ReadMe.txt COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE ${CMAKE_CURRENT_BINARY_DIR}/License.txt COPYONLY)
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_BINARY_DIR}/License.txt)
+    set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_BINARY_DIR}/ReadMe.txt)
+    if (CODESIGN_CERTIFICATE_NAME)
+        install(CODE "
+            message(STATUS \"Code-Signing binary\")
+            execute_process(COMMAND codesign --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"$<TARGET_FILE:${PROJECT_NAME}>\")"
+                COMPONENT ${PROJECT_NAME})
+    endif (CODESIGN_CERTIFICATE_NAME)
+    set(CPACK_PACKAGING_INSTALL_PREFIX /usr/local)
+    set(CPACK_GENERATOR "productbuild")
 elseif (UNIX)
     # Linux
     # Debian

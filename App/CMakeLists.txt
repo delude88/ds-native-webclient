@@ -96,8 +96,7 @@ target_sources(${target}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KeyStore.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/forms/UI.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/forms/UI.cpp
-        ${RESOURCES}
-        ${APP_ICON})
+        ${RESOURCES})
 target_link_libraries(${target}
         PRIVATE
         DigitalStageConnectorCore
