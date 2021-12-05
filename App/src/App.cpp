@@ -51,8 +51,10 @@ bool App::OnInit() {
   wxInitAllImageHandlers();
 
   wxApp::SetExitOnFrameDelete(true);
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
   auto *menubar = new wxMenuBar;
   wxMenuBar::MacSetCommonMenuBar(menubar);
+#endif
 
   // Login Dialog (also our main frame)
   login_dialog_ = new LoginDialog(nullptr);
