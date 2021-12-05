@@ -20,11 +20,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Get version
-        run: |
-          FULL_VERSION=$(git describe --tags --abbrev=0)
-          echo '::set-output name=VERSION::$(echo ${FULL_VERSION:1})'
-        id: get-version
+      - id: get_version
+        uses: battila7/get-version-action@v2
       - name: Install codesign certificates
         uses: apple-actions/import-codesign-certs@v1
         with:
@@ -49,22 +46,22 @@ jobs:
 
       - name: Rename to nighly
         run: |
-          mv build/digital-stage-connector-${{ steps.get-version.outputs.VERSION }}-Darwin-app.dmg build/digital-stage-connector-nightly-Darwin-app.dmg
-          mv build/digital-stage-connector-${{ steps.get-version.outputs.VERSION }}-Darwin-service.dmg build/digital-stage-connector-nightly-Darwin-service.dmg
+          mv build/digital-stage-connector-${{ steps.get_version.outputs.version-without-v }}-Darwin-app.dmg build/digital-stage-connector-nightly-Darwin-app.dmg
+          mv build/digital-stage-connector-${{ steps.get_version.outputs.version-without-v }}-Darwin-service.dmg build/digital-stage-connector-nightly-Darwin-service.dmg
       - name: Sign bundle
         run: |
           codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-nightly-Darwin-app.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: "build/digital-stage-connector-nightly-Darwin-app.dmg"
+          product-path: build/digital-stage-connector-nightly-Darwin-app.dmg
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
           primary-bundle-id: de.tobiashegemann.digital-stage.app
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: "build/digital-stage-connector-nightly-Darwin-app.dmg"
+          product-path: build/digital-stage-connector-nightly-Darwin-app.dmg
 
       - name: Publish bundle
         uses: ncipollo/release-action@v1

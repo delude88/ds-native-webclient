@@ -98,7 +98,6 @@ target_sources(${target}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/forms/UI.cpp
         ${RESOURCES}
         ${APP_ICON})
-#target_include_directories(${target} PRIVATE ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${target}
         PRIVATE
         DigitalStageConnectorCore
