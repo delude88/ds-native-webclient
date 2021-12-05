@@ -18,8 +18,5 @@ cmake --build build --config Release --parallel
 cpack --config build/CPackConfigApp.cmake -B build
 # Pack service
 cpack --config build/CPackConfigService.cmake -B build
-echo "WITHOUT SIGNING"
-spctl -a -t open -vvv --context context:primary-signature build/digital-stage-connector*.dmg
 codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector*.dmg
-echo "WITH SIGNING"
 spctl -a -t open -vvv --context context:primary-signature build/digital-stage-connector*.dmg

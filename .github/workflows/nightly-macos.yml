@@ -42,20 +42,23 @@ jobs:
       - name: Bundle Service
         run: cpack --config build/CPackConfigService.cmake -B build
 
+      - name: Rename to nighly
+        run: mv bin/digital-stage-connector-*.dmg bin/digital-stage-connector-nightly-Darwin.dmg
+
       - name: Sign bundle
         run: |
-          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-0.0.6-Darwin.dmg
+          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-nightly-Darwin.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: "build/digital-stage-connector-0.0.6-Darwin.dmg"
+          product-path: "build/digital-stage-connector-nightly-Darwin.dmg"
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
           primary-bundle-id: de.tobiashegemann.digital-stage.app
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: "build/digital-stage-connector-0.0.6-Darwin.dmg"
+          product-path: "build/digital-stage-connector-nightly-Darwin.dmg"
 
       - name: Publish bundle
         uses: ncipollo/release-action@v1
