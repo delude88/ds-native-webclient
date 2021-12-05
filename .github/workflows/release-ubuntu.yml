@@ -20,7 +20,7 @@ jobs:
           pip3 install wheel setuptools
           pip3 install conan
       - name: Install linux related project dependencies using apt
-        run: sudo apt-get -y install build-essential libgtk-3-dev libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
+        run: sudo apt-get -y install build-essential libgtk-3-dev freeglut3-dev libssl-dev libsrtp2-dev libsecret-1-dev cmake pkg-config libasound2-dev libjack-dev
       - name: Install general project dependencies using Conan package manager
         run: |
           conan profile new default --detect

@@ -9,7 +9,7 @@ if [ "$1" != "noprepare" ]; then
   # Install other dependencies using conan
   conan install -if build --build missing .
   # Configure
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
 cmake --build build --config Release
