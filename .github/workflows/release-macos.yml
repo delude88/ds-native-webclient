@@ -25,8 +25,7 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.CODESIGN_CERTIFICATE }}
           p12-password: ${{ secrets.CODESIGN_CERTIFICATE_PASSWORD }}
-      - name: Install wxwidget
-        run: brew install wxwidgets
+
       - name: Install depedencies using conan
         run: |
           pip3 install wheel setuptools
@@ -41,6 +40,7 @@ jobs:
         run: cpack --config build/CPackConfigApp.cmake -B build
       - name: Bundle Service
         run: cpack --config build/CPackConfigService.cmake -B build
+
       - name: Sign bundle
         run:  |
           codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-${{ steps.get_version.outputs.version-without-v }}-Darwin-app.dmg
