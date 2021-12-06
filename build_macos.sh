@@ -9,7 +9,7 @@ if [ "$1" != "noprepare" ]; then
   # Install other dependencies using conan
   conan install -if build --build missing .
   # Configure
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
 cmake --build build --config Release
@@ -19,3 +19,4 @@ cpack --config build/CPackConfigApp.cmake -B build
 cpack --config build/CPackConfigService.cmake -B build
 codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector*.dmg
 spctl -a -t open -vvv --context context:primary-signature build/digital-stage-connector*.dmg
+

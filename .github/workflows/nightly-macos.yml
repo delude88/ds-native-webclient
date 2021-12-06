@@ -43,8 +43,8 @@ jobs:
 
       - name: Rename to nighly
         run: |
-          mv build/digital-stage-connector-*-Darwin-app.dmg build/digital-stage-connector-nightly-Darwin-app.dmg
-          mv build/digital-stage-connector-*-Darwin-service.dmg build/digital-stage-connector-nightly-Darwin-service.dmg
+          mv build/digital-stage-connector-*.dmg build/digital-stage-connector-nightly-Darwin-app.dmg
+          mv build/digital-stage-connector-*.pkg build/digital-stage-connector-nightly-Darwin-service.pkg
       - name: Sign bundle
         run: |
           codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-nightly-Darwin-app.dmg
