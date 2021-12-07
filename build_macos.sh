@@ -14,17 +14,19 @@ fi
 # Build
 cmake --build build --config Release
 
-if [ "$1" != "onlybuild" ]; then
+if [ "$1" = "sign" ]; then
   # Pack app
   cpack --config build/CPackConfigApp.cmake -B build
   # Pack service
   cpack --config build/CPackConfigService.cmake -B build
   xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file build/digital-stage-connector-*.dmg
+  for (( ; ; ))
   do
     xcrun stapler staple build/digital-stage-connector*.dmg
     if [ $? -eq 0 ]; then break; fi
   done
   xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.service --file build/digital-stage-connector-*.pkg
+  for (( ; ; ))
   do
     xcrun stapler staple build/digital-stage-connector*.pkg
     if [ $? -eq 0 ]; then break; fi
