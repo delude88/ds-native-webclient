@@ -45,9 +45,6 @@ jobs:
         run: |
           mv build/digital-stage-connector-*.dmg build/digital-stage-connector-nightly-Darwin-app.dmg
           mv build/digital-stage-connector-*.pkg build/digital-stage-connector-nightly-Darwin-service.pkg
-      - name: Sign bundle
-        run: |
-          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-nightly-Darwin-app.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:

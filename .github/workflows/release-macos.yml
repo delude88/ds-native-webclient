@@ -39,9 +39,6 @@ jobs:
       - name: Bundle Service
         run: cpack --config build/CPackConfigService.cmake -B build
 
-      - name: Sign bundle
-        run:  |
-          codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector-${{ steps.get_version.outputs.version-without-v }}-Darwin-app.dmg
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:

@@ -185,10 +185,8 @@ elseif (APPLE)
             message(STATUS \"Fixup\")
             fixup_bundle(\"${APPS}.app\" \"\" \"\")
             message(STATUS \"Code-Signing bundle\")
-            execute_process(COMMAND codesign --options runtime --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
+            execute_process(COMMAND codesign --force --timestamp --options runtime --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
                 COMPONENT ${target})
-        #set(CPACK_BUNDLE_APPLE_CERT_APP ${CODESIGN_CERTIFICATE_NAME})
-        #set(CPACK_BUNDLE_APPLE_CODESIGN_PARAMETER "--force --deep --options runtime")
     else ()
         install(CODE "
         include(BundleUtilities)

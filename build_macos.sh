@@ -1,6 +1,6 @@
 #!/bin/zsh
 ## You can skip preparation by calling ./build_macos.sh noprepare
-if [ "$1" != "noprepare" ]; then
+if [ "$1" != "onlybuild" ]; then
   # Prepare
   git submodule update --init --recursive
   pip3 install wheel setuptools
@@ -13,10 +13,20 @@ if [ "$1" != "noprepare" ]; then
 fi
 # Build
 cmake --build build --config Release
-# Pack app
-cpack --config build/CPackConfigApp.cmake -B build
-# Pack service
-cpack --config build/CPackConfigService.cmake -B build
-codesign --force --options runtime --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" build/digital-stage-connector*.dmg
-spctl -a -t open -vvv --context context:primary-signature build/digital-stage-connector*.dmg
 
+if [ "$1" != "onlybuild" ]; then
+  # Pack app
+  cpack --config build/CPackConfigApp.cmake -B build
+  # Pack service
+  cpack --config build/CPackConfigService.cmake -B build
+  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file build/digital-stage-connector-*.dmg
+  do
+    xcrun stapler staple build/digital-stage-connector*.dmg
+    if [ $? -eq 0 ]; then break; fi
+  done
+  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.service --file build/digital-stage-connector-*.pkg
+  do
+    xcrun stapler staple build/digital-stage-connector*.pkg
+    if [ $? -eq 0 ]; then break; fi
+  done
+fi
