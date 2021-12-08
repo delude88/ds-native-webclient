@@ -18,7 +18,7 @@
 #include <BRIR/BRIRCereal.h>
 #include <BinauralSpatializer/3DTI_BinauralSpatializer.h>
 #include <plog/Log.h>
-#include "AudioMixer.h"
+#include <DigitalStage/Audio/AudioMixer.h>
 
 #include <cmrc/cmrc.hpp>
 CMRC_DECLARE(clientres);
@@ -83,7 +83,7 @@ class AudioRenderer {
   std::unordered_map<std::string, std::shared_ptr<Binaural::CSingleSourceDSP>> audio_tracks_;
   std::mutex mutex_;
 
-  std::unique_ptr<AudioMixer<float>> audio_mixer_;
+  std::unique_ptr<DigitalStage::Audio::AudioMixer<float>> audio_mixer_;
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;
 };
 

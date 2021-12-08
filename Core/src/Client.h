@@ -9,7 +9,6 @@
 #include <DigitalStage/Api/Client.h>
 #include "webrtc/ConnectionService.h"
 #include "audio/AudioIO.h"
-#include "audio/AudioMixer.h"
 #include "audio/AudioRenderer.h"
 #ifdef USE_CIRCULAR_QUEUE
 #include "utils/CircularQueue.h"

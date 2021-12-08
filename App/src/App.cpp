@@ -81,7 +81,7 @@ bool App::OnInit() {
   // Tray icon
   tray_icon_ = new TaskBarIcon();
 #if defined(__WXOSX__) && wxOSX_USE_COCOA
-  auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon@2x.png", wxBITMAP_TYPE_PNG);
+  auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon.png"/*, wxBITMAP_TYPE_PNG*/);
 #else
   auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon.png", wxBITMAP_TYPE_PNG);
 #endif
