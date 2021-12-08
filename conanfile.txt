@@ -12,7 +12,7 @@ ixwebsocket/11.2.4
 ### libds
 nlohmann_json/3.10.4
 sigslot/1.2.1
-plog/1.1.5
+# plog/1.1.5
 
 
 [generators]

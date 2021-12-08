@@ -56,11 +56,25 @@ option(BUILD_APP "Build App (requires Qt5 or Qt6)" ON)
 option(BUILD_SERVICE "Build headless service" ON)
 
 
+if (CMAKE_OSX_DEPLOYMENT_TARGET LESS_EQUAL "10.14")
+    # See: https://github.com/nlohmann/json/issues/3156
+    add_compile_definitions(JSON_HAS_CPP_14)
+endif ()
+
+
 #################################################
 #
 #   Dependencies
 #
 #################################################
+# IXWebSocket
+#set(USE_TLS ON CACHE BOOL "Support TLS" FORCE)
+#set(BUILD_SHARED_LIBS OFF CACHE BOOL "Don't use static libs" FORCE)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/IXWebSocket EXCLUDE_FROM_ALL)
+# libds
+set(USE_IX_WEBSOCKET ON CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
+
 # libdatachannel
 set(NO_WEBSOCKET ON CACHE BOOL "" FORCE)
 set(NO_MEDIA ON CACHE BOOL "" FORCE)
@@ -71,18 +85,14 @@ if (UNIX AND NOT APPLE)
     set(USE_GNUTLS OFF CACHE BOOL "" FORCE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdatachannel EXCLUDE_FROM_ALL)
-# IXWebSocket
-#set(USE_TLS ON CACHE BOOL "Support TLS" FORCE)
-#set(BUILD_SHARED_LIBS OFF CACHE BOOL "Don't use static libs" FORCE)
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/IXWebSocket EXCLUDE_FROM_ALL)
-# libds
-set(USE_IX_WEBSOCKET ON CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
+
 # libdeviceid
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
+
 # UDP Discovery cpp
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
 set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
+
 
 add_subdirectory(Core EXCLUDE_FROM_ALL)
 if (BUILD_SERVICE)
