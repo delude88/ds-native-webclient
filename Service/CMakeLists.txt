@@ -68,8 +68,8 @@ target_sources(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/auth_cli.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/AuthIO.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/RemoteAuthService.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/RemoteAuthService.cpp
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/RemoteAuthService.h
+        #${CMAKE_CURRENT_SOURCE_DIR}/src/RemoteAuthService.cpp
         )
 target_include_directories(${PROJECT_NAME}
         PRIVATE

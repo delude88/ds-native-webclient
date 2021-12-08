@@ -80,11 +80,7 @@ bool App::OnInit() {
 
   // Tray icon
   tray_icon_ = new TaskBarIcon();
-#if defined(__WXOSX__) && wxOSX_USE_COCOA
-  auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon.png"/*, wxBITMAP_TYPE_PNG*/);
-#else
   auto icon = wxIcon(wxStandardPaths::Get().GetResourcesDir() + "/icon.png", wxBITMAP_TYPE_PNG);
-#endif
   tray_icon_->SetIcon(icon);
   tray_icon_->loginClicked.connect([this]() { login_dialog_->SetFocus(); });
   tray_icon_->restartClicked.connect([this]() { restart(); });

@@ -16,7 +16,7 @@
 
 // Local
 #include "auth_cli.h"
-#include "RemoteAuthService.h"
+//#include "RemoteAuthService.h"
 #include <Client.h>
 #include <utils/ServiceDiscovery.h>
 

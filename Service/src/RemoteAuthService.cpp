@@ -1,9 +1,7 @@
 //
 // Created by Tobias Hegemann on 05.11.21.
 //
-
-#include <cpprest/details/basic_types.h>
-#include <cpprest/uri_builder.h>
+#include <ixwebsocket/IXHttpServer.h>
 #include "RemoteAuthService.h"
 #include "AuthIO.h"
 #include <plog/Log.h>
