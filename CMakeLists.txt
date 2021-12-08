@@ -44,7 +44,7 @@ endif ()
 #
 #################################################
 set(PROJECT_HOMEPAGE_URL "https://github.com/delude88")
-set(PROJECT_DESCRIPTION "Online zusammen proben und aufführen")
+set(PROJECT_DESCRIPTION "Online zusammen proben und auffuehren")
 set(PROJECT_COPYRIGHT "Copyright (c) 2021 Tobias Hegemann")
 set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
 set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
