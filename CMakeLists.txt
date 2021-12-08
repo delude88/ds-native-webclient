@@ -56,12 +56,6 @@ option(BUILD_APP "Build App (requires Qt5 or Qt6)" ON)
 option(BUILD_SERVICE "Build headless service" ON)
 
 
-if (CMAKE_OSX_DEPLOYMENT_TARGET LESS_EQUAL "10.14")
-    # See: https://github.com/nlohmann/json/issues/3156
-    add_compile_definitions(JSON_HAS_CPP_14)
-endif ()
-
-
 #################################################
 #
 #   Dependencies

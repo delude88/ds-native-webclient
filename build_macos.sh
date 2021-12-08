@@ -7,9 +7,9 @@ if [ "$1" != "onlybuild" ]; then
   pip3 install conan
 
   # Install other dependencies using conan
-  conan install -if build --build missing .
+  conan install -if build --build missing -s os.version=10.13 .
   # Configure
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
 cmake --build build --config Release
