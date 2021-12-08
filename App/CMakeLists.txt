@@ -173,7 +173,7 @@ elseif (APPLE)
     set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${target}
             PROPERTIES
-            MACOSX_RPATH ON
+            MACOSX_RPATH TRUE
             MACOSX_BUNDLE TRUE
             MACOSX_BUNDLE_GUI_IDENTIFIER de.tobiashegemann.digital-stage.app
             MACOSX_BUNDLE_BUNDLE_NAME ${BUNDLE_NAME}
@@ -182,7 +182,7 @@ elseif (APPLE)
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
             MACOSX_BUNDLE_LONG_VERSION_STRING ${CMAKE_PROJECT_VERSION}
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
-            MACOSX_BUNDLE_INFO_STRING "${PROJECT_DESCRIPTION}"
+            MACOSX_BUNDLE_INFO_STRING ${PROJECT_DESCRIPTION}
             MACOSX_BUNDLE_ICON_FILE appicon.icns)
     # First use macdeployqt to bundle the qt libs, but do NOT sign yet
     if (CODESIGN_CERTIFICATE_NAME)
