@@ -14,7 +14,7 @@
 	path = Core/deps/cmrc
 	url = https://github.com/vector-of-bool/cmrc.git
 [submodule "Core/deps/libdatachannel"]
-	path = deps/libdatachannel
+	path = Core/deps/libdatachannel
 	url = https://github.com/delude88/libdatachannel.git
 [submodule "deps/libdeviceid"]
 	path = deps/libdeviceid
@@ -28,6 +28,3 @@
 [submodule "App/deps/wxWidgets"]
 	path = App/deps/wxWidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
-[submodule "deps/IXWebSocket"]
-	path = deps/IXWebSocket
-	url = https://github.com/machinezone/IXWebSocket.git

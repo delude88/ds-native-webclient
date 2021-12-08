@@ -2,7 +2,7 @@
 ## You can skip preparation by calling ./build_macos.sh noprepare
 if [ "$1" != "onlybuild" ]; then
   # Prepare
-  git submodule update --init --recursive
+  #git submodule update --init --recursive
   pip3 install wheel setuptools
   pip3 install conan
 

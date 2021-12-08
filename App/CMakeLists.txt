@@ -106,6 +106,7 @@ target_link_libraries(${target}
         wx::base
         keychain
         DigitalStage::AuthStatic
+        plog::plog
         )
 if (APPLE)
     enable_language(OBJC)
