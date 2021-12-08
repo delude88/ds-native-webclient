@@ -30,7 +30,7 @@ jobs:
         run: |
           pip3 install wheel setuptools
           pip3 install conan
-          conan install -if build --build missing -s os.version=10.13 .
+          conan install -if build --build missing -s os.version=10.14 .
       - name: Configure CMake
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
