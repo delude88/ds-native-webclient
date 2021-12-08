@@ -28,3 +28,6 @@
 [submodule "App/deps/wxWidgets"]
 	path = App/deps/wxWidgets
 	url = https://github.com/wxWidgets/wxWidgets.git
+[submodule "deps/IXWebSocket"]
+	path = deps/IXWebSocket
+	url = https://github.com/machinezone/IXWebSocket.git

@@ -57,7 +57,7 @@ void AudioIO::attachHandlers() {
       watchDeviceUpdates();
     }
   }, token_);
-  client_->disconnected.connect([this](bool normal_exit) {
+  client_->disconnected.connect([this](bool /*normal_exit*/) {
     stopWatchingDeviceUpdates();
   }, token_);
   client_->audioDriverSelected.connect([this](std::optional<std::string> audio_driver,
@@ -174,9 +174,9 @@ void AudioIO::attachHandlers() {
   client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackAdded";
-      auto localDeviceId = store->getLocalDeviceId();
-      auto inputSoundCard = store->getInputSoundCard();
-      if (localDeviceId && audio_track.deviceId == *localDeviceId && audio_track.sourceChannel) {
+      auto local_device_id = store->getLocalDeviceId();
+      auto input_sound_card = store->getInputSoundCard();
+      if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         // This is a local track, so map the channels to this track
         mutex_.lock();
         if (!input_channel_mapping_.count(*audio_track.sourceChannel)) {
@@ -190,8 +190,8 @@ void AudioIO::attachHandlers() {
   client_->audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackRemoved";
-      auto localDeviceId = store->getLocalDeviceId();
-      if (localDeviceId && audio_track.deviceId == *localDeviceId && audio_track.sourceChannel) {
+      auto local_device_id = store->getLocalDeviceId();
+      if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         mutex_.lock();
         if (input_channel_mapping_.count(*audio_track.sourceChannel)) {
           input_channel_mapping_.erase(*audio_track.sourceChannel);
@@ -204,13 +204,13 @@ void AudioIO::attachHandlers() {
 }
 
 void AudioIO::publishChannel(int channel) {
-  if (!published_channels_[channel] && !input_channel_mapping_.count(channel)) {
+  if (!published_channels_[channel] && (input_channel_mapping_.count(channel) == 0U)) {
     published_channels_[channel] = true;
     PLOGD << "publishChannel " << channel;
-    auto store = client_->getStore();
-    auto stageId = store->getStageId();
+    auto *store = client_->getStore();
+    auto stage_id = store->getStageId();
     nlohmann::json payload;
-    payload["stageId"] = *stageId;
+    payload["stageId"] = *stage_id;
     payload["type"] = "native";
     payload["sourceChannel"] = channel;
     PLOGD << "Publishing audio track";
@@ -223,7 +223,7 @@ void AudioIO::publishChannel(int channel) {
 
 void AudioIO::unPublishChannel(int channel) {
   PLOGD << "unPublishChannel " << channel;
-  if (input_channel_mapping_.count(channel)) {
+  if (input_channel_mapping_.count(channel) != 0U) {
     published_channels_[channel] = false;
     client_->send(DigitalStage::Api::SendEvents::REMOVE_AUDIO_TRACK, input_channel_mapping_[channel]);
   } else {

@@ -54,9 +54,6 @@ endif (NOT TARGET datachannel)
 if (NOT TARGET plog)
     find_package(plog REQUIRED)
 endif ()
-#if (NOT TARGET OpenSSL)
-#    find_package(OpenSSL REQUIRED)
-#endif (NOT TARGET OpenSSL)
 
 
 #################################################
@@ -147,9 +144,8 @@ cmrc_add_resource_library(${PROJECT_NAME}-resources
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
         DigitalStage::ApiStatic
-        #OpenSSL::Crypto
         3dtiAudioToolkitStatic
-        plog
+        plog::plog
         Threads::Threads
         LibDataChannel::LibDataChannelStatic
         ${PROJECT_NAME}-resources
@@ -161,7 +157,7 @@ target_link_libraries(${PROJECT_NAME}
 #   Installation
 #
 #################################################
-export(
-        TARGETS ${PROJECT_NAME} 3dtiAudioToolkitStatic datachannel-static ${PROJECT_NAME}-resources usrsctp juice-static cmrc-base
-        NAMESPACE ${PROJECT_NAME}::
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")
+#export(
+#        TARGETS ${PROJECT_NAME} 3dtiAudioToolkitStatic datachannel-static ${PROJECT_NAME}-resources usrsctp juice-static cmrc-base
+#        NAMESPACE ${PROJECT_NAME}::
+#        FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")

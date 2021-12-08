@@ -61,6 +61,7 @@ option(BUILD_SERVICE "Build headless service" ON)
 #   Dependencies
 #
 #################################################
+# libdatachannel
 set(NO_WEBSOCKET ON CACHE BOOL "" FORCE)
 set(NO_MEDIA ON CACHE BOOL "" FORCE)
 set(NO_TESTS ON CACHE BOOL "" FORCE)
@@ -70,9 +71,16 @@ if (UNIX AND NOT APPLE)
     set(USE_GNUTLS OFF CACHE BOOL "" FORCE)
 endif ()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdatachannel EXCLUDE_FROM_ALL)
+# IXWebSocket
+#set(USE_TLS ON CACHE BOOL "Support TLS" FORCE)
+#set(BUILD_SHARED_LIBS OFF CACHE BOOL "Don't use static libs" FORCE)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/IXWebSocket EXCLUDE_FROM_ALL)
+# libds
 set(USE_IX_WEBSOCKET ON CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
+# libdeviceid
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
+# UDP Discovery cpp
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
 set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
 

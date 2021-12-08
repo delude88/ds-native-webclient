@@ -3,17 +3,15 @@
 #include <tbb/cache_aligned_allocator.h>
 #include <cstring>
 
-using namespace std;
-
 template<typename T>
 struct alignas(64) CircularQueue {
   int m_front;
   int m_rear;
-  size_t m_size;
-  size_t m_counter;
-  std::vector<T, tbb::cache_aligned_allocator<T>> m_arr;
+  std::size_t m_size;
+  std::size_t m_counter;
+  std::vector<T, tbb::cache_aligned_allocator < T>> m_arr;
 
-  explicit CircularQueue(size_t size)
+  explicit CircularQueue(std::size_t size)
       : m_front(-1), m_rear(-1), m_size(size), m_counter(0), m_arr(size) {};
 
   inline void enqueue(T val) {
@@ -21,14 +19,14 @@ struct alignas(64) CircularQueue {
       printf("Queue is Full \n");
       //throw std::runtime_error("Queue is Full \n");
       return;
-    } else {
-      if (m_front == -1) { /* Insert First Element */
-        m_front = 0;
-      }
-      m_rear++;
-      if (m_rear == m_size) m_rear = 0;
-      m_arr[m_rear] = val;
     }
+    if (m_front == -1) { /* Insert First Element */
+      m_front = 0;
+    }
+    m_rear++;
+    if (m_rear == m_size) m_rear = 0;
+    m_arr[m_rear] = val;
+
     m_counter++;
   }
 

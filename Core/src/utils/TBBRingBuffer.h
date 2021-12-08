@@ -45,7 +45,7 @@ class RingBuffer {
     return (!full_ && (head_ == tail_));
   }
 
-  [[nodiscard]] inline bool full() const {
+  [[maybe_unused]] [[maybe_unused]] [[nodiscard]] inline bool full() const {
     // If tail is ahead the head by 1, we are full
     return full_;
   }

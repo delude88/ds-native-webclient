@@ -50,10 +50,6 @@ endif (NOT TARGET DeviceId)
 if (NOT TARGET udp-discovery)
     find_package(udp-discovery REQUIRED)
 endif (NOT TARGET udp-discovery)
-# pLog -Logger
-if (NOT TARGET plog)
-    find_package(plog REQUIRED)
-endif ()
 
 
 #################################################
