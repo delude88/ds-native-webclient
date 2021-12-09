@@ -7,28 +7,28 @@ if [ "$1" != "onlybuild" ]; then
   pip3 install conan
 
   # Install other dependencies using conan
-  conan install -if build --build missing -s os.version=10.13 .
+  conan install -if cmake-build-release --build missing -s os.version=10.13 .
   # Configure
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+  cmake -S . -B cmake-build-release -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
-cmake --build build --config Release
+cmake --build cmake-build-release --config Release
 
 if [ "$1" = "sign" ]; then
   # Pack app
-  cpack --config build/CPackConfigApp.cmake -B build
+  cpack --config cmake-build-release/CPackConfigApp.cmake -B build
   # Pack service
-  cpack --config build/CPackConfigService.cmake -B build
-  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file build/digital-stage-connector-*.dmg
+  cpack --config cmake-build-release/CPackConfigService.cmake -B build
+  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file cmake-build-release/digital-stage-connector-*.dmg
   for (( ; ; ))
   do
-    xcrun stapler staple build/digital-stage-connector*.dmg
+    xcrun stapler staple cmake-build-release/digital-stage-connector*.dmg
     if [ $? -eq 0 ]; then break; fi
   done
-  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.service --file build/digital-stage-connector-*.pkg
+  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.service --file cmake-build-release/digital-stage-connector-*.pkg
   for (( ; ; ))
   do
-    xcrun stapler staple build/digital-stage-connector*.pkg
+    xcrun stapler staple cmake-build-release/digital-stage-connector*.pkg
     if [ $? -eq 0 ]; then break; fi
   done
 fi

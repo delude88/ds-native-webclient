@@ -8,6 +8,8 @@ if (NOT WIN32)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/../cmake/modules)
+cmake_policy(SET CMP0068 NEW)
+
 
 
 #################################################
