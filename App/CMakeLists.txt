@@ -11,7 +11,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_L
 cmake_policy(SET CMP0068 NEW)
 
 
-
 #################################################
 #
 #   Environment configuration

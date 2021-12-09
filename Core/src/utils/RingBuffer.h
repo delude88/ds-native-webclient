@@ -39,7 +39,7 @@ class RingBuffer {
     return val;
   }
 
-  inline void reset() {
+  [[maybe_unused]] inline void reset() {
     std::lock_guard<std::mutex> lock(mutex_);
     head_ = tail_;
     full_ = false;
@@ -55,7 +55,7 @@ class RingBuffer {
     return full_;
   }
 
-  [[nodiscard]] inline size_t capacity() const {
+  [[maybe_unused]] [[nodiscard]] inline size_t capacity() const {
     return max_size_;
   }
 

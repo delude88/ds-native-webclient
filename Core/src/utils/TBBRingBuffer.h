@@ -35,7 +35,7 @@ class RingBuffer {
     return val;
   }
 
-  inline void reset() {
+  [[maybe_unused]] inline void reset() {
     head_ = tail_;
     full_ = false;
   }

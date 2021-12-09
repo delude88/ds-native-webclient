@@ -41,10 +41,10 @@ void ConnectionService::attachHandlers() {
     PLOGD << "ready end";
   }, token_);
   client_->stageJoined.connect([this](const ID_TYPE &, const std::optional<ID_TYPE> &,
-                                      const DigitalStage::Api::Store *store) {
+                                      const DigitalStage::Api::Store * /*store*/) {
     onStageChanged();
   }, token_);
-  client_->stageLeft.connect([this](const DigitalStage::Api::Store *store) {
+  client_->stageLeft.connect([this](const DigitalStage::Api::Store * /*store*/) {
     onStageChanged();
   }, token_);
   client_->stageDeviceAdded.connect([this](const StageDevice &device, const DigitalStage::Api::Store *store) {
@@ -230,11 +230,11 @@ void ConnectionService::broadcastBytes(const std::string &audio_track_id,
 
 void ConnectionService::broadcastFloats(const std::string &audio_track_id, const float *data, const std::size_t size) {
   std::size_t buffer_size = size * 4;
-  auto buffer = new std::byte[buffer_size];
+  auto *buffer = new std::byte[buffer_size];
   serialize(data, size, buffer);
   broadcastBytes(audio_track_id, buffer, buffer_size);
 }
-void ConnectionService::broadcastFloat(const std::string &audio_track_id, const float data) {
+[[maybe_unused]] void ConnectionService::broadcastFloat(const std::string &audio_track_id, const float data) {
   std::byte buffer[4];
   serializeFloat(data, buffer);
   broadcastBytes(audio_track_id, buffer, 4);

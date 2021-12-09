@@ -4,6 +4,7 @@
 
 #include "RtAudioIO.h"
 #include "../utils/cp1252_to_utf8.h"
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <plog/Log.h>
@@ -61,8 +62,8 @@ nlohmann::json RtAudioIO::getDevice(const std::string &id,
   sound_card["sampleRates"] = info.sampleRates;
   sound_card["online"] = true;
 
-  const auto localDeviceId = store.getLocalDeviceId();
-  const auto existing = localDeviceId ? store.getSoundCardByDeviceAndDriverAndTypeAndLabel(
+  const auto local_device_id = store.getLocalDeviceId();
+  const auto existing = local_device_id ? store.getSoundCardByDeviceAndDriverAndTypeAndLabel(
       *store.getLocalDeviceId(),
       driver,
       type,
@@ -110,7 +111,7 @@ void RtAudioIO::initAudio() {
   std::lock_guard<std::mutex> guard{mutex_};
 
   // Capture all dependencies
-  auto store = client_->getStore();
+  auto *store = client_->getStore();
   auto local_device = store->getLocalDevice();
 
   // Stop and close rt audio if open
@@ -129,8 +130,8 @@ void RtAudioIO::initAudio() {
     PLOGD << "Got valid audio driver";
     auto input_sound_card = store->getInputSoundCard();
     auto output_sound_card = store->getOutputSoundCard();
-    unsigned int sampleRate = 48000;
-    unsigned int bufferSize = 512;
+    unsigned int sample_rate = 48000;
+    unsigned int buffer_size = 512;
 
     /**
      * Audio driver handling
@@ -145,16 +146,16 @@ void RtAudioIO::initAudio() {
      * Input sound card handling
      */
     bool has_input = false;
-    RtAudio::StreamParameters inputParameters;
+    RtAudio::StreamParameters input_parameters;
     if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && input_sound_card->online
         && local_device->sendAudio) {
       has_input = true;
       PLOGD << "Got input sound card";
-      sampleRate = input_sound_card->sampleRate;
-      bufferSize = input_sound_card->bufferSize;
-      inputParameters = RtAudio::StreamParameters();
-      inputParameters.deviceId = std::stoi(input_sound_card->uuid);
-      inputParameters.nChannels = input_sound_card->channels.size();
+      sample_rate = input_sound_card->sampleRate;
+      buffer_size = input_sound_card->bufferSize;
+      input_parameters = RtAudio::StreamParameters();
+      input_parameters.deviceId = std::stoi(input_sound_card->uuid);
+      input_parameters.nChannels = input_sound_card->channels.size();
       // Sync enabled channels
       for (int channel = 0; channel < input_sound_card->channels.size(); channel++) {
         if (input_sound_card->channels[channel].active) {
@@ -173,16 +174,16 @@ void RtAudioIO::initAudio() {
     num_total_output_channels_ = 0;
     output_channels_.fill(false);
     bool has_output = false;
-    RtAudio::StreamParameters outputParameters;
+    RtAudio::StreamParameters output_parameters;
     if (output_sound_card && output_sound_card->audioEngine == "rtaudio" && output_sound_card->online
         && local_device->receiveAudio) {
       has_output = true;
       PLOGD << "Got output sound card";
-      sampleRate = output_sound_card->sampleRate;
-      bufferSize = output_sound_card->bufferSize;
-      outputParameters = RtAudio::StreamParameters();
-      outputParameters.deviceId = std::stoi(output_sound_card->uuid);
-      outputParameters.nChannels = output_sound_card->channels.size();
+      sample_rate = output_sound_card->sampleRate;
+      buffer_size = output_sound_card->bufferSize;
+      output_parameters = RtAudio::StreamParameters();
+      output_parameters.deviceId = std::stoi(output_sound_card->uuid);
+      output_parameters.nChannels = output_sound_card->channels.size();
       num_total_output_channels_ = output_sound_card->channels.size();
       num_output_channels_ = 0;
       for (auto i = 0; i < output_sound_card->channels.size(); i++) {
@@ -201,13 +202,13 @@ void RtAudioIO::initAudio() {
       auto callback = [](void *output,
                          void *input,
                          unsigned int bufferSize,
-                         double streamTime,
+                         double  /*streamTime*/,
                          RtAudioStreamStatus status,
                          void *userData) {
-        auto context = static_cast<RtAudioIO *>(userData);
+        auto *context = static_cast<RtAudioIO *>(userData);
         if (context->mutex_.try_lock()) {
-          auto *outputBuffer = (float *) output;
-          auto *inputBuffer = (float *) input;
+          auto *output_buffer = static_cast<float *>(output);
+          auto *input_buffer = static_cast<float *>(input);
 
           if (status) {
             if (status & RTAUDIO_INPUT_OVERFLOW) {
@@ -218,16 +219,16 @@ void RtAudioIO::initAudio() {
             }
           }
 
-          if (inputBuffer && outputBuffer) {
+          if (input_buffer && output_buffer) {
             // Duplex
             std::unordered_map<std::string, float *> input_channels;
             for (const auto &item: context->input_channel_mapping_) {
-              input_channels[item.second] = &inputBuffer[item.first * bufferSize];
+              input_channels[item.second] = &input_buffer[static_cast<size_t>(item.first) * bufferSize];
             }
 
-            auto **out = (float **) malloc(bufferSize * context->num_output_channels_ * sizeof(float *));
+            auto **out = static_cast<float **>(malloc(bufferSize * context->num_output_channels_ * sizeof(float *)));
             for (int output_channel = 0; output_channel < context->num_output_channels_; output_channel++) {
-              out[output_channel] = (float *) malloc(bufferSize * sizeof(float));
+              out[output_channel] = static_cast<float *>(malloc(bufferSize * sizeof(float)));
             }
 
             context->onDuplex(input_channels, out, context->num_output_channels_, bufferSize);
@@ -235,27 +236,27 @@ void RtAudioIO::initAudio() {
             unsigned int relative_channel = 0;
             for (int channel = 0; channel < context->num_total_output_channels_; channel++) {
               if (context->output_channels_[channel]) {
-                memcpy(&outputBuffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
+                memcpy(&output_buffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
                 relative_channel++;
               }
             }
             free(out);
-          } else if (inputBuffer) {
+          } else if (input_buffer) {
             // Capture only
             for (const auto &item: context->input_channel_mapping_) {
-              context->onCapture(item.second, &inputBuffer[item.first * bufferSize], bufferSize);
+              context->onCapture(item.second, &input_buffer[item.first * bufferSize], bufferSize);
             }
-          } else if (outputBuffer) {
+          } else if (output_buffer) {
             // Playback only
-            auto **out = (float **) malloc(bufferSize * context->num_output_channels_ * sizeof(float *));
+            auto **out = static_cast<float **>(malloc(bufferSize * context->num_output_channels_ * sizeof(float *)));
             for (int output_channel = 0; output_channel < context->num_output_channels_; output_channel++) {
-              out[output_channel] = (float *) malloc(bufferSize * sizeof(float));
+              out[output_channel] = static_cast<float *>(malloc(bufferSize * sizeof(float)));
             }
             context->onPlayback(out, context->num_output_channels_, bufferSize);
             unsigned int relative_channel = 0;
-            for (int channel = 0; channel < context->num_total_output_channels_; channel++) {
+            for (unsigned int channel = 0; channel < context->num_total_output_channels_; channel++) {
               if (context->output_channels_[channel]) {
-                memcpy(&outputBuffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
+                memcpy(&output_buffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
                 relative_channel++;
               }
             }
@@ -271,12 +272,12 @@ void RtAudioIO::initAudio() {
       try {
         PLOGD << "open stream";
         rt_audio_->openStream(
-            has_output ? &outputParameters : nullptr,
-            has_input ? &inputParameters : nullptr,
+            has_output ? &output_parameters : nullptr,
+            has_input ? &input_parameters : nullptr,
             RTAUDIO_FLOAT32,
             // Always prefer the output sound card settings
-            sampleRate,
-            &bufferSize,
+            sample_rate,
+            &buffer_size,
             callback,
             this,
             &options
@@ -299,16 +300,16 @@ void RtAudioIO::initAudio() {
   }
 }
 
-void RtAudioIO::setAudioDriver(const std::string &audio_driver) {
+void RtAudioIO::setAudioDriver(const std::string & /*audio_driver*/) {
   PLOGD << "setAudioDriver()";
   initAudio();
 }
 
-void RtAudioIO::setInputSoundCard(const SoundCard &sound_card, bool start) {
+void RtAudioIO::setInputSoundCard(const SoundCard & /*sound_card*/, bool start) {
   PLOGD << "setInputSoundCard()";
   initAudio();
 }
-void RtAudioIO::setOutputSoundCard(const SoundCard &sound_card, bool start) {
+void RtAudioIO::setOutputSoundCard(const SoundCard & /*sound_card*/, bool start) {
   PLOGD << "setOutputSoundCard()";
   initAudio();
 }
@@ -328,7 +329,7 @@ void RtAudioIO::stopReceiving() {
   PLOGD << "stopReceiving()";
   initAudio();
 }
-unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
+[[maybe_unused]] unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
                                             std::optional<RtAudio::StreamParameters> outputParameters,
                                             unsigned int sample_rate) {
   PLOGD << "getLowestBufferSize";

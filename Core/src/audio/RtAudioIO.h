@@ -3,12 +3,12 @@
 //
 #pragma once
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <RtAudio.h>
 #include "AudioIO.h"
 #include <optional>
-
-#define COPY_BUFFERS false
 
 class RtAudioIO :
     public AudioIO {
@@ -28,9 +28,9 @@ class RtAudioIO :
   void stopReceiving() override;
 
  private:
-  unsigned int getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
-                                   std::optional<RtAudio::StreamParameters> outputParameters,
-                                   unsigned int sample_rate);
+  [[maybe_unused]] unsigned int getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
+                                                    std::optional<RtAudio::StreamParameters> outputParameters,
+                                                    unsigned int sample_rate);
 
   void initAudio();
   static std::vector<nlohmann::json> enumerateRtDevices(RtAudio::Api rt_api, const DigitalStage::Api::Store &store);

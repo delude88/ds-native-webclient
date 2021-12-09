@@ -1,21 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Version from git
-find_package(Git)
-if (GIT_EXECUTABLE)
-    execute_process(
-            COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0 --match "v[0-9]*"
-            WORKING_DIRECTORY .
-            OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
-            RESULT_VARIABLE GIT_DESCRIBE_ERROR_CODE
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if (NOT GIT_DESCRIBE_ERROR_CODE)
-        string(SUBSTRING ${GIT_DESCRIBE_VERSION} 1 -1 VERSION)
-        set(CMAKE_PROJECT_VERSION ${VERSION})
-    endif ()
-endif ()
-project(digital-stage-connector VERSION ${CMAKE_PROJECT_VERSION} LANGUAGES CXX)
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
+include( VersionFromGit )
+
+version_from_git(
+        LOG       ON
+        TIMESTAMP "%Y%m%d%H%M%S"
+)
+
+project(digital-stage-connector VERSION ${VERSION} LANGUAGES CXX)
 message(STATUS "Building Digital Stage Connector ${CMAKE_PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -31,7 +24,6 @@ if (APPLE)
         include("${PROJECT_SOURCE_DIR}/cmake/BrewResolver.cmake")
     endif ()
 endif (APPLE)
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake OPTIONAL)
 if (COMMAND conan_basic_setup)
     conan_basic_setup()
