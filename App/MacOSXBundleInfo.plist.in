@@ -10,6 +10,10 @@
     <string>Diese Anwendung benötigt Zugriff auf Dein Audiogerät.</string>
     <key>com.apple.security.device.audio-input</key>
     <true/>
+    <key>com.apple.security.device.microphone</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
 	<key>CFBundleExecutable</key>
 	<string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
 	<key>CFBundleGetInfoString</key>
