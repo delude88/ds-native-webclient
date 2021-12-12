@@ -6,14 +6,10 @@
     <string>Digital Stage Connector</string>
     <key>CFBundleDevelopmentRegion</key>
     <string>de-DE</string>
+    <key>CFBundleAllowMixedLocalizations</key>
+    <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>Diese Anwendung benötigt Zugriff auf Dein Audiogerät.</string>
-    <key>com.apple.security.device.audio-input</key>
-    <true/>
-    <key>com.apple.security.device.microphone</key>
-    <true/>
-    <key>com.apple.security.network.client</key>
-    <true/>
 	<key>CFBundleExecutable</key>
 	<string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
 	<key>CFBundleGetInfoString</key>
@@ -39,8 +35,14 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>${MACOSX_BUNDLE_COPYRIGHT}</string>
 	<key>NSHighResolutionCapable</key>
-	<true/>
+    <string>YES</string>
+    <key>NSHighResolutionMagnifyAllowed</key>
+    <string>NO</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.music</string>
+    <key>LSMultipleInstancesProhibited</key>
+    <true/>
 </dict>
 </plist>

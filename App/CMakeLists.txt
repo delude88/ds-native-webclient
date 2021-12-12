@@ -159,7 +159,7 @@ if (WIN32)
     # Windows
     set_target_properties(${target}
             PROPERTIES
-            CMAKE_WIN32_EXECUTABLE ON)
+            WIN32_EXECUTABLE TRUE)
     set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
     include(InstallRequiredSystemLibraries)
     install(CODE "
@@ -179,8 +179,9 @@ elseif (APPLE)
             MACOSX_BUNDLE_BUNDLE_VERSION ${CMAKE_PROJECT_VERSION}
             MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION}
             MACOSX_BUNDLE_LONG_VERSION_STRING ${CMAKE_PROJECT_VERSION}
-            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
             MACOSX_BUNDLE_INFO_STRING "Online zusammen proben und auffuehren"
+            CPACK_BUNDLE_APPLE_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/Entitlement.plist.in
             MACOSX_BUNDLE_ICON_FILE appicon.icns
             )
     # First use macdeployqt to bundle the qt libs, but do NOT sign yet
@@ -191,7 +192,7 @@ elseif (APPLE)
             message(STATUS \"Fixup\")
             fixup_bundle(\"${APPS}.app\" \"\" \"\")
             message(STATUS \"Code-Signing bundle\")
-            execute_process(COMMAND codesign --force --timestamp --options runtime --deep --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
+            execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements \"${CMAKE_CURRENT_LIST_DIR}/Digital Stage Connector.entitlements\" --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"${APPS}.app\")"
                 COMPONENT ${target})
     else ()
         install(CODE "
