@@ -17,17 +17,6 @@ set(CMAKE_PROJECT_VERSION "0.0.1")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/../cmake/modules)
 
 
-include(TestBigEndian)
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-if (IS_BIG_ENDIAN)
-    add_compile_definitions(BIG_ENDIAN)
-    message(STATUS "BIG_ENDIAN")
-else ()
-    add_compile_definitions(LITTLE_ENDIAN)
-    message(STATUS "LITTLE_ENDIAN")
-endif ()
-
-
 #################################################
 #
 #   Environment
@@ -70,6 +59,19 @@ endif ()
 #################################################
 add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+include(TestBigEndian)
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+if (IS_BIG_ENDIAN)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC DS_BIG_ENDIAN)
+    #add_compile_definitions(DS_BIG_ENDIAN)
+    message(STATUS "DS_BIG_ENDIAN")
+else ()
+    target_compile_definitions(${PROJECT_NAME} PUBLIC DS_LITTLE_ENDIAN)
+    #add_compile_definitions(DS_LITTLE_ENDIAN)
+    message(STATUS "DS_LITTLE_ENDIAN")
+endif ()
+
 target_include_directories(
         ${PROJECT_NAME}
         INTERFACE $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/src>

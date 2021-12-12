@@ -48,7 +48,7 @@ static int unpackFloatArray(void **buf, float *arr) {
 static int packFloat(void *buf, float x) {
   auto *b = (unsigned char *) buf;
   auto *p = (unsigned char *) &x;
-#if defined (LITTLE_ENDIAN)
+#if defined (DS_LITTLE_ENDIAN)
   b[0] = p[3];
   b[1] = p[2];
   b[2] = p[1];
@@ -73,7 +73,7 @@ static int packFloatArray(void **buffer, const float *arr, const size_t arr_size
 static size_t serializeFloat(const float f, std::byte out[4]) {
   auto *p = (unsigned char *) &f;
   auto *b = (unsigned char *) &out[0];
-#if defined (LITTLE_ENDIAN)
+#if defined (DS_LITTLE_ENDIAN)
   b[0] = p[3];
   b[1] = p[2];
   b[2] = p[1];
@@ -92,7 +92,7 @@ static size_t serialize(const float *in, const size_t size, std::byte *out) {
   for (size_t i = 0; i < size; i++) {
     auto *p = (unsigned char *) &in[i]; // get pointer to first byte of current index
     auto *b = (unsigned char *) &out[i * 4];  // access out using uchar ptr
-#if defined (LITTLE_ENDIAN)
+#if defined (DS_LITTLE_ENDIAN)
     b[0] = p[3];
     b[1] = p[2];
     b[2] = p[1];
