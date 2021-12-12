@@ -53,3 +53,5 @@ class App : public wxApp {
 #endif
   LoginDialog *login_dialog_;
 };
+
+wxDECLARE_APP(App);
