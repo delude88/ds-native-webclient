@@ -166,6 +166,7 @@ if (WIN32)
         include(BundleUtilities)
         fixup_bundle(\"${APPS}\" \"\" \"\")"
             COMPONENT ${target})
+    set(CPACK_PACKAGE_FILE_NAME digital-stage-connector-app-win-${CMAKE_SYSTEM_PROCESSOR})
 elseif (APPLE)
     # Apple
     set(CMAKE_MACOSX_RPATH ON)
@@ -202,6 +203,7 @@ elseif (APPLE)
     set(CPACK_DMG_DS_STORE_SETUP_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/Packaging_DMGSetup.scpt)
     set(CPACK_DMG_BACKGROUND_IMAGE ${CMAKE_CURRENT_LIST_DIR}/assets/DMGBackground.tif)
     set(CPACK_GENERATOR "DragNDrop")
+    set(CPACK_PACKAGE_FILE_NAME digital-stage-connector-app-macos-${CMAKE_SYSTEM_PROCESSOR})
 elseif (UNIX)
     # Linux
     # Debian package
@@ -230,6 +232,7 @@ elseif (UNIX)
         include(BundleUtilities)
             fixup_bundle(\"${APPS}\" \"\" \"\")"
             COMPONENT ${target})
+    #set(CPACK_PACKAGE_FILE_NAME digital-stage-connector-app-linux-${CMAKE_SYSTEM_PROCESSOR})
 endif ()
 if (CMAKE_BUILD_TYPE_UPPER MATCHES "^ (DEBUG|RELWITHDEBINFO) $")
     set(CPACK_STRIP_FILES FALSE)

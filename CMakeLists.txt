@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
-include( VersionFromGit )
+#include( VersionFromGit )
 
-version_from_git(
-        LOG       ON
-        TIMESTAMP "%Y%m%d%H%M%S"
-)
+#version_from_git(
+#        LOG       ON
+#        TIMESTAMP "%Y%m%d%H%M%S"
+#)
 
-project(digital-stage-connector VERSION ${VERSION} LANGUAGES CXX)
+project(digital-stage-connector VERSION 0.0.1 LANGUAGES CXX)
 message(STATUS "Building Digital Stage Connector ${CMAKE_PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)

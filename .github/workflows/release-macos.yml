@@ -16,8 +16,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-      - id: get_version
-        uses: battila7/get-version-action@v2
       - name: Install codesign certificates
         uses: apple-actions/import-codesign-certs@v1
         with:
@@ -42,14 +40,14 @@ jobs:
       - name: Notarize App bundle
         uses: devbotsxyz/xcode-notarize@v1
         with:
-          product-path: build/digital-stage-connector-${{ steps.get_version.outputs.version-without-v }}-Darwin-app.dmg
+          product-path: build/digital-stage-connector-app-macos-x86-64.dmg
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
           primary-bundle-id: de.tobiashegemann.digital-stage.app
       - name: Staple App bundle
         uses: devbotsxyz/xcode-staple@v1
         with:
-          product-path: build/digital-stage-connector-${{ steps.get_version.outputs.version-without-v }}-Darwin-app.dmg
+          product-path: build/digital-stage-connector-app-macos-x86-64.dmg
       - name: Publish bundle
         uses: ncipollo/release-action@v1
         with:

@@ -7,18 +7,19 @@ if [ "$1" != "onlybuild" ]; then
   pip3 install conan
 
   # Install other dependencies using conan
-  conan install -if cmake-build-release --build missing -s os.version=10.13 .
+  conan install -if cmake-build-release --build missing .
   # Configure
-  cmake -S . -B cmake-build-release -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
+  cmake -S . -B cmake-build-release -DCMAKE_BUILD_TYPE=Release -DCODESIGN_CERTIFICATE_NAME="Developer ID Application: Tobias Hegemann (JH3275598G)"
 fi
 # Build
 cmake --build cmake-build-release --config Release
 
+# Pack app
+cpack --config cmake-build-release/CPackConfigApp.cmake -B build
+# Pack service
+cpack --config cmake-build-release/CPackConfigService.cmake -B build
+
 if [ "$1" = "sign" ]; then
-  # Pack app
-  cpack --config cmake-build-release/CPackConfigApp.cmake -B build
-  # Pack service
-  cpack --config cmake-build-release/CPackConfigService.cmake -B build
   xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file cmake-build-release/digital-stage-connector-*.dmg
   for (( ; ; ))
   do
