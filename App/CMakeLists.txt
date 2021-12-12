@@ -45,7 +45,7 @@ endif (NOT TARGET udp-discovery)
 if (NOT TARGET wxWidgets)
     set(wxBUILD_SHARED OFF)
     set(wxUSE_STL ON)
-    set(wxBUILD_PRECOMP ON)
+    set(wxBUILD_PRECOMP OFF)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/wxWidgets EXCLUDE_FROM_ALL)
 endif (NOT TARGET wxWidgets)
 # Keychain
