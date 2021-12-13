@@ -8,9 +8,6 @@ class LoginDialog : public UILoginFrame {
   explicit LoginDialog(wxWindow *parent = nullptr);
   ~LoginDialog() override;
 
-  std::string getEmail() const;
-  std::string getPassword() const;
-
   void setLoading(bool
                   loading);
   void setEmail(const std::string &user);

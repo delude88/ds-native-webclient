@@ -42,7 +42,7 @@ void RemoteAuthService::init() {
   }
 }
 
-void RemoteAuthService::handlePost(const web::http::http_request &message) {
+void RemoteAuthService::handlePost(const web::http::http_request & /*message*/) {
   auto paths = web::http::uri::split_path(web::http::uri::decode(message.relative_uri().path()));
   if (!paths.empty()) {
     const std::string &path = paths[0];

@@ -10,7 +10,7 @@ class RingBuffer {
   explicit RingBuffer(std::size_t size) : buf_(size), max_size_(size) {
   }
 
-  inline void put(T item) {
+  [[maybe_unused]] inline void put(T item) {
     buf_[head_] = item;
 
     if (full_) {
@@ -50,7 +50,7 @@ class RingBuffer {
     return full_;
   }
 
-  [[nodiscard]] inline size_t capacity() const {
+  [[maybe_unused]] [[nodiscard]] inline size_t capacity() const {
     return max_size_;
   }
 

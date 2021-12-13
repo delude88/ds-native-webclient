@@ -34,16 +34,16 @@
 #include <cmrc/cmrc.hpp>
 CMRC_DECLARE(clientres);
 
-bool isRunning = false;
+bool is_running = false;
 
 void sig_handler(int s) {
   printf("Caught signal %d\n", s);
-  isRunning = false;
+  is_running = false;
 }
 
 int main(int, char *[]) {
-  static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender;
-  plog::init(plog::debug, &consoleAppender);
+  static plog::ConsoleAppender<plog::TxtFormatter> console_appender;
+  plog::init(plog::debug, &console_appender);
 
 #ifdef POSIX
   // What to do for WIN32 here?
@@ -63,26 +63,26 @@ int main(int, char *[]) {
   auto token = authenticate_user(); //TODO: Remove
 
   // Create an API service
-  auto apiClient = std::make_shared<DigitalStage::Api::Client>(API_URL);
-  auto client = std::make_unique<Client>(apiClient);
+  auto api_client = std::make_shared<DigitalStage::Api::Client>(API_URL);
+  auto client = std::make_unique<Client>(api_client);
 
   // Describe this device
-  nlohmann::json initialDeviceInformation;
+  nlohmann::json initial_device_information;
   // - always use an UUID when you want Digital Stage to remember this device and its settings
-  initialDeviceInformation["uuid"] = device_id;
-  initialDeviceInformation["type"] = "native";
-  initialDeviceInformation["canAudio"] = true;
-  initialDeviceInformation["canVideo"] = false;
-  initialDeviceInformation["sendAudio"] = false;
-  initialDeviceInformation["receiveAudio"] = true;
+  initial_device_information["uuid"] = device_id;
+  initial_device_information["type"] = "native";
+  initial_device_information["canAudio"] = true;
+  initial_device_information["canVideo"] = false;
+  initial_device_information["sendAudio"] = false;
+  initial_device_information["receiveAudio"] = true;
 #ifdef USE_RT_AUDIO
-  initialDeviceInformation["audioEngine"] = "rtaudio";
+  initial_device_information["audioEngine"] = "rtaudio";
 #else
   initialDeviceInformation["audioEngine"] = "miniaudio";
 #endif
 
   // And finally connect with the token and device description
-  apiClient->connect(token, initialDeviceInformation);
+  api_client->connect(token, initial_device_information);
 
   // For debug only, show discovered peers
   for (const auto &item: discovery->scan()) {
@@ -90,8 +90,8 @@ int main(int, char *[]) {
     std::cout << "Found other client in local network at " << ip_and_port.ip() << std::endl;
   }
 
-  isRunning = true;
-  while (isRunning) {
+  is_running = true;
+  while (is_running) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 

@@ -17,14 +17,6 @@ void LoginDialog::setPassword(const std::string &password) {
   password_entry_->SetValue(password);
 }
 
-std::string LoginDialog::getEmail() const {
-  return email_entry_->GetValue().ToStdString();
-}
-
-std::string LoginDialog::getPassword() const {
-  return password_entry_->GetValue().ToStdString();
-}
-
 void LoginDialog::setError(const std::string &error) {
   error_message_->SetLabel(error);
   error_message_->Show();

@@ -134,7 +134,7 @@ void ConnectionService::attachHandlers() {
 
 void ConnectionService::onStageChanged() {
   PLOGD << "handleStageChanged()";
-  auto store = client_->getStore();
+  auto *store = client_->getStore();
   if (store->isReady()) {
     auto stage_id = store->getStageId();
     if (stage_id) {

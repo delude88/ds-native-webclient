@@ -29,8 +29,8 @@ AudioRenderer<T>::~AudioRenderer() {
 template<class T>
 std::string AudioRenderer<T>::to_string(AudioRenderer::RoomSize room_size) {
   switch (room_size) {
-    case AudioRenderer::RoomSize::SMALL:return "small";
-    case AudioRenderer::RoomSize::LARGE:return "large";
+    case AudioRenderer::RoomSize::kSmall:return "small";
+    case AudioRenderer::RoomSize::kLarge:return "large";
     default:return "medium";
   }
 }
@@ -142,11 +142,11 @@ void AudioRenderer<T>::autoInit(const DigitalStage::Types::Stage &stage,
   if (isValid(sound_card.sampleRate, sound_card.bufferSize)) {
     // Get room size
     auto room_volume = stage.width * stage.length * stage.height;
-    auto room_size = AudioRenderer::RoomSize::SMALL;
+    auto room_size = AudioRenderer::RoomSize::kSmall;
     if (room_volume > 10000) {
-      room_size = AudioRenderer::RoomSize::LARGE;
+      room_size = AudioRenderer::RoomSize::kLarge;
     } else if (room_volume > 1000) {
-      room_size = AudioRenderer::RoomSize::MEDIUM;
+      room_size = AudioRenderer::RoomSize::kMedium;
     }
     try {
       start(sound_card.sampleRate, sound_card.bufferSize, room_size);

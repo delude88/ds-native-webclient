@@ -29,7 +29,7 @@
 #include <locale>
 #include <string>
 
-static const wchar_t CP1252_UNICODE_TABLE[] =
+static const wchar_t kCP1252UnicodeTable[] =
     L"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007"
     L"\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F"
     L"\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017"
@@ -67,12 +67,12 @@ static const wchar_t CP1252_UNICODE_TABLE[] =
 // * Windows-1252 (aka CP1252) stored as an std::string
 // into an
 // * UTF8 std::string.
-std::string CP1252_to_UTF8(const std::string &byte_array) {
+inline std::string CP1252_to_UTF8(const std::string &byte_array) {
 
   // Byte array => Unicode.
   std::wstring unicode(byte_array.size(), ' ');
   for (size_t i = 0; i < unicode.size(); ++i)
-    unicode[i] = CP1252_UNICODE_TABLE[(uint8_t) byte_array[i]];
+    unicode[i] = kCP1252UnicodeTable[static_cast<uint8_t>(byte_array[i])];
 
   // Unicode => UTF8.
   std::wstring_convert<std::codecvt_utf8<wchar_t>> unicode_to_utf8;

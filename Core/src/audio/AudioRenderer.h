@@ -27,9 +27,9 @@ template<class T>
 class AudioRenderer {
  public:
   enum RoomSize {
-    SMALL,
-    MEDIUM,
-    LARGE
+    kSmall,
+    kMedium,
+    kLarge
   };
 
   explicit AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart = false);

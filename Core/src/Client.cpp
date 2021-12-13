@@ -84,15 +84,15 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
   connection_service_->broadcastFloats(audio_track_id, data, frame_count);
 }
 void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, const std::size_t frame_count) {
-  auto left = new float[frame_count];
-  auto right = new float[frame_count];
+  auto *left = new float[frame_count];
+  auto *right = new float[frame_count];
   memset(left, 0, frame_count * sizeof(float));
   memset(right, 0, frame_count * sizeof(float));
 
   if (audio_renderer_) {
     for (const auto &item: channels_) {
       if (item.second) {
-        auto buf = (float *) malloc(frame_count * sizeof(float));
+        auto *buf = static_cast<float *>(malloc(frame_count * sizeof(float)));
 #ifdef USE_CIRCULAR_QUEUE
         for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->dequeue();
@@ -137,7 +137,7 @@ void Client::attachHandlers() {
     }
   });
   api_client_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
-                                                 const DigitalStage::Api::Store *store) {
+                                                 const DigitalStage::Api::Store * /*store*/) {
     if (update.contains("buffer")) {
       changeReceiverSize(update["buffer"]);
     }
@@ -148,8 +148,8 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
                               std::size_t num_output_channels,
                               std::size_t frame_count) {
   // Mix to L / R
-  auto left = new float[frame_count];
-  auto right = new float[frame_count];
+  auto *left = new float[frame_count];
+  auto *right = new float[frame_count];
   memset(left, 0, frame_count * sizeof(float));
   memset(right, 0, frame_count * sizeof(float));
 
@@ -168,7 +168,7 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   // Forward remote streams
   for (const auto &item: channels_) {
     if (item.second) {
-      auto buf = (float *) malloc(frame_count * sizeof(float));
+      auto *buf = static_cast<float *>(malloc(frame_count * sizeof(float)));
 #ifdef USE_CIRCULAR_QUEUE
       for (int f = 0; f < frame_count; f++) {
         buf[f] = item.second->dequeue();

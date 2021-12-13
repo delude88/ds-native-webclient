@@ -234,7 +234,7 @@ void RtAudioIO::initAudio() {
             context->onDuplex(input_channels, out, context->num_output_channels_, bufferSize);
 
             unsigned int relative_channel = 0;
-            for (int channel = 0; channel < context->num_total_output_channels_; channel++) {
+            for (std::size_t channel = 0; channel < context->num_total_output_channels_; channel++) {
               if (context->output_channels_[channel]) {
                 memcpy(&output_buffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
                 relative_channel++;
@@ -254,7 +254,7 @@ void RtAudioIO::initAudio() {
             }
             context->onPlayback(out, context->num_output_channels_, bufferSize);
             unsigned int relative_channel = 0;
-            for (unsigned int channel = 0; channel < context->num_total_output_channels_; channel++) {
+            for (std::size_t channel = 0; channel < context->num_total_output_channels_; channel++) {
               if (context->output_channels_[channel]) {
                 memcpy(&output_buffer[channel * bufferSize], out[relative_channel], bufferSize * sizeof(float));
                 relative_channel++;
@@ -305,11 +305,11 @@ void RtAudioIO::setAudioDriver(const std::string & /*audio_driver*/) {
   initAudio();
 }
 
-void RtAudioIO::setInputSoundCard(const SoundCard & /*sound_card*/, bool start) {
+void RtAudioIO::setInputSoundCard(const SoundCard & /*sound_card*/, bool  /*start*/) {
   PLOGD << "setInputSoundCard()";
   initAudio();
 }
-void RtAudioIO::setOutputSoundCard(const SoundCard & /*sound_card*/, bool start) {
+void RtAudioIO::setOutputSoundCard(const SoundCard & /*sound_card*/, bool  /*start*/) {
   PLOGD << "setOutputSoundCard()";
   initAudio();
 }

@@ -28,7 +28,7 @@ static std::string convert_backend_to_string(ma_backend backend) {
  * @param str
  * @return ma_backend value
  */
-static ma_backend convert_string_to_backend(const std::string &str) {
+static ma_backend convert_string_to_backend() {
   for (int i = 0; i < sizeof(backend_str); i++) {
     if (backend_str[i] == str) {
       return static_cast<ma_backend>(i);
@@ -41,7 +41,7 @@ static ma_backend convert_string_to_backend(const std::string &str) {
  * Determine possible sample rates
  * @return array of sample rates
  */
-static std::vector<ma_uint32> get_sample_rates(ma_device_info device_info) {
+static std::vector<ma_uint32> get_sample_rates() {
   std::vector<ma_uint32> v = {22050, 44100, 48000, 88200, 96000, 176400, 192000};
   if (device_info.minSampleRate == 0 && device_info.maxSampleRate == 0) {
     // All are supported
@@ -58,7 +58,7 @@ static std::vector<ma_uint32> get_sample_rates(ma_device_info device_info) {
   return v;
 }
 
-static const std::string convert_device_id(ma_backend backend, ma_device_id id) {
+static std::string convert_device_id(ma_backend backend, ma_device_id id) {
   switch (backend) {
     case ma_backend_sndio:return id.sndio;
     case ma_backend_wasapi: {
@@ -82,7 +82,7 @@ static const std::string convert_device_id(ma_backend backend, ma_device_id id) 
   }
 }
 
-static const ma_device_id convert_device_id(ma_backend backend, const std::string &id) {
+static ma_device_id convert_device_id(ma_backend backend, const std::string &id) {
   ma_device_id device_id;
   switch (backend) {
     case ma_backend_sndio: {

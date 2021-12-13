@@ -9,8 +9,9 @@
 #include <plog/Log.h>
 #include "AuthIO.h"
 
-std::pair<std::string, std::string> sign_in() {
-  std::string email, password;
+inline std::pair<std::string, std::string> sign_in() {
+  std::string email;
+  std::string password;
   std::cout << "Please enter your email: ";
   std::cin >> email;
   std::cout << "Please enter your password: ";
@@ -18,8 +19,8 @@ std::pair<std::string, std::string> sign_in() {
   return {email, password};
 }
 
-std::string authenticate_user() {
-  auto service = new DigitalStage::Auth::AuthService(AUTH_URL);
+inline std::string authenticate_user() {
+  auto *service = new DigitalStage::Auth::AuthService(AUTH_URL);
   // Read last token
   auto token = AuthIO::readToken();
   if (!token.empty()) {

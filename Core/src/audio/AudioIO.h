@@ -9,7 +9,7 @@
 #include <string>
 #include <mutex>
 
-using ChannelMap = std::unordered_map<unsigned int, std::string>;
+using ChannelMap = std::unordered_map<std::size_t, std::string>;
 
 class AudioIO {
  public:

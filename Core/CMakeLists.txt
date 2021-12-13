@@ -64,13 +64,16 @@ include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
     target_compile_definitions(${PROJECT_NAME} PUBLIC DS_BIG_ENDIAN)
-    #add_compile_definitions(DS_BIG_ENDIAN)
     message(STATUS "DS_BIG_ENDIAN")
 else ()
     target_compile_definitions(${PROJECT_NAME} PUBLIC DS_LITTLE_ENDIAN)
-    #add_compile_definitions(DS_LITTLE_ENDIAN)
     message(STATUS "DS_LITTLE_ENDIAN")
 endif ()
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
+        )
 
 target_include_directories(
         ${PROJECT_NAME}

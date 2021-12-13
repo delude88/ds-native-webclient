@@ -14,7 +14,7 @@ struct alignas(64) CircularQueue {
   explicit CircularQueue(std::size_t size)
       : m_front(-1), m_rear(-1), m_size(size), m_counter(0), m_arr(size) {};
 
-  inline void enqueue(T val) {
+  [[maybe_unused]] inline void enqueue(T val) {
     if ((m_front == 0 && m_rear == m_size - 1)) {
       printf("Queue is Full \n");
       //throw std::runtime_error("Queue is Full \n");
@@ -71,13 +71,13 @@ struct alignas(64) CircularQueue {
     return data;
   }
 
-  inline void dequeue_many(int numOfItems) {
+  [[maybe_unused]] inline void dequeue_many(int numOfItems) {
     m_front += numOfItems;
     if (m_front > m_size) m_front -= m_size;
     m_counter -= numOfItems;
   }
 
-  inline void reset() {
+  [[maybe_unused]] inline void reset() {
     m_front = -1;
     m_rear = -1;
     m_counter = 0;

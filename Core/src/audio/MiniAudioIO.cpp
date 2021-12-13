@@ -17,13 +17,6 @@ MiniAudioIO::~MiniAudioIO() {
   ma_context_uninit(&context_);
 }
 
-MiniAudioIO::shutdown() {
-  PLOGD << "MiniAudioIO::~MiniAudioIO";
-  ma_device_uninit(&input_device_);
-  ma_device_uninit(&output_device_);
-  ma_context_uninit(&context_);
-}
-
 void MiniAudioIO::setAudioDriver(const std::string &audio_driver) {
   PLOGD << "AudioIO::setAudioDriver";
   initialized_ = false;
@@ -200,11 +193,11 @@ std::vector<json> MiniAudioIO::enumerateDevices(const DigitalStage::Api::Store &
   // Here we enumerate using miniaudio
   ma_result result;
   ma_context context;
-  ma_device_info *pPlaybackDeviceInfos;
-  ma_uint32 playbackDeviceCount;
-  ma_device_info *pCaptureDeviceInfos;
-  ma_uint32 captureDeviceCount;
-  ma_uint32 iDevice;
+  ma_device_info *p_playback_device_infos;
+  ma_uint32 playback_device_count;
+  ma_device_info *p_capture_device_infos;
+  ma_uint32 capture_device_count;
+  ma_uint32 i_device;
 
   if (ma_context_init(nullptr, 0, nullptr, &context) != MA_SUCCESS) {
     PLOGE << "Failed to initialize context.";
@@ -271,15 +264,15 @@ std::vector<json> MiniAudioIO::enumerateDevices(const DigitalStage::Api::Store &
   return sound_cards;
 }
 
-nlohmann::json convert_device_to_sound_card(ma_device_info device_info,
-                                            ma_context *context,
+nlohmann::json convert_device_to_sound_card(ma_device_info  /*device_info*/,
+                                            ma_context * /*context*/,
                                             const DigitalStage::Api::Store &store,
                                             const bool is_input
 ) {
   const std::string type = is_input ? "input" : "output";
   const auto driver = convert_backend_to_string(context->backend);
   // Maybe the sound card already exists and we might just update it here?
-  const auto localDeviceId = store.getLocalDeviceId();
+  const auto local_device_id = store.getLocalDeviceId();
   const auto existing = localDeviceId ? store.getSoundCardByDeviceAndDriverAndTypeAndLabel(
       *store.getLocalDeviceId(),
       driver,
@@ -287,20 +280,21 @@ nlohmann::json convert_device_to_sound_card(ma_device_info device_info,
       device_info.name
   ) : std::nullopt;
 
-  nlohmann::json sound_card;
-  sound_card["uuid"] = convert_device_id(context->backend, device_info.id);
-  sound_card["label"] = device_info.name;
-  sound_card["audioEngine"] = "miniaudio";
-  sound_card["audioDriver"] = driver;
-  sound_card["type"] = type;
-  sound_card["isDefault"] = device_info.isDefault == 1;
+  nlohmann::json sound_card {
+      {"uuid", convert_device_id(context->backend, device_info.id)},
+      {"label", device_info.name},
+      {"audioEngine", "miniaudio"},
+      {"audioDriver", driver},
+      {"type", type},
+      {"isDefault", device_info.isDefault == 1},
+  };
 
   // We have to initialize the device to get more details
   ma_device_config device_config;
   ma_device device;
   device_config = ma_device_config_init(is_input ? ma_device_type_capture : ma_device_type_playback);
   device_config.performanceProfile = ma_performance_profile_low_latency;
-  if (is_input) {
+  if (is_input) { // NOLINT(bugprone-branch-clone)
     device_config.capture.pDeviceID = &device_info.id;
   } else {
     device_config.playback.pDeviceID = &device_info.id;
@@ -321,7 +315,7 @@ nlohmann::json convert_device_to_sound_card(ma_device_info device_info,
   sound_card["online"] = true;
 
   std::vector<DigitalStage::Types::Channel> channels;
-  const ma_uint32 numChannels = is_input ? device.capture.channels : device.playback.channels;
+  const ma_uint32 num_channels = is_input ? device.capture.channels : device.playback.channels;
   for (int i = 0; i < numChannels; i++) {
     std::string label = "Kanal " + std::to_string(i + 1);
     if (existing && existing->channels.size() >= i) {

@@ -12,13 +12,13 @@ class TaskBarIcon : public wxTaskBarIcon {
  public:
 #if defined(__WXOSX__) && wxOSX_USE_COCOA
   explicit TaskBarIcon(wxTaskBarIconType iconType = wxTBI_DEFAULT_TYPE)
-      : wxTaskBarIcon(iconType), isLoggedIn_(false)
+      : wxTaskBarIcon(iconType)
 #else
   explicit TaskBarIcon() : isLoggedIn_(false)
 #endif
   {
   }
-  virtual ~TaskBarIcon();
+  ~TaskBarIcon() override;
 
   void showLoginMenu();
   void showStatusMenu();
@@ -43,7 +43,7 @@ class TaskBarIcon : public wxTaskBarIcon {
   void onLogoutClicked(wxCommandEvent &);
   void onCloseClicked(wxCommandEvent &);
 
-  bool isLoggedIn_;
+  bool isLoggedIn_{false};
 
  wxDECLARE_EVENT_TABLE();
 };

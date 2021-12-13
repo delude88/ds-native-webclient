@@ -41,7 +41,7 @@ class RtAudioIO :
                                   const DigitalStage::Api::Store &store);
 
   std::unique_ptr<RtAudio> rt_audio_;
-  std::atomic<unsigned int> num_output_channels_{};
-  std::atomic<unsigned int> num_total_output_channels_{};
+  std::atomic<std::size_t> num_output_channels_{};
+  std::atomic<std::size_t> num_total_output_channels_{};
   std::array<bool, 64> output_channels_{};
 };

@@ -4,60 +4,63 @@
 #include "TaskBarIcon.h"
 
 enum {
-  PU_RESTART = 10001,
-  PU_OPEN_STAGE,
-  PU_OPEN_SETTINGS,
-  PU_ADD_BOX,
-  PU_LOGOUT,
-  PU_CLOSE,
-  PU_LOGIN
+  kPuRestart = 10001,
+  kPuOpenStage,
+  kPuOpenSettings,
+  kPuAddBox,
+  kPuLogout,
+  kPuClose,
+  kPuLogin
 };
 
 wxBEGIN_EVENT_TABLE(TaskBarIcon, wxTaskBarIcon)
-        EVT_MENU(PU_RESTART, TaskBarIcon::onRestartClicked)
-        EVT_MENU(PU_OPEN_STAGE, TaskBarIcon::onOpenStageClicked)
-        EVT_MENU(PU_OPEN_SETTINGS, TaskBarIcon::onOpenSettingsClicked)
-        EVT_MENU(PU_ADD_BOX, TaskBarIcon::onAddBoxClicked)
-        EVT_MENU(PU_LOGOUT, TaskBarIcon::onLogoutClicked)
-        EVT_MENU(PU_CLOSE, TaskBarIcon::onCloseClicked)
-        EVT_MENU(PU_LOGIN, TaskBarIcon::onLoginClicked)
+        EVT_MENU(kPuRestart, TaskBarIcon::onRestartClicked)
+        EVT_MENU(kPuOpenStage, TaskBarIcon::onOpenStageClicked)
+        EVT_MENU(kPuOpenSettings, TaskBarIcon::onOpenSettingsClicked)
+        EVT_MENU(kPuAddBox, TaskBarIcon::onAddBoxClicked)
+        EVT_MENU(kPuLogout, TaskBarIcon::onLogoutClicked)
+        EVT_MENU(kPuClose, TaskBarIcon::onCloseClicked)
+        EVT_MENU(kPuLogin, TaskBarIcon::onLoginClicked)
 wxEND_EVENT_TABLE()
 
 TaskBarIcon::~TaskBarIcon() {
   if (IsIconInstalled()) {
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "VirtualCallInCtorOrDtor"
     RemoveIcon();
+#pragma clang diagnostic pop
   }
 }
 
 wxMenu *TaskBarIcon::CreatePopupMenu() {
-  auto menu = new wxMenu;
+  auto *menu = new wxMenu;
   if (isLoggedIn_) {
-    menu->Append(PU_RESTART, "&Neustarten");
+    menu->Append(kPuRestart, "&Neustarten");
     menu->AppendSeparator();
-    menu->Append(PU_OPEN_STAGE, "Öffne &Bühne");
+    menu->Append(kPuOpenStage, "Öffne &Bühne");
     menu->AppendSeparator();
-    menu->Append(PU_OPEN_SETTINGS, "Öffne Ein&stellungen");
+    menu->Append(kPuOpenSettings, "Öffne Ein&stellungen");
     menu->AppendSeparator();
-    menu->Append(PU_ADD_BOX, "&Neue Box hinzufügen");
+    menu->Append(kPuAddBox, "&Neue Box hinzufügen");
     menu->AppendSeparator();
-    menu->Append(PU_LOGOUT, "&Abmelden");
+    menu->Append(kPuLogout, "&Abmelden");
     menu->AppendSeparator();
 #ifdef __WXOSX__
     if (OSXIsStatusItem())
 #endif
     {
       menu->AppendSeparator();
-      menu->Append(PU_CLOSE, "B&eenden");
+      menu->Append(kPuClose, "B&eenden");
     }
   } else {
-    menu->Append(PU_LOGIN, "&Anmelden");
+    menu->Append(kPuLogin, "&Anmelden");
     menu->AppendSeparator();
 #ifdef __WXOSX__
     if (OSXIsStatusItem())
 #endif
     {
       menu->AppendSeparator();
-      menu->Append(PU_CLOSE, "B&eenden");
+      menu->Append(kPuClose, "B&eenden");
     }
   }
   return menu;

@@ -10,20 +10,20 @@ class CMRCFileBuffer : public std::streambuf {
  public:
   explicit CMRCFileBuffer(cmrc::file file) : file_(file), current_(file.begin()) {
   }
-  inline int_type underflow() {
+  inline int_type underflow() override {
     if (current_ == file_.end()) {
       return traits_type::eof();
     }
     return traits_type::to_int_type(*current_);
   }
-  inline int_type uflow() {
+  inline int_type uflow() override {
     if (current_ == file_.end()) {
       return traits_type::eof();
     }
     return traits_type::to_int_type(*current_++);
   }
 
-  inline std::streamsize showmanyc() {
+  inline std::streamsize showmanyc() override {
     return file_.end() - file_.begin();
   }
 };

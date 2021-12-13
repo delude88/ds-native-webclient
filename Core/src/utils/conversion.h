@@ -16,17 +16,17 @@
 //   float y = unpackFloat(&buffer[i], &i);
 //   float z = unpackFloat(&buffer[i], &i);
 static float unpackFloat(const void *buf, int *i) {
-  const auto *b = (const unsigned char *) buf;
+  const auto *b = static_cast<const unsigned char *>(buf);
   uint32_t temp = 0;
   *i += 4;
   temp = ((b[0] << 24) |
       (b[1] << 16) |
       (b[2] << 8) |
       b[3]);
-  return *((float *) &temp);
+  return *(reinterpret_cast<float *>(&temp));
 }
 
-static int unpackFloatArray(void **buf, float *arr) {
+[[maybe_unused]] static int unpackFloatArray(void **buf, float *arr) {
   int arr_size = sizeof(buf);
   int buf_index = 0;
   for (auto arr_index = 0; arr_index < arr_size; arr_index++) {
@@ -46,8 +46,8 @@ static int unpackFloatArray(void **buf, float *arr) {
 //   i += packFloat(&buffer[i], y);
 //   i += packFloat(&buffer[i], z);
 static int packFloat(void *buf, float x) {
-  auto *b = (unsigned char *) buf;
-  auto *p = (unsigned char *) &x;
+  auto *b = static_cast<unsigned char *>(buf);
+  auto *p = reinterpret_cast<unsigned char *>(&x);
 #if defined (DS_LITTLE_ENDIAN)
   b[0] = p[3];
   b[1] = p[2];
@@ -62,7 +62,7 @@ static int packFloat(void *buf, float x) {
   return 4;
 }
 
-static int packFloatArray(void **buffer, const float *arr, const size_t arr_size) {
+[[maybe_unused]] static int packFloatArray(void **buffer, const float *arr, const size_t arr_size) {
   int buffer_size = 0;
   for (auto arr_index = 0; arr_index < arr_size; arr_index++) {
     buffer_size += packFloat(&buffer[buffer_size], arr[arr_index]);
@@ -111,12 +111,12 @@ static size_t deserialize(const std::byte *in, const size_t size, float *out) {
   size_t out_size = size / 4;
   uint32_t temp = 0;
   for (size_t i = 0; i < out_size; i++) {
-    const auto *b = (const unsigned char *) &in[i * 4];
+    const auto *b = reinterpret_cast<const unsigned char *>(&in[i * 4]);
     temp = ((b[0] << 24) |
         (b[1] << 16) |
         (b[2] << 8) |
         b[3]);
-    out[i] = *((float *) &temp);
+    out[i] = *(reinterpret_cast<float *>(&temp));
   }
   return out_size;
 }

@@ -11,7 +11,7 @@
 class MiniAudioIO : public AudioIO {
  public:
   explicit MiniAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
-  ~MiniAudioIO();
+  ~MiniAudioIO() override;
  protected:
   std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;
 
@@ -22,7 +22,6 @@ class MiniAudioIO : public AudioIO {
   void stopSending() override;
   void startReceiving() override;
   void stopReceiving() override;
-  void shutdown() override;
 
  private:
   std::atomic<bool> initialized_{};

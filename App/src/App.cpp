@@ -124,7 +124,6 @@ bool App::OnInit() {
     dock_icon_->showStatusMenu();
 #endif
     login_dialog_->Show(false);
-    //login_dialog_->Hide();
     start();
   }
   return true;
@@ -195,14 +194,16 @@ void App::start() {
 
   api_client_ = std::make_shared<DigitalStage::Api::Client>(API_URL);
   client_ = std::make_unique<Client>(api_client_);// Describe this device
-  nlohmann::json initial_device_information;
+  nlohmann::json initial_device_information{
+      {"uuid", device_id_},
+      {"type", "native"},
+      {"canAudio", true},
+      {"sendAudio", true},
+      {"receiveAudio", true},
+      {"canVideo", false},
+      {"name", "Digital Stage Connector"}
+  };
   // - always use a UUID when you want Digital Stage to remember this device and its settings
-  initial_device_information["uuid"] = device_id_;
-  initial_device_information["type"] = "native";
-  initial_device_information["canAudio"] = true;
-  initial_device_information["sendAudio"] = false;
-  initial_device_information["receiveAudio"] = true;
-  initial_device_information["canVideo"] = false;
 #ifdef USE_RT_AUDIO
   initial_device_information["audioEngine"] = "rtaudio";
 #else
@@ -221,8 +222,8 @@ void App::start() {
 }
 void App::stop() {
   PLOGE << "Stopping";
-  client_ = nullptr;
-  api_client_ = nullptr;
+  client_.reset();
+  api_client_.reset();
 }
 void App::restart() {
   PLOGE << "Restarting";
