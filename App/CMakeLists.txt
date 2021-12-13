@@ -162,10 +162,7 @@ if (WIN32)
             WIN32_EXECUTABLE TRUE)
     set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
     include(InstallRequiredSystemLibraries)
-    install(CODE "
-        include(BundleUtilities)
-        fixup_bundle(\"${APPS}\" \"\" \"\")"
-            COMPONENT ${target})
+    set(CPACK_GENERATOR "NSIS")
     set(CPACK_PACKAGE_FILE_NAME digital-stage-connector-app-win-${CMAKE_SYSTEM_PROCESSOR})
 elseif (APPLE)
     # Apple
