@@ -8,8 +8,7 @@
     <true/>
     <key>com.apple.security.network.client</key>
     <true/>
-    <key>com.apple.security.network.client</key>
-    <true/>
     <key>com.apple.developer.authentication-services.autofill-credential-provider</key>
     <true/>
 </dict>
+</plist>
