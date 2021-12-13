@@ -15,21 +15,16 @@ fi
 cmake --build cmake-build-release --config Release
 
 # Pack app
-cpack --config cmake-build-release/CPackConfigApp.cmake -B build
+cpack --config cmake-build-release/CPackConfigApp.cmake -B cmake-build-release
 # Pack service
-cpack --config cmake-build-release/CPackConfigService.cmake -B build
+cpack --config cmake-build-release/CPackConfigService.cmake -B cmake-build-release
 
 if [ "$1" = "sign" ]; then
-  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file cmake-build-release/digital-stage-connector-*.dmg
+  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.app --file cmake-build-release/digital-stage-connector-app-macos-arm64.dmg
   for (( ; ; ))
   do
-    xcrun stapler staple cmake-build-release/digital-stage-connector*.dmg
+    xcrun stapler staple cmake-build-release/digital-stage-connector-app-macos-arm64.dmg
     if [ $? -eq 0 ]; then break; fi
-  done
-  xcrun altool --notarize-app -u tobias.hegemann@googlemail.com -p "@keystore:Developer-altool" --primary-bundle-id de.tobiashegemann.digital-stage.service --file cmake-build-release/digital-stage-connector-*.pkg
-  for (( ; ; ))
-  do
-    xcrun stapler staple cmake-build-release/digital-stage-connector*.pkg
-    if [ $? -eq 0 ]; then break; fi
+    sleep 5s
   done
 fi
