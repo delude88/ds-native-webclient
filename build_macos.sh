@@ -16,6 +16,8 @@ cmake --build cmake-build-release --config Release
 
 # Pack app
 cpack --config cmake-build-release/CPackConfigApp.cmake -B cmake-build-release
+# Including: codesign --force --timestamp --options runtime --deep --entitlements App/Digital\ Stage\ Connector.entitlements --sign "Developer ID Application: Tobias Hegemann (JH3275598G)" cmake-build-release/_CPack_Packages/Darwin/DragNDrop/digital-stage-connector-app-macos-arm64/ALL_IN_ONE/Digital\ Stage\ Connector.app
+
 # Pack service
 cpack --config cmake-build-release/CPackConfigService.cmake -B cmake-build-release
 
