@@ -69,12 +69,6 @@ if (APPLE)
     list(APPEND RESOURCES
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.icns
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/appicon.png
-            #${CMAKE_CURRENT_SOURCE_DIR}/assets/logo@2x.png
-            #${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-dark.png
-            #${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-dark@2x.png
-            #${CMAKE_CURRENT_SOURCE_DIR}/assets/logo.tiff
-            #${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-dark.tiff
-            #${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full@2x.png
             )
     set_source_files_properties(${RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif (APPLE)
