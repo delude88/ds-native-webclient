@@ -24,6 +24,7 @@
 class Client {
  public:
   explicit Client(std::shared_ptr<DigitalStage::Api::Client> api_client);
+  ~Client();
 
  protected:
   void onCaptureCallback(const std::string &audio_track_id, const float *data, std::size_t frame_count);
@@ -47,6 +48,7 @@ class Client {
 #endif
   std::shared_mutex channels_mutex_;
 
+  bool is_ready_;
   std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<AudioIO> audio_io_;
   std::unique_ptr<AudioRenderer<float>> audio_renderer_;

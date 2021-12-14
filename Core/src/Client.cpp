@@ -57,6 +57,12 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
   });
   attachHandlers();
   attachAudioHandlers();
+
+  is_ready_ = true;
+}
+
+Client::~Client() {
+  is_ready_ = false;
 }
 
 void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, const std::size_t frame_count) {
@@ -147,6 +153,9 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
                               float **out,
                               std::size_t num_output_channels,
                               std::size_t frame_count) {
+  if(!is_ready_)
+    return;
+
   // Mix to L / R
   auto *left = new float[frame_count];
   auto *right = new float[frame_count];
