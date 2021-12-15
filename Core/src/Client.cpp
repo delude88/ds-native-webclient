@@ -63,6 +63,10 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
 
 Client::~Client() {
   is_ready_ = false;
+  audio_io_.reset();
+  connection_service_.reset();
+  audio_renderer_.reset();
+  api_client_.reset();
 }
 
 void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, const std::size_t frame_count) {

@@ -18,6 +18,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <memory>
+#include <atomic>
 
 #define RECEIVER_BUFFER 2000
 
@@ -48,7 +49,7 @@ class Client {
 #endif
   std::shared_mutex channels_mutex_;
 
-  bool is_ready_;
+  std::atomic<bool> is_ready_;
   std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<AudioIO> audio_io_;
   std::unique_ptr<AudioRenderer<float>> audio_renderer_;

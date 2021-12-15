@@ -7,16 +7,16 @@ if [ "$1" != "onlybuild" ]; then
   pip3 install conan
 
   # Install other dependencies using conan
-  conan install -if cmake-build-debug -s build_type=Debug --build=missing .
+  conan install -if build -s build_type=Debug --build=missing .
   # Configure
-  cmake -S . -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -G Xcode
 fi
 # Build
-cmake --build cmake-build-debug --config Debug
+cmake --build build --config Debug
 
 if [ "$1" = "pack" ]; then
   # Pack app
-  cpack --config build/CPackConfigApp.cmake -B cmake-build-debug
+  cpack --config build/CPackConfigApp.cmake -B build
   # Pack service
-  cpack --config build/CPackConfigService.cmake -B cmake-build-debug
+  cpack --config build/CPackConfigService.cmake -B build
 fi

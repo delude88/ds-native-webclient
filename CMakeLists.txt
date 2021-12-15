@@ -41,6 +41,9 @@ set(USE_RT_AUDIO ON CACHE BOOL "Use RtAudio as audio engine" FORCE)
 option(BUILD_APP "Build App (requires Qt5 or Qt6)" ON)
 option(BUILD_SERVICE "Build headless service" ON)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -g -O2")
+endif()
 
 #################################################
 #

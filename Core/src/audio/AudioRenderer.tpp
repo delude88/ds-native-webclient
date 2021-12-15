@@ -94,7 +94,11 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   if (!HRTF::CreateFrom3dtiStream(hrtf_stream, listener_)) {
     throw std::runtime_error("Could not create HRTF");
   }
-  if (!listener_->GetHRTF()->IsHRTFLoaded()) {
+  auto *hrtf = listener_->GetHRTF();
+  if(!hrtf) {
+    throw std::runtime_error("HRTF has not been created");
+  }
+  if (!hrtf->IsHRTFLoaded()) {
     throw std::runtime_error("Created HRTF but it is not loaded");
   }
   PLOGI << "Loaded HRTF " << hrtf_path;
@@ -821,6 +825,9 @@ template<class T>
 void AudioRenderer<T>::renderReverb(T *outLeft, T *outRight, std::size_t frame_size) {
   if (initialized_ && frame_size == current_frame_size_) {
     if (mutex_.try_lock()) {
+      //TODO: Pull initialized fully to here
+      if(!initialized_)
+        return;
       Common::CEarPair<CMonoBuffer<float>> buffer_reverb;
 
       environment_->ProcessVirtualAmbisonicReverb(buffer_reverb.left, buffer_reverb.right);
