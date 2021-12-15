@@ -1,11 +1,10 @@
 #include "KeyStore.h"
-#include <iostream>
 
 #include <keychain/keychain.h>
 #include <plog/Log.h>
 
 auto KeyStore::store(const Credentials &credentials) -> bool {
-  PLOGI << "store";
+  PLOGD << "store";
   keychain::Error error{};
   keychain::setPassword(KEYSTORE_PACKAGE,
                         KEYSTORE_SERVICE,
@@ -13,39 +12,39 @@ auto KeyStore::store(const Credentials &credentials) -> bool {
                         credentials.password,
                         error);
   if (error) {
-    std::cerr << "Storing of password failed: "
-              << error.message << std::endl;
+    PLOGE << "Storing of password failed: "
+              << error.message;
     return false;
   }
   return true;
 }
 
 auto KeyStore::restore(const std::string &email) -> std::optional<KeyStore::Credentials> {
-  PLOGI << "restore";
+  PLOGD << "restore";
   keychain::Error error{};
   auto password = keychain::getPassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {
-    std::cerr << "Restore of password failed: "
-              << error.message << std::endl;
+    PLOGE << "Restore of password failed: "
+              << error.message;
     return std::nullopt;
   }
   return Credentials{email, password};
 }
 
 auto KeyStore::remove(const std::string &email) -> bool {
-  PLOGI << "remove";
+  PLOGD << "remove";
   keychain::Error error{};
   keychain::deletePassword(KEYSTORE_PACKAGE, KEYSTORE_SERVICE, email, error);
   if (error) {
-    std::cerr << "Reset of password failed: "
-              << error.message << std::endl;
+    PLOGE << "Reset of password failed: "
+              << error.message;
     return false;
   }
   return true;
 }
 
 auto KeyStore::restoreEmail() -> std::optional<std::string> {
-  PLOGI << "restoreEmail " << EMAIL_IDENTIFIER;
+  PLOGD << "restoreEmail " << EMAIL_IDENTIFIER;
   auto* config = new wxConfig(KEYSTORE_PACKAGE);
   if (config->HasEntry("email")) {
     auto value = config->Read("email").ToStdString();
@@ -57,7 +56,7 @@ auto KeyStore::restoreEmail() -> std::optional<std::string> {
 }
 
 void KeyStore::storeEmail(const std::string &email) {
-  PLOGI << "storeEmail" << email;
+  PLOGD << "storeEmail" << email;
   auto* config = new wxConfig(KEYSTORE_PACKAGE);
   config->Write("email", wxString(email));
   delete config;

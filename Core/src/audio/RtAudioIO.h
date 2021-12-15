@@ -10,11 +10,11 @@
 #include "AudioIO.h"
 #include <optional>
 
-class RtAudioIO :
+class [[maybe_unused]] RtAudioIO :
     public AudioIO {
 
  public:
-  explicit RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
+  [[maybe_unused]] explicit RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
   ~RtAudioIO() override;
  protected:
   std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;
@@ -39,6 +39,12 @@ class RtAudioIO :
                                   const std::string &type,
                                   const RtAudio::DeviceInfo &info,
                                   const DigitalStage::Api::Store &store);
+
+  std::atomic<bool> is_running_;
+
+  RtAudio::StreamParameters input_parameters_;
+  RtAudio::StreamParameters output_parameters_;
+  unsigned int buffer_size_;
 
   std::unique_ptr<RtAudio> rt_audio_;
   std::atomic<std::size_t> num_output_channels_{};

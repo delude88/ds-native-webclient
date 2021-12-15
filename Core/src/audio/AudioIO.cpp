@@ -241,9 +241,11 @@ void AudioIO::unPublishAll() {
 }
 AudioIO::~AudioIO() {
   token_ = nullptr; // Don't listen to the unpublished event
-  PLOGI << "Unpublish all";
+  PLOGD << "Unpublish all";
   unPublishAll();
+  PLOGD << "Stopping device watcher";
   stopWatchingDeviceUpdates();
+  PLOGD << "Destructor finished";
 }
 void AudioIO::watchDeviceUpdates() {
   if (!watching_device_updates_) {
@@ -279,7 +281,7 @@ void AudioIO::watchDeviceUpdates() {
         if (watching_device_updates_)
           std::this_thread::sleep_for(std::chrono::seconds(1));
       }
-      PLOGI << "Stopping AudioIO thread";
+      PLOGD << "Stopping AudioIO watcher thread";
     });
   }
 }
