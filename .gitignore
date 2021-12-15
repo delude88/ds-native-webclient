@@ -629,3 +629,5 @@ build-macos
 /*.dmg
 aqtinstall.log
 *.7z
+
+iwyu.out
