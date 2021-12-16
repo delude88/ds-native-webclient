@@ -177,7 +177,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
         }
       }
     }, token_);
-    client_->stageJoined.connect([this](const ID_TYPE &stage_id, const optional<ID_TYPE> &,
+    client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &stage_id, const optional<DigitalStage::Types::ID_TYPE> &,
                                         const DigitalStage::Api::Store *store) {
       if (store->isReady()) {
         PLOGD << "stageJoined";
@@ -234,7 +234,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       PLOGD << "audioTrackAdded";
 #ifdef USE_ONLY_NATIVE_DEVICES
@@ -269,7 +269,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       mutex_.lock();
       PLOGD << "audioTrackRemoved";
@@ -277,7 +277,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       mutex_.unlock();
     }
   }, token_);
-  client_->customAudioTrackPositionAdded.connect([this](const CustomAudioTrackPosition &position,
+  client_->customAudioTrackPositionAdded.connect([this](const DigitalStage::Types::CustomAudioTrackPosition &position,
                                                         const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_track = store->audioTracks.get(position.audioTrackId);
@@ -311,7 +311,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customAudioTrackPositionRemoved.connect([this](const CustomAudioTrackPosition &position,
+  client_->customAudioTrackPositionRemoved.connect([this](const DigitalStage::Types::CustomAudioTrackPosition &position,
                                                           const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_track = store->audioTracks.get(position.audioTrackId);
@@ -349,7 +349,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customStageDevicePositionAdded.connect([this](const CustomStageDevicePosition &position,
+  client_->customStageDevicePositionAdded.connect([this](const DigitalStage::Types::CustomStageDevicePosition &position,
                                                          const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageDevice(position.stageDeviceId);
@@ -406,7 +406,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customStageDevicePositionRemoved.connect([this](const CustomStageDevicePosition &position,
+  client_->customStageDevicePositionRemoved.connect([this](const DigitalStage::Types::CustomStageDevicePosition &position,
                                                            const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageDevice(position.stageDeviceId);
@@ -458,7 +458,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customStageMemberPositionAdded.connect([this](const CustomStageMemberPosition &position,
+  client_->customStageMemberPositionAdded.connect([this](const DigitalStage::Types::CustomStageMemberPosition &position,
                                                          const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageMember(position.stageMemberId);
@@ -514,7 +514,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customStageMemberPositionRemoved.connect([this](const CustomStageMemberPosition &position,
+  client_->customStageMemberPositionRemoved.connect([this](const DigitalStage::Types::CustomStageMemberPosition &position,
                                                            const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByStageMember(position.stageMemberId);
@@ -566,7 +566,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customGroupPositionAdded.connect([this](const CustomGroupPosition &position,
+  client_->customGroupPositionAdded.connect([this](const DigitalStage::Types::CustomGroupPosition &position,
                                                    const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByGroup(position.groupId);
@@ -622,7 +622,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->customGroupPositionRemoved.connect([this](const CustomGroupPosition &position,
+  client_->customGroupPositionRemoved.connect([this](const DigitalStage::Types::CustomGroupPosition &position,
                                                      const DigitalStage::Api::Store *store) {
     if (store->isReady() && initialized_) {
       auto audio_tracks = store->getAudioTracksByGroup(position.groupId);

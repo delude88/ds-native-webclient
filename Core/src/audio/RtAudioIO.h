@@ -6,9 +6,19 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <RtAudio.h>
-#include "AudioIO.h"
-#include <optional>
+#include <RtAudio.h>              // for RtAudio, RtAudio::StreamParameters
+#include <memory>                 // for shared_ptr, unique_ptr
+#include <cstddef>                // for size_t
+#include <array>                  // for array
+#include <atomic>                 // for atomic
+#include <iosfwd>                 // for string
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <optional>               // for optional
+#include <vector>                 // for vector
+#include "AudioIO.h"              // for AudioIO
+#include "DigitalStage/Types.h"   // for json, SoundCard (ptr only)
+namespace DigitalStage::Api { class Client; }
+namespace DigitalStage::Api { class Store; }
 
 class [[maybe_unused]] RtAudioIO :
     public AudioIO {
@@ -20,8 +30,8 @@ class [[maybe_unused]] RtAudioIO :
   std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;
 
   void setAudioDriver(const std::string &audio_driver) override;
-  void setInputSoundCard(const SoundCard &sound_card, bool start) override;
-  void setOutputSoundCard(const SoundCard &sound_card, bool start) override;
+  void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) override;
+  void setOutputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) override;
   void startSending() override;
   void stopSending() override;
   void startReceiving() override;

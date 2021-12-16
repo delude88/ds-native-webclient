@@ -1,12 +1,26 @@
 //
 // Created by Tobias Hegemann on 26.10.21.
 //
-
 #include "Client.h"
-
-#include <utility>
-#include "utils/conversion.h"
-
+#include <utility>                     // for move, pair
+#include <cstdlib>                     // for free, malloc
+#include <cstring>                     // for memset
+//#include <__mutex_base>                // for unique_lock
+#include <cstddef>                     // for size_t, byte
+//#include <exception>                   // for exception
+#include <iostream>                    // for string, operator<<, endl, basi...
+//#include <nlohmann/json.hpp>           // for basic_json<>::object_t, basic_...
+#include <nlohmann/json_fwd.hpp>       // for json
+#include <optional>                    // for optional
+//#include <sigslot/signal.hpp>          // for signal
+//#include <stdexcept>                   // for out_of_range
+//#include <string>                      // for operator<, operator+
+#include <type_traits>                 // for remove_extent_t, remove_refere...
+#include <vector>                      // for vector
+#include "DigitalStage/Api/Store.h"    // for Store
+//#include "DigitalStage/Types.h"        // for json
+#include "audio/AudioIO.h"             // for AudioIO
+#include "audio/AudioRenderer.h"       // for AudioRenderer
 // AudioIO engine
 #ifdef USE_RT_AUDIO
 #include "audio/RtAudioIO.h"
@@ -19,6 +33,12 @@
 #include "miniaudio.h"
 #include "audio/MiniAudioIO.h"
 #endif
+#include "plog/Log.h"                  // for PLOGD, PLOGE
+#include "plog/Record.h"               // for Record
+#include "utils/RingBuffer.h"          // for RingBuffer
+#include "utils/conversion.h"          // for deserialize
+#include "webrtc/ConnectionService.h"  // for ConnectionService
+namespace DigitalStage::Api { class Client; }
 
 Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
     api_client_(std::move(api_client)),
@@ -42,7 +62,7 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
       lock.unlock();
     }
     auto values_size = data.size() / 4;
-    auto* values = new float[values_size];
+    auto *values = new float[values_size];
     deserialize(data.data(), data.size(), values);
     std::shared_lock lock(channels_mutex_);
 #ifdef USE_CIRCULAR_QUEUE
@@ -52,7 +72,7 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
       channels_[audio_track_id]->put(values[v]);
     }
 #endif
-    delete [] values;
+    delete[] values;
     lock.unlock();  // May be useless here
   });
   attachHandlers();
@@ -157,7 +177,7 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
                               float **out,
                               std::size_t num_output_channels,
                               std::size_t frame_count) {
-  if(!is_ready_)
+  if (!is_ready_)
     return;
 
   // Mix to L / R
