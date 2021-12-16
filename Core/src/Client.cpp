@@ -5,20 +5,13 @@
 #include <utility>                     // for move, pair
 #include <cstdlib>                     // for free, malloc
 #include <cstring>                     // for memset
-//#include <__mutex_base>                // for unique_lock
 #include <cstddef>                     // for size_t, byte
-//#include <exception>                   // for exception
 #include <iostream>                    // for string, operator<<, endl, basi...
-//#include <nlohmann/json.hpp>           // for basic_json<>::object_t, basic_...
 #include <nlohmann/json_fwd.hpp>       // for json
 #include <optional>                    // for optional
-//#include <sigslot/signal.hpp>          // for signal
-//#include <stdexcept>                   // for out_of_range
-//#include <string>                      // for operator<, operator+
 #include <type_traits>                 // for remove_extent_t, remove_refere...
 #include <vector>                      // for vector
 #include "DigitalStage/Api/Store.h"    // for Store
-//#include "DigitalStage/Types.h"        // for json
 #include "audio/AudioIO.h"             // for AudioIO
 #include "audio/AudioRenderer.h"       // for AudioRenderer
 // AudioIO engine

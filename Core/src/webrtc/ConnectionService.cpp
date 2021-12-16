@@ -2,10 +2,9 @@
 // Created by Tobias Hegemann on 26.10.21.
 //
 #include "ConnectionService.h"
-//#include <functional>                 // for __base, function
 #include <utility>                    // for move, pair
-#include <cassert>                   // for assert
-#include <__mutex_base>               // for lock_guard
+#include <cassert>                    // for assert
+#include <mutex>                      // for lock_guard
 //#include <map>                        // for operator!=
 #include <memory>                     // for allocator
 #include <nlohmann/json.hpp>          // for basic_json<>::object_t, basic_json

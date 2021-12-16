@@ -5,7 +5,7 @@
 #include <DigitalStage/Api/Client.h>  // for Client
 #include <DigitalStage/Types.h>       // for json
 #include <memory>                     // for shared_ptr
-#include <__mutex_base>               // for mutex
+#include <mutex>                      // for mutex
 #include <array>                      // for array
 #include <atomic>                     // for atomic
 #include <cstddef>                    // for size_t
