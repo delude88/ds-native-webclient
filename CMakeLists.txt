@@ -127,3 +127,7 @@ endif (BUILD_SERVICE)
 if (BUILD_APP)
     add_subdirectory(App)
 endif (BUILD_APP)
+
+if (CMAKE_GENERATOR STREQUAL "Xcode")
+    add_subdirectory(SwiftApp)
+endif (CMAKE_MAKE_PROGRAM STREQUAL "xcodebuild")

@@ -15,7 +15,6 @@
 #include <thread>                     // for thread
 #include <unordered_map>              // for unordered_map
 #include <vector>                     // for vector
-namespace DigitalStage::Api { class Store; }
 
 using ChannelMap = std::unordered_map<std::size_t, std::string>;
 

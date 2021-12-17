@@ -17,8 +17,6 @@
 #include <vector>                 // for vector
 #include "AudioIO.h"              // for AudioIO
 #include "DigitalStage/Types.h"   // for json, SoundCard (ptr only)
-namespace DigitalStage::Api { class Client; }
-namespace DigitalStage::Api { class Store; }
 
 class [[maybe_unused]] RtAudioIO :
     public AudioIO {
