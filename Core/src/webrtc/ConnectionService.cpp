@@ -5,7 +5,8 @@
 #include "ConnectionService.h"
 #include "../utils/conversion.h"
 #include <optional>
-#include <DigitalStage/Api/Events.h>
+#include <DigitalStage/Api/Events.h>          // for PeerConnection
+#include "plog/Log.h"
 
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),

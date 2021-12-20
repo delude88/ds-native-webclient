@@ -9,7 +9,7 @@ if [ "$1" != "onlybuild" ]; then
   # Install other dependencies using conan
   conan install -if build -s build_type=Debug --build=missing .
   # Configure
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -G Xcode
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_SERVICE=Off -DBUILD_APP=Off -G Xcode
 fi
 # Build
 cmake --build build --config Debug

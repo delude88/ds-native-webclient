@@ -8,6 +8,7 @@
 #include <DigitalStage/Auth/AuthService.h>
 #include <DigitalStage/Auth/AuthError.h>
 #include <plog/Log.h>
+#include <DigitalStage/Auth/AuthError.h>
 #include "AuthIO.h"
 
 inline std::pair<std::string, std::string> sign_in() {
