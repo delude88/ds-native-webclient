@@ -13,8 +13,6 @@
 #include "rtc/candidate.hpp"     // for Candidate
 #include "rtc/common.hpp"        // for binary, message_variant
 #include "rtc/description.hpp"   // for Description, Description::Type, Desc...
-namespace rtc { class DataChannel; }
-namespace rtc { struct Configuration; }
 
 PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool polite) :
     peer_connection_(std::make_unique<rtc::PeerConnection>(configuration)),

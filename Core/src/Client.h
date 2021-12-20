@@ -13,16 +13,17 @@
 #include <map>                    // for map
 #include <shared_mutex>           // for shared_mutex
 #include <unordered_map>          // for unordered_map
+#include <DigitalStage/Api/Client.h>
+#include "audio/AudioIO.h"
+#include "audio/AudioRenderer.h"
+#include "webrtc/ConnectionService.h"
 #ifdef USE_CIRCULAR_QUEUE
 #include "utils/CircularQueue.h"
 #else
 #include "utils/RingBuffer.h"
-template <class T> class RingBuffer;
+template<class T>
+class RingBuffer;
 #endif
-class AudioIO;
-class ConnectionService;
-namespace DigitalStage::Api { class Client; } // NOLINT(readability-identifier-naming)
-template <class T> class AudioRenderer;
 
 #define RECEIVER_BUFFER 2000
 

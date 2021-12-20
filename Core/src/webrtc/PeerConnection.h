@@ -13,12 +13,8 @@
 #include <map>                      // for map
 #include <string>                   // for operator<
 #include <vector>                   // for vector
+#include <DigitalStage/Types.h>
 #include "rtc/peerconnection.hpp"   // for PeerConnection
-namespace DigitalStage::Types { struct IceCandidateInit; } // NOLINT(readability-identifier-naming)
-namespace DigitalStage::Types { struct SessionDescriptionInit; } // NOLINT(readability-identifier-naming)
-namespace rtc { class DataChannel; }
-namespace rtc { class Description; }
-namespace rtc { struct Configuration; }
 
 class PeerConnection {
  public:

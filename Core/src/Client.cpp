@@ -31,7 +31,6 @@
 #include "utils/RingBuffer.h"          // for RingBuffer
 #include "utils/conversion.h"          // for deserialize
 #include "webrtc/ConnectionService.h"  // for ConnectionService
-namespace DigitalStage::Api { class Client; }
 
 Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
     api_client_(std::move(api_client)),
