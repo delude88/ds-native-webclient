@@ -5,6 +5,7 @@
 #include "ConnectionService.h"
 #include "../utils/conversion.h"
 #include <optional>
+#include <DigitalStage/Api/Events.h>
 
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
@@ -40,14 +41,14 @@ void ConnectionService::attachHandlers() {
     onStageChanged();
     PLOGD << "ready end";
   }, token_);
-  client_->stageJoined.connect([this](const ID_TYPE &, const std::optional<ID_TYPE> &,
+  client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &, const std::optional<DigitalStage::Types::ID_TYPE> &,
                                       const DigitalStage::Api::Store * /*store*/) {
     onStageChanged();
   }, token_);
   client_->stageLeft.connect([this](const DigitalStage::Api::Store * /*store*/) {
     onStageChanged();
   }, token_);
-  client_->stageDeviceAdded.connect([this](const StageDevice &device, const DigitalStage::Api::Store *store) {
+  client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       if (device.active) {
@@ -94,7 +95,7 @@ void ConnectionService::attachHandlers() {
       }
     }
   }, token_);
-  client_->p2pOffer.connect([this](const P2POffer &offer, const DigitalStage::Api::Store *store) {
+  client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(offer.to == *local_stage_device_id);
     assert(offer.from != *local_stage_device_id);
@@ -112,7 +113,7 @@ void ConnectionService::attachHandlers() {
     assert(peer_connections_[offer.from]);
     peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   }, token_);
-  client_->p2pAnswer.connect([this](const P2PAnswer &answer, const DigitalStage::Api::Store *store) {
+  client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
@@ -121,7 +122,7 @@ void ConnectionService::attachHandlers() {
       peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
     }
   }, token_);
-  client_->iceCandidate.connect([this](const IceCandidate &ice, const DigitalStage::Api::Store *store) {
+  client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice, const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);

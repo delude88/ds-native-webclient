@@ -276,11 +276,11 @@ void RtAudioIO::setAudioDriver(const std::string & /*audio_driver*/) {
   initAudio();
 }
 
-void RtAudioIO::setInputSoundCard(const SoundCard & /*sound_card*/, bool  /*start*/) {
+void RtAudioIO::setInputSoundCard(const DigitalStage::Types::SoundCard & /*sound_card*/, bool  /*start*/) {
   PLOGD << "setInputSoundCard()";
   initAudio();
 }
-void RtAudioIO::setOutputSoundCard(const SoundCard & /*sound_card*/, bool  /*start*/) {
+void RtAudioIO::setOutputSoundCard(const DigitalStage::Types::SoundCard & /*sound_card*/, bool  /*start*/) {
   PLOGD << "setOutputSoundCard()";
   initAudio();
 }

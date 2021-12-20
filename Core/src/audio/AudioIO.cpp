@@ -4,6 +4,7 @@
 
 #include "AudioIO.h"
 #include <plog/Log.h>
+#include <DigitalStage/Api/Events.h>
 
 AudioIO::AudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
@@ -171,7 +172,7 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackAdded";
       auto local_device_id = store->getLocalDeviceId();
@@ -179,7 +180,7 @@ void AudioIO::attachHandlers() {
       if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         // This is a local track, so map the channels to this track
         mutex_.lock();
-        if (!input_channel_mapping_.count(*audio_track.sourceChannel)) {
+        if (input_channel_mapping_.count(*audio_track.sourceChannel) == 0U) {
           input_channel_mapping_[*audio_track.sourceChannel] = audio_track._id;
           PLOGD << "Added local track for channel " << *audio_track.sourceChannel;
         }
@@ -187,13 +188,13 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackRemoved";
       auto local_device_id = store->getLocalDeviceId();
       if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         mutex_.lock();
-        if (input_channel_mapping_.count(*audio_track.sourceChannel)) {
+        if (input_channel_mapping_.count(*audio_track.sourceChannel) != 0U) {
           input_channel_mapping_.erase(*audio_track.sourceChannel);
           PLOGD << "Removed local track for channel " << *audio_track.sourceChannel;
         }

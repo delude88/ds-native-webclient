@@ -20,8 +20,8 @@ class [[maybe_unused]] RtAudioIO :
   std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;
 
   void setAudioDriver(const std::string &audio_driver) override;
-  void setInputSoundCard(const SoundCard &sound_card, bool start) override;
-  void setOutputSoundCard(const SoundCard &sound_card, bool start) override;
+  void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) override;
+  void setOutputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) override;
   void startSending() override;
   void stopSending() override;
   void startReceiving() override;
