@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <DigitalStage/Auth/AuthService.h>
+#include <DigitalStage/Auth/AuthError.h>
 #include <plog/Log.h>
 #include "AuthIO.h"
 

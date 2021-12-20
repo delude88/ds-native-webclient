@@ -9,7 +9,7 @@
 #include <utility>
 #include <plog/Log.h>
 
-[[maybe_unused]] RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)) {
+[[maybe_unused]] RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)), is_running_(true) {
 }
 
 RtAudioIO::~RtAudioIO() {
