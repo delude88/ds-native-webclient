@@ -697,7 +697,7 @@ DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosit
       store.getCustomStageMemberPositionByStageMemberAndDevice(stage_member->_id, *local_device_id);
   // Get related group
   auto group = stage_member->groupId ? store.groups.get(*stage_member->groupId) : std::nullopt;
-  auto custom_group_position = store.getCustomGroupPositionByGroupAndDevice(group->_id, *local_device_id);
+  auto custom_group_position = group ? store.getCustomGroupPositionByGroupAndDevice(group->_id, *local_device_id) : std::nullopt;
 
   // Calculate coordinates
   double x = custom_stage_device_position ? custom_stage_device_position->x : stage_device.x;
