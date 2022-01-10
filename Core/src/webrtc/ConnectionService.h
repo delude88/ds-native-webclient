@@ -22,6 +22,7 @@
 class ConnectionService {
  public:
   explicit ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client);
+  ~ConnectionService();
 
   [[maybe_unused]] void broadcastFloat(const std::string &audio_track_id, float data);
   void broadcastBytes(const std::string &audio_track_id, const std::byte *data, size_t size);
@@ -42,6 +43,8 @@ class ConnectionService {
   rtc::Configuration configuration_;
 
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;
+
+  bool running_;
 };
 
 #endif //CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_

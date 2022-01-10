@@ -9,8 +9,13 @@
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
       configuration_(rtc::Configuration()),
-      token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
+      token_(std::make_shared<DigitalStage::Api::Client::Token>()),
+      running_(true) {
   attachHandlers();
+}
+
+ConnectionService::~ConnectionService() {
+  running_ = false;
 }
 
 void ConnectionService::attachHandlers() {
@@ -48,7 +53,7 @@ void ConnectionService::attachHandlers() {
     onStageChanged();
   }, token_);
   client_->stageDeviceAdded.connect([this](const StageDevice &device, const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (running_ && store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       if (device.active) {
 #if USE_ONLY_NATIVE_DEVICES
@@ -66,7 +71,7 @@ void ConnectionService::attachHandlers() {
   }, token_);
   client_->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                              const DigitalStage::Api::Store *store) {
-    if (store->isReady()) {
+    if (running_ && store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       auto local_stage_device_id = store->getStageDeviceId();
       if (_id != *local_stage_device_id) {
@@ -95,6 +100,8 @@ void ConnectionService::attachHandlers() {
     }
   }, token_);
   client_->p2pOffer.connect([this](const P2POffer &offer, const DigitalStage::Api::Store *store) {
+    if(!running_)
+      return;
     auto local_stage_device_id = store->getStageDeviceId();
     assert(offer.to == *local_stage_device_id);
     assert(offer.from != *local_stage_device_id);
@@ -113,6 +120,8 @@ void ConnectionService::attachHandlers() {
     peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   }, token_);
   client_->p2pAnswer.connect([this](const P2PAnswer &answer, const DigitalStage::Api::Store *store) {
+    if(!running_)
+      return;
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
@@ -122,6 +131,8 @@ void ConnectionService::attachHandlers() {
     }
   }, token_);
   client_->iceCandidate.connect([this](const IceCandidate &ice, const DigitalStage::Api::Store *store) {
+    if(!running_)
+      return;
     auto local_stage_device_id = store->getStageDeviceId();
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
@@ -135,7 +146,7 @@ void ConnectionService::attachHandlers() {
 void ConnectionService::onStageChanged() {
   PLOGD << "handleStageChanged()";
   auto *store = client_->getStore();
-  if (store->isReady()) {
+  if (running_ && store->isReady()) {
     auto stage_id = store->getStageId();
     if (stage_id) {
       auto stage = store->stages.get(*stage_id);
@@ -220,10 +231,12 @@ void ConnectionService::closePeerConnection(const std::string &stage_device_id) 
 void ConnectionService::broadcastBytes(const std::string &audio_track_id,
                                        const std::byte *data,
                                        const std::size_t size) {
-  std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_);
-  for (const auto &item: peer_connections_) {
-    if (item.second) {
-      item.second->send(audio_track_id, data, size);
+  if(running_) {
+    std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_);
+    for (const auto &item: peer_connections_) {
+      if (item.second) {
+        item.second->send(audio_track_id, data, size);
+      }
     }
   }
 }
