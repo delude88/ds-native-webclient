@@ -3,7 +3,21 @@
 //
 
 #include "AudioIO.h"
-#include <plog/Log.h>
+#include <utility>                       // for move, pair
+#include <plog/Log.h>                    // for PLOGD, PLOGE
+#include <chrono>                        // for seconds
+//#include <map>                           // for operator!=
+#include <nlohmann/detail/json_ref.hpp>  // for json_ref
+//#include <nlohmann/json.hpp>             // for basic_json<>::object_t, basi...
+#include <optional>                      // for optional
+//#include <stdexcept>                     // for out_of_range
+#include <string>                        // for operator==, basic_string
+#include <type_traits>                   // for remove_reference<>::type
+#include "DigitalStage/Api/Client.h"     // for Client::Token, Client
+#include "DigitalStage/Api/Events.h"     // for REMOVE_AUDIO_TRACK, SET_SOUN...
+#include "DigitalStage/Api/Store.h"      // for Store, StoreEntry
+#include "DigitalStage/Types.h"          // for SoundCard, json, AudioTrack
+#include "plog/Record.h"                 // for Record
 
 AudioIO::AudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
@@ -179,7 +193,7 @@ void AudioIO::attachHandlers() {
       if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         // This is a local track, so map the channels to this track
         mutex_.lock();
-        if (!input_channel_mapping_.count(*audio_track.sourceChannel)) {
+        if (input_channel_mapping_.count(*audio_track.sourceChannel) == 0U) {
           input_channel_mapping_[*audio_track.sourceChannel] = audio_track._id;
           PLOGD << "Added local track for channel " << *audio_track.sourceChannel;
         }
@@ -193,7 +207,7 @@ void AudioIO::attachHandlers() {
       auto local_device_id = store->getLocalDeviceId();
       if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         mutex_.lock();
-        if (input_channel_mapping_.count(*audio_track.sourceChannel)) {
+        if (input_channel_mapping_.count(*audio_track.sourceChannel) != 0U) {
           input_channel_mapping_.erase(*audio_track.sourceChannel);
           PLOGD << "Removed local track for channel " << *audio_track.sourceChannel;
         }
@@ -241,9 +255,11 @@ void AudioIO::unPublishAll() {
 }
 AudioIO::~AudioIO() {
   token_ = nullptr; // Don't listen to the unpublished event
-  PLOGI << "Unpublish all";
+  PLOGD << "Unpublish all";
   unPublishAll();
+  PLOGD << "Stopping device watcher";
   stopWatchingDeviceUpdates();
+  PLOGD << "Destructor finished";
 }
 void AudioIO::watchDeviceUpdates() {
   if (!watching_device_updates_) {
@@ -279,7 +295,7 @@ void AudioIO::watchDeviceUpdates() {
         if (watching_device_updates_)
           std::this_thread::sleep_for(std::chrono::seconds(1));
       }
-      PLOGI << "Stopping AudioIO thread";
+      PLOGD << "Stopping AudioIO watcher thread";
     });
   }
 }

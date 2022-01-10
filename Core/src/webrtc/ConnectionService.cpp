@@ -1,10 +1,25 @@
 //
 // Created by Tobias Hegemann on 26.10.21.
 //
-
 #include "ConnectionService.h"
-#include "../utils/conversion.h"
-#include <optional>
+#include <utility>                    // for move, pair
+#include <cassert>                    // for assert
+#include <mutex>                      // for lock_guard
+//#include <map>                        // for operator!=
+#include <memory>                     // for allocator
+#include <nlohmann/json.hpp>          // for basic_json<>::object_t, basic_json
+#include <nlohmann/json_fwd.hpp>      // for json
+#include <optional>                   // for optional, optional<>::value_type
+//#include <stdexcept>                  // for out_of_range
+#include <type_traits>                // for remove_extent_t, remove_referen...
+#include "../utils/conversion.h"      // for serialize, serializeFloat
+#include "DigitalStage/Api/Client.h"  // for Client::Token, Client
+#include "DigitalStage/Api/Events.h"  // for SEND_ICE_CANDIDATE, SEND_P2P_AN...
+#include "DigitalStage/Api/Store.h"   // for Store, StoreEntry
+#include "DigitalStage/Types.h"       // for StageDevice, P2POffer, ID_TYPE
+#include "PeerConnection.h"           // for PeerConnection
+#include "plog/Log.h"                 // for PLOGD, PLOGI, PLOGW
+#include "plog/Record.h"              // for Record
 
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),

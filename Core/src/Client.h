@@ -6,18 +6,23 @@
 
 //#define USE_CIRCULAR_QUEUE
 
-#include <DigitalStage/Api/Client.h>
-#include "webrtc/ConnectionService.h"
-#include "audio/AudioIO.h"
-#include "audio/AudioRenderer.h"
+#include <memory>                 // for shared_ptr, unique_ptr
+#include <cstddef>                // for size_t
+#include <atomic>                 // for atomic
+#include <iosfwd>                 // for string
+#include <map>                    // for map
+#include <shared_mutex>           // for shared_mutex
+#include <unordered_map>          // for unordered_map
 #ifdef USE_CIRCULAR_QUEUE
 #include "utils/CircularQueue.h"
 #else
 #include "utils/RingBuffer.h"
+template <class T> class RingBuffer;
 #endif
-#include <mutex>
-#include <shared_mutex>
-#include <memory>
+class AudioIO;
+class ConnectionService;
+namespace DigitalStage::Api { class Client; } // NOLINT(readability-identifier-naming)
+template <class T> class AudioRenderer;
 
 #define RECEIVER_BUFFER 2000
 
@@ -48,7 +53,7 @@ class Client {
 #endif
   std::shared_mutex channels_mutex_;
 
-  bool is_ready_;
+  std::atomic<bool> is_ready_;
   std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<AudioIO> audio_io_;
   std::unique_ptr<AudioRenderer<float>> audio_renderer_;

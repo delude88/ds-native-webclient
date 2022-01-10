@@ -1,31 +1,31 @@
 //
 // Created by Tobias Hegemann on 06.11.21.
 //
-
 #include "RtAudioIO.h"
-#include "../utils/cp1252_to_utf8.h"
-#include <cstddef>
-#include <memory>
-#include <utility>
-#include <plog/Log.h>
+#include <utility>                    // for move, pair
+#include <plog/Log.h>                 // for PLOGD, PLOGW, PLOGE, PLOGI
+#include <cstdlib>                    // for malloc, free
+#include <cstring>                    // for memcpy
+#include <mutex>                      // for mutex, lock_guard
+#include <cstddef>                    // for size_t
+#include <map>                        // for operator!=
+//#include <nlohmann/json.hpp>          // for basic_json, basic_json<>::object_t
+#include <sigslot/signal.hpp>         // for signal_base<>::slots_type, signal
+#include <string>                     // for basic_string, allocator, operat...
+#include <type_traits>                // for remove_reference<>::type, remov...
+#include <unordered_map>              // for __hash_map_iterator, operator!=
+#include "../utils/cp1252_to_utf8.h"  // for CP1252_to_UTF8
+#include "DigitalStage/Api/Store.h"   // for Store
+#include "plog/Record.h"              // for Record
 
-RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
-    : AudioIO(std::move(client)) {
-  PLOGD << "RtAudioIO";
+[[maybe_unused]] RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
+    : AudioIO(std::move(client)), is_running_(true) {
 }
 
 RtAudioIO::~RtAudioIO() {
-  PLOGI << "Stopping rt audio";
-  if (rt_audio_) {
-    if (rt_audio_->isStreamRunning()) {
-      PLOGD << "RtAudiostop stream";
-      rt_audio_->stopStream();
-    }
-    if (rt_audio_->isStreamOpen()) {
-      PLOGD << "close stream";
-      rt_audio_->closeStream();
-    }
-  }
+  PLOGD << "Stopping rt audio";
+  is_running_ = false;
+  rt_audio_.reset();
 }
 
 std::vector<nlohmann::json> RtAudioIO::enumerateRtDevices(RtAudio::Api rt_api,
@@ -109,53 +109,33 @@ std::vector<json> RtAudioIO::enumerateDevices(const DigitalStage::Api::Store &st
 
 void RtAudioIO::initAudio() {
   std::lock_guard<std::mutex> guard{mutex_};
+  if (!is_running_) {
+    return;
+  }
 
   // Capture all dependencies
   auto *store = client_->getStore();
   auto local_device = store->getLocalDevice();
 
-  // Stop and close rt audio if open
-  if (rt_audio_) {
-    if (rt_audio_->isStreamRunning()) {
-      PLOGD << "RtAudiostop stream";
-      rt_audio_->stopStream();
-    }
-    if (rt_audio_->isStreamOpen()) {
-      PLOGD << "close stream";
-      rt_audio_->closeStream();
-    }
-  }
-
   if (local_device && local_device->audioDriver) {
-    PLOGD << "Got valid audio driver";
+
     auto input_sound_card = store->getInputSoundCard();
     auto output_sound_card = store->getOutputSoundCard();
     unsigned int sample_rate = 48000;
-    unsigned int buffer_size = 512;
-
-    /**
-     * Audio driver handling
-     */
-    RtAudio::Api api = RtAudio::getCompiledApiByName(*local_device->audioDriver);
-    if (!rt_audio_ || rt_audio_->getCurrentApi() != api) {
-      PLOGD << "(Re)init with audio driver " << *local_device->audioDriver;
-      rt_audio_ = std::make_unique<RtAudio>(api);
-    }
+    buffer_size_ = 512;
 
     /**
      * Input sound card handling
      */
     bool has_input = false;
-    RtAudio::StreamParameters input_parameters;
     if (input_sound_card && input_sound_card->audioEngine == "rtaudio" && input_sound_card->online
         && local_device->sendAudio) {
       has_input = true;
       PLOGD << "Got input sound card";
       sample_rate = input_sound_card->sampleRate;
-      buffer_size = input_sound_card->bufferSize;
-      input_parameters = RtAudio::StreamParameters();
-      input_parameters.deviceId = std::stoi(input_sound_card->uuid);
-      input_parameters.nChannels = input_sound_card->channels.size();
+      buffer_size_ = input_sound_card->bufferSize;
+      input_parameters_.deviceId = std::stoi(input_sound_card->uuid);
+      input_parameters_.nChannels = input_sound_card->channels.size();
       // Sync enabled channels
       for (int channel = 0; channel < input_sound_card->channels.size(); channel++) {
         if (input_sound_card->channels[channel].active) {
@@ -174,16 +154,14 @@ void RtAudioIO::initAudio() {
     num_total_output_channels_ = 0;
     output_channels_.fill(false);
     bool has_output = false;
-    RtAudio::StreamParameters output_parameters;
     if (output_sound_card && output_sound_card->audioEngine == "rtaudio" && output_sound_card->online
         && local_device->receiveAudio) {
       has_output = true;
       PLOGD << "Got output sound card";
       sample_rate = output_sound_card->sampleRate;
-      buffer_size = output_sound_card->bufferSize;
-      output_parameters = RtAudio::StreamParameters();
-      output_parameters.deviceId = std::stoi(output_sound_card->uuid);
-      output_parameters.nChannels = output_sound_card->channels.size();
+      buffer_size_ = output_sound_card->bufferSize;
+      output_parameters_.deviceId = std::stoi(output_sound_card->uuid);
+      output_parameters_.nChannels = output_sound_card->channels.size();
       num_total_output_channels_ = output_sound_card->channels.size();
       num_output_channels_ = 0;
       for (auto i = 0; i < output_sound_card->channels.size(); i++) {
@@ -269,27 +247,30 @@ void RtAudioIO::initAudio() {
         return 0;
       };
 
-      try {
-        PLOGD << "open stream";
-        rt_audio_->openStream(
-            has_output ? &output_parameters : nullptr,
-            has_input ? &input_parameters : nullptr,
-            RTAUDIO_FLOAT32,
-            // Always prefer the output sound card settings
-            sample_rate,
-            &buffer_size,
-            callback,
-            this,
-            &options
-        );
-        PLOGD << "start stream";
-        rt_audio_->startStream();
-        PLOGI << "Started Audio IO";
-      } catch (RtAudioError &e) {
-        PLOGE << e.getMessage();
-        if (rt_audio_ && rt_audio_->isStreamOpen()) {
-          rt_audio_->closeStream();
-          PLOGI << "Stopped Audio IO";
+      if (is_running_) {
+        try {
+          /**
+           * Audio driver handling
+           */
+          RtAudio::Api api = RtAudio::getCompiledApiByName(*local_device->audioDriver);
+          PLOGD << "(Re)init with audio driver " << *local_device->audioDriver;
+          rt_audio_ = std::make_unique<RtAudio>(std::move(api));
+          rt_audio_->openStream(
+              has_output ? &output_parameters_ : nullptr,
+              has_input ? &input_parameters_ : nullptr,
+              RTAUDIO_FLOAT32,
+              // Always prefer the output sound card settings
+              sample_rate,
+              &buffer_size_,
+              callback,
+              this,
+              &options
+          );
+          rt_audio_->startStream();
+          PLOGD << "Started Audio IO";
+        } catch (RtAudioError &e) {
+          PLOGE << e.getMessage();
+          rt_audio_.reset();
         }
       }
     } else {
@@ -305,11 +286,11 @@ void RtAudioIO::setAudioDriver(const std::string & /*audio_driver*/) {
   initAudio();
 }
 
-void RtAudioIO::setInputSoundCard(const SoundCard & /*sound_card*/, bool  /*start*/) {
+void RtAudioIO::setInputSoundCard(const DigitalStage::Types::SoundCard & /*sound_card*/, bool  /*start*/) {
   PLOGD << "setInputSoundCard()";
   initAudio();
 }
-void RtAudioIO::setOutputSoundCard(const SoundCard & /*sound_card*/, bool  /*start*/) {
+void RtAudioIO::setOutputSoundCard(const DigitalStage::Types::SoundCard & /*sound_card*/, bool  /*start*/) {
   PLOGD << "setOutputSoundCard()";
   initAudio();
 }
@@ -330,8 +311,8 @@ void RtAudioIO::stopReceiving() {
   initAudio();
 }
 [[maybe_unused]] unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
-                                            std::optional<RtAudio::StreamParameters> outputParameters,
-                                            unsigned int sample_rate) {
+                                                             std::optional<RtAudio::StreamParameters> outputParameters,
+                                                             unsigned int sample_rate) {
   PLOGD << "getLowestBufferSize";
   unsigned int buffer_size = 256; // = default
   if (inputParameters || outputParameters) {
