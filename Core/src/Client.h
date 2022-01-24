@@ -6,24 +6,19 @@
 
 //#define USE_CIRCULAR_QUEUE
 
-#include <memory>                 // for shared_ptr, unique_ptr
-#include <cstddef>                // for size_t
-#include <atomic>                 // for atomic
-#include <iosfwd>                 // for string
-#include <map>                    // for map
-#include <shared_mutex>           // for shared_mutex
-#include <unordered_map>          // for unordered_map
 #include <DigitalStage/Api/Client.h>
+#include "webrtc/ConnectionService.h"
 #include "audio/AudioIO.h"
 #include "audio/AudioRenderer.h"
-#include "webrtc/ConnectionService.h"
 #ifdef USE_CIRCULAR_QUEUE
 #include "utils/CircularQueue.h"
 #else
 #include "utils/RingBuffer.h"
-template<class T>
-class RingBuffer;
 #endif
+#include <mutex>
+#include <shared_mutex>
+#include <memory>
+#include <atomic>
 
 #define RECEIVER_BUFFER 2000
 

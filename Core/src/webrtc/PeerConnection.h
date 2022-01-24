@@ -5,16 +5,13 @@
 #ifndef CLIENT_SRC_WEBRTC_PEERCONNECTION_H_
 #define CLIENT_SRC_WEBRTC_PEERCONNECTION_H_
 
-#include <functional>               // for function
-#include <memory>                   // for shared_ptr, unique_ptr
-#include <mutex>                    // for mutex
-#include <cstddef>                  // for byte, size_t
-#include <iosfwd>                   // for string
-#include <map>                      // for map
-#include <string>                   // for operator<
-#include <vector>                   // for vector
+#include "rtc/rtc.hpp"
 #include <DigitalStage/Types.h>
-#include "rtc/peerconnection.hpp"   // for PeerConnection
+#include <string>
+#include <memory>
+#include <map>
+#include <plog/Log.h>
+#include <mutex>
 
 class PeerConnection {
  public:

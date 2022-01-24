@@ -62,7 +62,7 @@ class AudioRenderer {
   void autoInit(const DigitalStage::Types::Stage &stage, const DigitalStage::Types::SoundCard &sound_card);
 
   void attachHandlers(bool autostart);
-  static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageDevice &stage_device,
+  static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageMember &stage_member,
                                                                            const DigitalStage::Api::Store &store);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                            const DigitalStage::Api::Store &store);

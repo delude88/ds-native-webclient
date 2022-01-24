@@ -4,17 +4,20 @@
 
 #ifndef CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_
 #define CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_
-#include <DigitalStage/Api/Client.h>  // for Client
-#include <memory>                     // for shared_ptr
-#include <cstddef>                    // for byte, size_t
-#include <iosfwd>                     // for string
-#include <shared_mutex>               // for shared_mutex
-#include <sigslot/signal.hpp>         // for signal
-#include <string>                     // for operator==, hash
-#include <unordered_map>              // for unordered_map
-#include <vector>                     // for vector
-#include "rtc/configuration.hpp"      // for Configuration
+
+#include "rtc/rtc.hpp"
 #include "PeerConnection.h"
+#include <DigitalStage/Api/Client.h>
+#include <DigitalStage/Api/Store.h>
+#include <DigitalStage/Types.h>
+#include <nlohmann/json.hpp>
+#include <string>
+#include <unordered_map>
+#include <memory>
+#include <plog/Log.h>
+#include <sigslot/signal.hpp>
+#include <mutex>
+#include <shared_mutex>
 
 class ConnectionService {
  public:

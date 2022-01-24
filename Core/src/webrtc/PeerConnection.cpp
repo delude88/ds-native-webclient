@@ -1,18 +1,8 @@
 //
 // Created by Tobias Hegemann on 26.10.21.
 //
+
 #include "PeerConnection.h"
-#include <exception>             // for exception
-#include <optional>              // for optional
-#include <stdexcept>             // for runtime_error, logic_error
-#include <type_traits>           // for remove_extent_t, remove_reference<>:...
-#include <variant>               // for get, bad_variant_access
-#include "DigitalStage/Types.h"  // for SessionDescriptionInit, IceCandidate...
-#include "plog/Log.h"            // for PLOGD, PLOGE, PLOGW
-#include "plog/Record.h"         // for Record
-#include "rtc/candidate.hpp"     // for Candidate
-#include "rtc/common.hpp"        // for binary, message_variant
-#include "rtc/description.hpp"   // for Description, Description::Type, Desc...
 
 PeerConnection::PeerConnection(const rtc::Configuration &configuration, bool polite) :
     peer_connection_(std::make_unique<rtc::PeerConnection>(configuration)),

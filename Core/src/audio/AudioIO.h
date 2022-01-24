@@ -8,10 +8,6 @@
 #include <unordered_map>
 #include <string>
 #include <mutex>
-#include <array>
-#include <memory>
-#include <atomic>
-#include <thread>
 
 using ChannelMap = std::unordered_map<std::size_t, std::string>;
 
