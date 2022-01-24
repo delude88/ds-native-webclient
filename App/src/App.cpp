@@ -17,7 +17,6 @@
 #include <wx/utils.h>
 #include <wx/file.h>
 #include <wx/image.h>
-#include <DigitalStage/Auth/AuthError.h>
 
 wxIMPLEMENT_APP(App);
 

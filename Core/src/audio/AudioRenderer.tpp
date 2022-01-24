@@ -450,6 +450,10 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
   if (initialized_ && frame_size == current_frame_size_) {
     if (mutex_.try_lock()) {
       if (audio_tracks_.count(audio_track_id) != 0) {
+        if(falling_back_) {
+          falling_back_ = false;
+          PLOGD << "Disabling fallback since all requirements are fulfilled";
+        }
         try {
           CMonoBuffer<float> input_buffer(frame_size);
           input_buffer.Feed(in, frame_size, 1);
@@ -472,16 +476,25 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
           mutex_.unlock();
         }
       } else {
-        PLOGD << "No render information for audio track - falling back to simple mixing";
+        if(!falling_back_) {
+          falling_back_ = true;
+          PLOGD << "No render information for audio track - falling back to simple mixing";
+        }
         renderFallback(in, outLeft, outRight, frame_size, volume_info);
       }
       mutex_.unlock();
     } else {
-      PLOGD << "Falling back to simple mixing to avoid blocking";
+      if(!falling_back_) {
+        falling_back_ = true;
+        PLOGD << "Falling back to simple mixing to avoid blocking";
+      }
       renderFallback(in, outLeft, outRight, frame_size, volume_info);
     }
   } else {
-    PLOGD << "Falling back to simple mixing since 3D audio is not supported";
+    if(!falling_back_) {
+      falling_back_ = true;
+      PLOGD << "Falling back to simple mixing since 3D audio is not supported";
+    }
     renderFallback(in, outLeft, outRight, frame_size, volume_info);
   }
 }
