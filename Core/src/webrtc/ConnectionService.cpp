@@ -11,8 +11,15 @@
 ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
       configuration_(rtc::Configuration()),
+      is_fetching_statistics_(true),
       token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
   attachHandlers();
+  statistics_thread_ = std::thread(&ConnectionService::fetchStatistics, this);
+}
+ConnectionService::~ConnectionService() {
+  is_fetching_statistics_ = false;
+  if (statistics_thread_.joinable())
+    statistics_thread_.join();
 }
 
 void ConnectionService::attachHandlers() {
@@ -42,14 +49,16 @@ void ConnectionService::attachHandlers() {
     onStageChanged();
     PLOGD << "ready end";
   }, token_);
-  client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &, const std::optional<DigitalStage::Types::ID_TYPE> &,
+  client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
+                                      const std::optional<DigitalStage::Types::ID_TYPE> &,
                                       const DigitalStage::Api::Store * /*store*/) {
     onStageChanged();
   }, token_);
   client_->stageLeft.connect([this](const DigitalStage::Api::Store * /*store*/) {
     onStageChanged();
   }, token_);
-  client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device, const DigitalStage::Api::Store *store) {
+  client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device,
+                                           const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       if (device.active) {
@@ -114,7 +123,8 @@ void ConnectionService::attachHandlers() {
     assert(peer_connections_[offer.from]);
     peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   }, token_);
-  client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer, const DigitalStage::Api::Store *store) {
+  client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer,
+                                    const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
@@ -123,7 +133,8 @@ void ConnectionService::attachHandlers() {
       peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
     }
   }, token_);
-  client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice, const DigitalStage::Api::Store *store) {
+  client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice,
+                                       const DigitalStage::Api::Store *store) {
     auto local_stage_device_id = store->getStageDeviceId();
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
@@ -240,4 +251,26 @@ void ConnectionService::broadcastFloats(const std::string &audio_track_id, const
   std::byte buffer[4];
   serializeFloat(data, buffer);
   broadcastBytes(audio_track_id, buffer, 4);
+}
+
+void ConnectionService::fetchStatistics() {
+  while (is_fetching_statistics_) {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    for (const auto &item: peer_connections_) {
+      auto time = item.second->getRoundTripTime();
+      if (time) {
+        auto stage_device = client_->getStore()->stageDevices.get(item.first);
+        if (stage_device) {
+          auto user = client_->getStore()->users.get(stage_device->userId);
+          if (user) {
+            PLOGI << user->name << "@" << item.first << ": " << time->count() << "ms RTT";
+          } else {
+            PLOGI << "" << stage_device->userId << "/" << item.first << ": " << time->count() << "ms RTT";
+          }
+        } else {
+          PLOGI << "?/" << item.first << ": " << time->count() << "ms RTT";
+        }
+      }
+    }
+  }
 }

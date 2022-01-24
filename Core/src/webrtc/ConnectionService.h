@@ -22,6 +22,7 @@
 class ConnectionService {
  public:
   explicit ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client);
+  ~ConnectionService();
 
   [[maybe_unused]] void broadcastFloat(const std::string &audio_track_id, float data);
   void broadcastBytes(const std::string &audio_track_id, const std::byte *data, size_t size);
@@ -34,6 +35,7 @@ class ConnectionService {
   void createPeerConnection(const std::string &stage_device_id,
                             const std::string &local_stage_device_id);
   void closePeerConnection(const std::string &stage_device_id);
+  void fetchStatistics();
 
   std::shared_ptr<DigitalStage::Api::Client> client_;
   std::unordered_map<std::string, std::shared_ptr<PeerConnection>> peer_connections_;
@@ -42,6 +44,9 @@ class ConnectionService {
   rtc::Configuration configuration_;
 
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;
+
+  std::thread statistics_thread_;
+  std::atomic<bool> is_fetching_statistics_;
 };
 
 #endif //CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_

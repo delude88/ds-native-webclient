@@ -12,6 +12,8 @@
 #include <map>
 #include <plog/Log.h>
 #include <mutex>
+#include <optional>
+#include <chrono>
 
 class PeerConnection {
  public:
@@ -20,6 +22,8 @@ class PeerConnection {
   //void makeOffer();
 
   void send(const std::string &audio_track_id, const std::byte *data, size_t size);
+
+  std::optional<std::chrono::milliseconds> getRoundTripTime();
 
   void addRemoteIceCandidate(const DigitalStage::Types::IceCandidateInit &ice_candidate_init);
   void setRemoteSessionDescription(const DigitalStage::Types::SessionDescriptionInit &session_description_init);

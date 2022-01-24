@@ -165,3 +165,7 @@ void PeerConnection::send(const std::string &audio_track_id, const std::byte *da
     PLOGW << "Could not send: " << err.what();
   }
 }
+
+std::optional<std::chrono::milliseconds> PeerConnection::getRoundTripTime() {
+  return peer_connection_->rtt();
+}
