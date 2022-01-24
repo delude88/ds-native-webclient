@@ -1,25 +1,15 @@
 //
 // Created by Tobias Hegemann on 06.11.21.
 //
-#include "RtAudioIO.h"
-#include <utility>                    // for move, pair
-#include <plog/Log.h>                 // for PLOGD, PLOGW, PLOGE, PLOGI
-#include <cstdlib>                    // for malloc, free
-#include <cstring>                    // for memcpy
-#include <mutex>                      // for mutex, lock_guard
-#include <cstddef>                    // for size_t
-#include <map>                        // for operator!=
-//#include <nlohmann/json.hpp>          // for basic_json, basic_json<>::object_t
-#include <sigslot/signal.hpp>         // for signal_base<>::slots_type, signal
-#include <string>                     // for basic_string, allocator, operat...
-#include <type_traits>                // for remove_reference<>::type, remov...
-#include <unordered_map>              // for __hash_map_iterator, operator!=
-#include "../utils/cp1252_to_utf8.h"  // for CP1252_to_UTF8
-#include "DigitalStage/Api/Store.h"   // for Store
-#include "plog/Record.h"              // for Record
 
-[[maybe_unused]] RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
-    : AudioIO(std::move(client)), is_running_(true) {
+#include "RtAudioIO.h"
+#include "../utils/cp1252_to_utf8.h"
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <plog/Log.h>
+
+[[maybe_unused]] RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)), is_running_(true) {
 }
 
 RtAudioIO::~RtAudioIO() {

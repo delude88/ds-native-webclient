@@ -2,19 +2,12 @@
 // Created by Tobias Hegemann on 03.11.21.
 //
 #pragma once
-#include <DigitalStage/Api/Client.h>  // for Client
-#include <DigitalStage/Types.h>       // for json
-#include <memory>                     // for shared_ptr
-#include <mutex>                      // for mutex
-#include <array>                      // for array
-#include <atomic>                     // for atomic
-#include <cstddef>                    // for size_t
-#include <iosfwd>                     // for string
-#include <nlohmann/json_fwd.hpp>      // for json
-#include <sigslot/signal.hpp>         // for signal
-#include <thread>                     // for thread
-#include <unordered_map>              // for unordered_map
-#include <vector>                     // for vector
+#include <DigitalStage/Api/Client.h>
+#include <DigitalStage/Types.h>
+#include <sigslot/signal.hpp>
+#include <unordered_map>
+#include <string>
+#include <mutex>
 
 using ChannelMap = std::unordered_map<std::size_t, std::string>;
 

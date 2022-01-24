@@ -4,17 +4,20 @@
 
 #ifndef CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_
 #define CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_
-#include <DigitalStage/Api/Client.h>  // for Client
-#include <memory>                     // for shared_ptr
-#include <cstddef>                    // for byte, size_t
-#include <iosfwd>                     // for string
-#include <shared_mutex>               // for shared_mutex
-#include <sigslot/signal.hpp>         // for signal
-#include <string>                     // for operator==, hash
-#include <unordered_map>              // for unordered_map
-#include <vector>                     // for vector
-#include "rtc/configuration.hpp"      // for Configuration
-class PeerConnection;
+
+#include "rtc/rtc.hpp"
+#include "PeerConnection.h"
+#include <DigitalStage/Api/Client.h>
+#include <DigitalStage/Api/Store.h>
+#include <DigitalStage/Types.h>
+#include <nlohmann/json.hpp>
+#include <string>
+#include <unordered_map>
+#include <memory>
+#include <plog/Log.h>
+#include <sigslot/signal.hpp>
+#include <mutex>
+#include <shared_mutex>
 
 class ConnectionService {
  public:
@@ -32,6 +35,7 @@ class ConnectionService {
   void createPeerConnection(const std::string &stage_device_id,
                             const std::string &local_stage_device_id);
   void closePeerConnection(const std::string &stage_device_id);
+  void fetchStatistics();
 
   std::shared_ptr<DigitalStage::Api::Client> client_;
   std::unordered_map<std::string, std::shared_ptr<PeerConnection>> peer_connections_;
@@ -41,7 +45,8 @@ class ConnectionService {
 
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;
 
-  bool running_;
+  std::thread statistics_thread_;
+  std::atomic<bool> is_fetching_statistics_;
 };
 
 #endif //CLIENT_SRC_WEBRTC_CONNECTIONSERVICE_H_

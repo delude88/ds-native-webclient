@@ -6,17 +6,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <RtAudio.h>              // for RtAudio, RtAudio::StreamParameters
-#include <memory>                 // for shared_ptr, unique_ptr
-#include <cstddef>                // for size_t
-#include <array>                  // for array
-#include <atomic>                 // for atomic
-#include <iosfwd>                 // for string
-#include <nlohmann/json_fwd.hpp>  // for json
-#include <optional>               // for optional
-#include <vector>                 // for vector
-#include "AudioIO.h"              // for AudioIO
-#include "DigitalStage/Types.h"   // for json, SoundCard (ptr only)
+#include <RtAudio.h>
+#include "AudioIO.h"
+#include <optional>
 
 class [[maybe_unused]] RtAudioIO :
     public AudioIO {

@@ -85,6 +85,8 @@ class AudioRenderer {
 
   std::unique_ptr<DigitalStage::Audio::AudioMixer<float>> audio_mixer_;
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;
+
+  std::atomic<bool> falling_back_ = false;
 };
 
 #include "AudioRenderer.tpp"

@@ -5,20 +5,15 @@
 #ifndef CLIENT_SRC_WEBRTC_PEERCONNECTION_H_
 #define CLIENT_SRC_WEBRTC_PEERCONNECTION_H_
 
-#include <functional>               // for function
-#include <memory>                   // for shared_ptr, unique_ptr
-#include <mutex>                    // for mutex
-#include <cstddef>                  // for byte, size_t
-#include <iosfwd>                   // for string
-#include <map>                      // for map
-#include <string>                   // for operator<
-#include <vector>                   // for vector
-#include "rtc/peerconnection.hpp"   // for PeerConnection
-namespace DigitalStage::Types { struct IceCandidateInit; } // NOLINT(readability-identifier-naming)
-namespace DigitalStage::Types { struct SessionDescriptionInit; } // NOLINT(readability-identifier-naming)
-namespace rtc { class DataChannel; }
-namespace rtc { class Description; }
-namespace rtc { struct Configuration; }
+#include "rtc/rtc.hpp"
+#include <DigitalStage/Types.h>
+#include <string>
+#include <memory>
+#include <map>
+#include <plog/Log.h>
+#include <mutex>
+#include <optional>
+#include <chrono>
 
 class PeerConnection {
  public:
@@ -27,6 +22,8 @@ class PeerConnection {
   //void makeOffer();
 
   void send(const std::string &audio_track_id, const std::byte *data, size_t size);
+
+  std::optional<std::chrono::milliseconds> getRoundTripTime();
 
   void addRemoteIceCandidate(const DigitalStage::Types::IceCandidateInit &ice_candidate_init);
   void setRemoteSessionDescription(const DigitalStage::Types::SessionDescriptionInit &session_description_init);

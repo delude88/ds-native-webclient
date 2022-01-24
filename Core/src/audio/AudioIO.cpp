@@ -3,21 +3,8 @@
 //
 
 #include "AudioIO.h"
-#include <utility>                       // for move, pair
-#include <plog/Log.h>                    // for PLOGD, PLOGE
-#include <chrono>                        // for seconds
-//#include <map>                           // for operator!=
-#include <nlohmann/detail/json_ref.hpp>  // for json_ref
-//#include <nlohmann/json.hpp>             // for basic_json<>::object_t, basi...
-#include <optional>                      // for optional
-//#include <stdexcept>                     // for out_of_range
-#include <string>                        // for operator==, basic_string
-#include <type_traits>                   // for remove_reference<>::type
-#include "DigitalStage/Api/Client.h"     // for Client::Token, Client
-#include "DigitalStage/Api/Events.h"     // for REMOVE_AUDIO_TRACK, SET_SOUN...
-#include "DigitalStage/Api/Store.h"      // for Store, StoreEntry
-#include "DigitalStage/Types.h"          // for SoundCard, json, AudioTrack
-#include "plog/Record.h"                 // for Record
+#include <plog/Log.h>
+#include <DigitalStage/Api/Events.h>
 
 AudioIO::AudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
     : client_(std::move(client)),
@@ -185,7 +172,7 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->audioTrackAdded.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackAdded";
       auto local_device_id = store->getLocalDeviceId();
@@ -201,7 +188,7 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->audioTrackRemoved.connect([this](const AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
     if (store->isReady()) {
       PLOGD << "audioTrackRemoved";
       auto local_device_id = store->getLocalDeviceId();

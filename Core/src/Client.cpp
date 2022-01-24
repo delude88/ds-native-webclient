@@ -1,19 +1,12 @@
 //
 // Created by Tobias Hegemann on 26.10.21.
 //
+
 #include "Client.h"
-#include <utility>                     // for move, pair
-#include <cstdlib>                     // for free, malloc
-#include <cstring>                     // for memset
-#include <cstddef>                     // for size_t, byte
-#include <iostream>                    // for string, operator<<, endl, basi...
-#include <nlohmann/json_fwd.hpp>       // for json
-#include <optional>                    // for optional
-#include <type_traits>                 // for remove_extent_t, remove_refere...
-#include <vector>                      // for vector
-#include "DigitalStage/Api/Store.h"    // for Store
-#include "audio/AudioIO.h"             // for AudioIO
-#include "audio/AudioRenderer.h"       // for AudioRenderer
+
+#include <utility>
+#include "utils/conversion.h"
+
 // AudioIO engine
 #ifdef USE_RT_AUDIO
 #include "audio/RtAudioIO.h"
@@ -26,12 +19,6 @@
 #include "miniaudio.h"
 #include "audio/MiniAudioIO.h"
 #endif
-#include "plog/Log.h"                  // for PLOGD, PLOGE
-#include "plog/Record.h"               // for Record
-#include "utils/RingBuffer.h"          // for RingBuffer
-#include "utils/conversion.h"          // for deserialize
-#include "webrtc/ConnectionService.h"  // for ConnectionService
-namespace DigitalStage::Api { class Client; }
 
 Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
     api_client_(std::move(api_client)),
