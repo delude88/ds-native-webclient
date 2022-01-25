@@ -29,57 +29,6 @@ elseif (CMAKE_RUN_SANITIZE_UNDEFINED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -g -O2")
 endif ()
 
-# clang-tidy
-option(CMAKE_RUN_CLANG_TIDY "Run clang-tidy with the compiler." OFF)
-if (CMAKE_RUN_CLANG_TIDY)
-    if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
-        message(FATAL_ERROR "CMAKE_RUN_CLANG_TIDY requires an out-of-source build!")
-    endif ()
-    find_program(CLANG_TIDY_COMMAND NAMES clang-tidy)
-    if (NOT CLANG_TIDY_COMMAND)
-        message(WARNING "CMAKE_RUN_CLANG_TIDY is ON but clang-tidy is not found!")
-        set(CMAKE_CXX_CLANG_TIDY "" CACHE STRING "" FORCE)
-    else ()
-        set(CLANG_TIDY_CHECKS "-*,modernize-*")
-        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};-checks=${CLANG_TIDY_CHECKS};-header-filter='${CMAKE_SOURCE_DIR}/src/*'")
-    endif ()
-
-    # Create a preprocessor definition that depends on .clang-tidy content so
-    # the compile command will change when .clang-tidy changes.  This ensures
-    # that a subsequent build re-runs clang-tidy on all sources even if they
-    # do not otherwise need to be recompiled.  Nothing actually uses this
-    # definition.  We add it to targets on which we run clang-tidy just to
-    # get the build dependency on the .clang-tidy file.
-    file(SHA1 ${CMAKE_CURRENT_LIST_DIR}/.clang-tidy clang_tidy_sha1)
-    set(CLANG_TIDY_DEFINITIONS "CLANG_TIDY_SHA1=${clang_tidy_sha1}")
-    unset(clang_tidy_sha1)
-endif ()
-
-# include-what-you-use
-option(CMAKE_RUN_IWYU "Run include-what-you-use with the compiler." OFF)
-if (CMAKE_RUN_IWYU)
-    find_program(IWYU_COMMAND NAMES include-what-you-use iwyu)
-    if (NOT IWYU_COMMAND)
-        message(WARNING "CMAKE_RUN_IWYU is ON but include-what-you-use is not found!")
-    else ()
-        set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE
-                "${IWYU_COMMAND};-Xiwyu;--cxx17ns;--output=iwyu.log")
-        list(APPEND CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${CMAKE_IWYU_OPTIONS})
-        message(STATUS "Using include-what-you-use")
-    endif ()
-endif ()
-
-# Clazy is a Qt oriented code checker based on clang framework. Krazy's little brother.
-set(CMAKE_RUN_CLAZY OFF CACHE BOOL "Add clazy check for builds")
-if (ENABLE_CLAZY)
-    find_program(CLAZY_EXECUTABLE NAMES clazy PATHS /usr/local/llvm/bin /usr/local/bin /opt/clazy/bin)
-    if (CLAZY_EXECUTABLE)
-        message(STATUS "clazy found: ${CLAZY_EXECUTABLE}")
-    else ()
-        message(AUTHOR_WARNING "clazy not found. ")
-    endif ()
-endif ()
-
 
 #################################################
 #
@@ -131,3 +80,61 @@ endif (BUILD_APP)
 if (CMAKE_GENERATOR STREQUAL "Xcode")
     add_subdirectory(SwiftApp)
 endif (CMAKE_GENERATOR STREQUAL "Xcode")
+
+
+#################################################
+#
+#   Additional routines
+#
+#################################################
+
+# clang-tidy
+option(CMAKE_RUN_CLANG_TIDY "Run clang-tidy with the compiler." OFF)
+if (CMAKE_RUN_CLANG_TIDY)
+    if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+        message(FATAL_ERROR "CMAKE_RUN_CLANG_TIDY requires an out-of-source build!")
+    endif ()
+    find_program(CLANG_TIDY_COMMAND NAMES clang-tidy)
+    if (NOT CLANG_TIDY_COMMAND)
+        message(WARNING "CMAKE_RUN_CLANG_TIDY is ON but clang-tidy is not found!")
+        set(CMAKE_CXX_CLANG_TIDY "" CACHE STRING "" FORCE)
+    else ()
+        set(CLANG_TIDY_CHECKS "-*,modernize-*")
+        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};-checks=${CLANG_TIDY_CHECKS};-header-filter='${CMAKE_SOURCE_DIR}/src/*'")
+    endif ()
+
+    # Create a preprocessor definition that depends on .clang-tidy content so
+    # the compile command will change when .clang-tidy changes.  This ensures
+    # that a subsequent build re-runs clang-tidy on all sources even if they
+    # do not otherwise need to be recompiled.  Nothing actually uses this
+    # definition.  We add it to targets on which we run clang-tidy just to
+    # get the build dependency on the .clang-tidy file.
+    file(SHA1 ${CMAKE_CURRENT_LIST_DIR}/.clang-tidy clang_tidy_sha1)
+    set(CLANG_TIDY_DEFINITIONS "CLANG_TIDY_SHA1=${clang_tidy_sha1}")
+    unset(clang_tidy_sha1)
+endif ()
+
+# include-what-you-use
+option(CMAKE_RUN_IWYU "Run include-what-you-use with the compiler." OFF)
+if (CMAKE_RUN_IWYU)
+    find_program(IWYU_COMMAND NAMES include-what-you-use iwyu)
+    if (NOT IWYU_COMMAND)
+        message(WARNING "CMAKE_RUN_IWYU is ON but include-what-you-use is not found!")
+    else ()
+        set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE
+                "${IWYU_COMMAND};-Xiwyu;--cxx17ns;--output=iwyu.log")
+        list(APPEND CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${CMAKE_IWYU_OPTIONS})
+        message(STATUS "Using include-what-you-use")
+    endif ()
+endif ()
+
+# Clazy is a Qt oriented code checker based on clang framework. Krazy's little brother.
+set(CMAKE_RUN_CLAZY OFF CACHE BOOL "Add clazy check for builds")
+if (ENABLE_CLAZY)
+    find_program(CLAZY_EXECUTABLE NAMES clazy PATHS /usr/local/llvm/bin /usr/local/bin /opt/clazy/bin)
+    if (CLAZY_EXECUTABLE)
+        message(STATUS "clazy found: ${CLAZY_EXECUTABLE}")
+    else ()
+        message(AUTHOR_WARNING "clazy not found. ")
+    endif ()
+endif ()
