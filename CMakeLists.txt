@@ -18,6 +18,12 @@ if (NOT WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif ()
 
+
+#################################################
+#
+#   Compiler tools
+#
+#################################################
 # Google sanitize
 option(CMAKE_RUN_SANITIZE_THREAD "Run google's thread sanitizer" OFF)
 option(CMAKE_RUN_SANITIZE_UNDEFINED "Run google's undefined sanitizer" OFF)
@@ -28,65 +34,6 @@ elseif (CMAKE_RUN_SANITIZE_UNDEFINED)
     message(STATUS "Using google's sanitizer 'undefined'")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -g -O2")
 endif ()
-
-
-#################################################
-#
-#   Environment configuration
-#
-#################################################
-set(PROJECT_HOMEPAGE_URL "https://github.com/delude88")
-set(PROJECT_DESCRIPTION "Online zusammen proben und auffuehren")
-set(PROJECT_COPYRIGHT "Copyright (c) 2021 Tobias Hegemann")
-set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
-set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
-set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
-set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
-set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
-set(USE_RT_AUDIO ON CACHE BOOL "Use RtAudio as audio engine" FORCE)
-option(BUILD_APP "Build App" ON)
-option(BUILD_SERVICE "Build headless service" ON)
-
-
-#################################################
-#
-#   Dependencies
-#
-#################################################
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake OPTIONAL)
-if (COMMAND conan_basic_setup)
-    conan_basic_setup()
-endif ()
-# libds
-set(USE_IX_WEBSOCKET ON CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
-
-# libdeviceid
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
-
-# UDP Discovery cpp
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
-set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
-
-
-add_subdirectory(Core EXCLUDE_FROM_ALL)
-if (BUILD_SERVICE)
-    add_subdirectory(Service)
-endif (BUILD_SERVICE)
-if (BUILD_APP)
-    add_subdirectory(App)
-endif (BUILD_APP)
-
-if (CMAKE_GENERATOR STREQUAL "Xcode")
-    add_subdirectory(SwiftApp)
-endif (CMAKE_GENERATOR STREQUAL "Xcode")
-
-
-#################################################
-#
-#   Additional routines
-#
-#################################################
 
 # clang-tidy
 option(CMAKE_RUN_CLANG_TIDY "Run clang-tidy with the compiler." OFF)
@@ -138,3 +85,62 @@ if (ENABLE_CLAZY)
         message(AUTHOR_WARNING "clazy not found. ")
     endif ()
 endif ()
+
+
+#################################################
+#
+#   Environment configuration
+#
+#################################################
+set(PROJECT_HOMEPAGE_URL "https://github.com/delude88")
+set(PROJECT_DESCRIPTION "Online zusammen proben und auffuehren")
+set(PROJECT_COPYRIGHT "Copyright (c) 2021 Tobias Hegemann")
+set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
+set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
+set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
+set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
+set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
+set(USE_RT_AUDIO ON CACHE BOOL "Use RtAudio as audio engine" FORCE)
+option(BUILD_APP "Build App" ON)
+option(BUILD_SERVICE "Build headless service" ON)
+
+
+#################################################
+#
+#   Dependencies
+#
+#################################################
+# Conan dependencies
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake OPTIONAL)
+if (COMMAND conan_basic_setup)
+    conan_basic_setup()
+endif ()
+
+# libds
+set(USE_IX_WEBSOCKET ON CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libds EXCLUDE_FROM_ALL)
+
+# libdeviceid
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/libdeviceid EXCLUDE_FROM_ALL)
+
+# UDP Discovery cpp
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp EXCLUDE_FROM_ALL)
+set(udp-discovery_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/udp-discovery-cpp)
+
+# Core
+add_subdirectory(Core EXCLUDE_FROM_ALL)
+
+# Service
+if (BUILD_SERVICE)
+    add_subdirectory(Service)
+endif (BUILD_SERVICE)
+
+# App
+if (BUILD_APP)
+    add_subdirectory(App)
+endif (BUILD_APP)
+
+# Swift app
+if (CMAKE_GENERATOR STREQUAL "Xcode")
+    add_subdirectory(SwiftApp)
+endif (CMAKE_GENERATOR STREQUAL "Xcode")
