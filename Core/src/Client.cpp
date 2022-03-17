@@ -139,15 +139,18 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   //delete [] right;
 }
 void Client::attachHandlers() {
-  api_client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+  api_client_->ready.connect([this](std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
     PLOGD << "ready";
-    auto local_device = store->getLocalDevice();
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto local_device = store_ptr.lock()->getLocalDevice();
     if (local_device) {
       changeReceiverSize(local_device->buffer);
     }
   });
   api_client_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
-                                                 const DigitalStage::Api::Store * /*store*/) {
+                                                 std::weak_ptr<DigitalStage::Api::Store> /*store_ptr*/) {
     if (update.contains("buffer")) {
       changeReceiverSize(update["buffer"]);
     }

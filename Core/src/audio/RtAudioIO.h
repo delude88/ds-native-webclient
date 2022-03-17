@@ -17,7 +17,7 @@ class [[maybe_unused]] RtAudioIO :
   [[maybe_unused]] explicit RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
   ~RtAudioIO() override;
  protected:
-  std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;
+  std::vector<nlohmann::json> enumerateDevices(std::shared_ptr<DigitalStage::Api::Store> store) override;
 
   void setAudioDriver(const std::string &audio_driver) override;
   void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card, bool start) override;
@@ -33,12 +33,12 @@ class [[maybe_unused]] RtAudioIO :
                                                     unsigned int sample_rate);
 
   void initAudio();
-  static std::vector<nlohmann::json> enumerateRtDevices(RtAudio::Api rt_api, const DigitalStage::Api::Store &store);
-  static nlohmann::json getDevice(const std::string &id,
+  static std::vector<nlohmann::json> enumerateRtDevices(RtAudio::Api rt_api, const std::shared_ptr<DigitalStage::Api::Store>& store);
+  static nlohmann::json getDevice(const std::string &uuid,
                                   const std::string &driver,
                                   const std::string &type,
                                   const RtAudio::DeviceInfo &info,
-                                  const DigitalStage::Api::Store &store);
+                                  const std::shared_ptr<DigitalStage::Api::Store>& store);
 
   std::atomic<bool> is_running_;
 

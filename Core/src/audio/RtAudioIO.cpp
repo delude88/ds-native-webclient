@@ -19,7 +19,7 @@ RtAudioIO::~RtAudioIO() {
 }
 
 std::vector<nlohmann::json> RtAudioIO::enumerateRtDevices(RtAudio::Api rt_api,
-                                                          const DigitalStage::Api::Store &store) {
+                                                          const std::shared_ptr<DigitalStage::Api::Store>& store) {
   PLOGD << "enumerateRtDevices";
   auto sound_cards = std::vector<nlohmann::json>();
   auto rt_audio = std::make_unique<RtAudio>(rt_api);
@@ -37,24 +37,24 @@ std::vector<nlohmann::json> RtAudioIO::enumerateRtDevices(RtAudio::Api rt_api,
   }
   return sound_cards;
 }
-nlohmann::json RtAudioIO::getDevice(const std::string &id,
+nlohmann::json RtAudioIO::getDevice(const std::string &uuid, // NOLINT(bugprone-easily-swappable-parameters)
                                     const std::string &driver,
                                     const std::string &type,
                                     const RtAudio::DeviceInfo &info,
-                                    const DigitalStage::Api::Store &store) {
+                                    const std::shared_ptr<DigitalStage::Api::Store>& store) {
   nlohmann::json sound_card;
   sound_card["audioDriver"] = driver;
   sound_card["audioEngine"] = "rtaudio";
   sound_card["type"] = type;
-  sound_card["uuid"] = id;
+  sound_card["uuid"] = uuid;
   sound_card["label"] = CP1252_to_UTF8(info.name);
   sound_card["isDefault"] = type == "input" ? info.isDefaultInput : info.isDefaultOutput;
   sound_card["sampleRates"] = info.sampleRates;
   sound_card["online"] = true;
 
-  const auto local_device_id = store.getLocalDeviceId();
-  const auto existing = local_device_id ? store.getSoundCardByDeviceAndDriverAndTypeAndLabel(
-      *store.getLocalDeviceId(),
+  const auto local_device_id = store->getLocalDeviceId();
+  const auto existing = local_device_id ? store->getSoundCardByDeviceAndDriverAndTypeAndLabel(
+      *store->getLocalDeviceId(),
       driver,
       type,
       info.name
@@ -82,7 +82,7 @@ nlohmann::json RtAudioIO::getDevice(const std::string &id,
   return sound_card;
 }
 
-std::vector<json> RtAudioIO::enumerateDevices(const DigitalStage::Api::Store &store) {
+std::vector<nlohmann::json> RtAudioIO::enumerateDevices(std::shared_ptr<DigitalStage::Api::Store> store) {
   PLOGD << "enumerateDevices";
   auto sound_cards = std::vector<nlohmann::json>();
   // Fetch existing
@@ -104,7 +104,11 @@ void RtAudioIO::initAudio() {
   }
 
   // Capture all dependencies
-  auto *store = client_->getStore();
+  auto store_ptr = client_->getStore();
+  if(store_ptr.expired()) {
+    return;
+  }
+  auto store = store_ptr.lock();
   auto local_device = store->getLocalDevice();
 
   if (local_device && local_device->audioDriver) {
@@ -167,7 +171,7 @@ void RtAudioIO::initAudio() {
       options.flags = RTAUDIO_NONINTERLEAVED | RTAUDIO_SCHEDULE_REALTIME;
       options.priority = 1;
 
-      auto callback = [](void *output,
+      auto callback = [](void *output, // NOLINT(bugprone-easily-swappable-parameters)
                          void *input,
                          unsigned int bufferSize,
                          double  /*streamTime*/,

@@ -17,12 +17,16 @@ AudioIO::AudioIO(std::shared_ptr<DigitalStage::Api::Client> client)
 
 void AudioIO::attachHandlers() {
   PLOGD << "Attaching handlers";
-  client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+  client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store>& storePtr) {
+    if(storePtr.expired()) {
+      return;
+    }
     PLOGD << "ready";
+    auto store = storePtr.lock();
     auto local_device = store->getLocalDevice();
     if (local_device) {
       // Read all available sound cards (and update with existing ones from store if available)
-      auto sound_cards = enumerateDevices(*store);
+      auto sound_cards = enumerateDevices(store);
       num_devices_ = sound_cards.size();
 
       // Emit all sound cards using the set request (will overwrite existing ones)
@@ -62,7 +66,11 @@ void AudioIO::attachHandlers() {
     stopWatchingDeviceUpdates();
   }, token_);
   client_->audioDriverSelected.connect([this](std::optional<std::string> audio_driver,
-                                              const DigitalStage::Api::Store *store) {
+                                              const std::weak_ptr<DigitalStage::Api::Store>& storePtr) {
+    if(storePtr.expired()) {
+      return;
+    }
+    auto store = storePtr.lock();
     if (store->isReady() && audio_driver && !audio_driver->empty()) {
       PLOGD << "audioDriverSelected";
       auto local_device = store->getLocalDevice();
@@ -83,7 +91,11 @@ void AudioIO::attachHandlers() {
     }
   }, token_);
   client_->soundCardChanged.connect([this](const std::string &_id, const nlohmann::json &update,
-                                           const DigitalStage::Api::Store *store) {
+                                           const std::weak_ptr<DigitalStage::Api::Store>& storePtr) {
+    if(storePtr.expired()) {
+      return;
+    }
+    auto store = storePtr.lock();
     if (store->isReady()) {
       PLOGD << "soundCardChanged";
       auto local_device = store->getLocalDevice();
@@ -110,13 +122,17 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->deviceChanged.connect([this](const std::string &id, const nlohmann::json &update,
-                                        const DigitalStage::Api::Store *store) {
+  client_->deviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
+                                        const std::weak_ptr<DigitalStage::Api::Store>& storePtr) {
+    if(storePtr.expired()) {
+      return;
+    }
+    auto store = storePtr.lock();
     if (store->isReady()) {
       PLOGD << "deviceChanged";
       // Did the local device changed? (so this device needs an update)
       auto local_device = store->getLocalDevice();
-      if (local_device && local_device->_id == id) {
+      if (local_device && local_device->_id == _id) {
         if (update.contains("audioDriver") && !update["audioDriver"].empty()) {
           // This handles audioDriver INCLUDING inputSoundCardId, outputSoundCardId, sendAudio and receiveAudio
           setAudioDriver(update["audioDriver"]);
@@ -172,7 +188,11 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const std::weak_ptr<DigitalStage::Api::Store>& storePtr) {
+    if(storePtr.expired()) {
+      return;
+    }
+    auto store = storePtr.lock();
     if (store->isReady()) {
       PLOGD << "audioTrackAdded";
       auto local_device_id = store->getLocalDeviceId();
@@ -188,7 +208,11 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
-  client_->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const DigitalStage::Api::Store *store) {
+  client_->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track, const std::weak_ptr<DigitalStage::Api::Store>& storePtr) {
+    if(storePtr.expired()) {
+      return;
+    }
+    auto store = storePtr.lock();
     if (store->isReady()) {
       PLOGD << "audioTrackRemoved";
       auto local_device_id = store->getLocalDeviceId();
@@ -208,7 +232,7 @@ void AudioIO::publishChannel(int channel) {
   if (!published_channels_[channel] && (input_channel_mapping_.count(channel) == 0U)) {
     published_channels_[channel] = true;
     PLOGD << "publishChannel " << channel;
-    auto *store = client_->getStore();
+    auto store = client_->getStore().lock();
     auto stage_id = store->getStageId();
     nlohmann::json payload {
         {"stageId", *stage_id},
@@ -253,7 +277,7 @@ void AudioIO::watchDeviceUpdates() {
     watching_device_updates_ = true;
     device_watcher_ = std::thread([this]() {
       while (watching_device_updates_) {
-        auto sound_cards = enumerateDevices(*client_->getStore());
+        auto sound_cards = enumerateDevices(client_->getStore().lock());
         if (num_devices_ != sound_cards.size()) {
           for (auto &sound_card: sound_cards) {
             sound_card["online"] = true;

@@ -50,7 +50,7 @@ class AudioRenderer {
 
   void stop();
 
-  void render(const std::string &audio_track_id, T *in, T *outLeft, T *outRight, std::size_t frame_size);
+  void render(const std::string &audio_track_id, T *input, T *outLeft, T *outRight, std::size_t frame_size);
 
   void renderReverb(T *outLeft, T *outRight, std::size_t frame_size);
 
@@ -63,9 +63,9 @@ class AudioRenderer {
 
   void attachHandlers(bool autostart);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageMember &stage_member,
-                                                                           const DigitalStage::Api::Store &store);
+                                                                           const std::shared_ptr<DigitalStage::Api::Store>& store);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
-                                                                           const DigitalStage::Api::Store &store);
+                                                                           std::shared_ptr<DigitalStage::Api::Store> store);
 
   void setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position);
   void setAudioTrackPosition(const std::string &audio_track_id,

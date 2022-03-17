@@ -43,7 +43,8 @@ class AudioIO {
                                 std::size_t num_output_channels,
                                 std::size_t frame_count
   ) = 0;*/
-  virtual std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) = 0;
+  // TODO: Check if a shared_ptr can be used here instaed of an waek ptr
+  virtual std::vector<nlohmann::json> enumerateDevices(std::shared_ptr<DigitalStage::Api::Store> store) = 0;
   virtual void setAudioDriver(const std::string &audio_driver) = 0;
   virtual void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card,
                                  bool start) = 0;

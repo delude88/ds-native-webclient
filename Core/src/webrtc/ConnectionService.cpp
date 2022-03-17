@@ -24,8 +24,12 @@ ConnectionService::~ConnectionService() {
 
 void ConnectionService::attachHandlers() {
   PLOGD << "attachHandlers()";
-  client_->ready.connect([this](const DigitalStage::Api::Store *store) {
+  client_->ready.connect([this](std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
     PLOGD << "ready";
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     auto turn_urls = store->getTurnServers();
     if (!turn_urls.empty()) {
       auto turn_user = store->getTurnUsername();
@@ -51,14 +55,18 @@ void ConnectionService::attachHandlers() {
   }, token_);
   client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
                                       const std::optional<DigitalStage::Types::ID_TYPE> &,
-                                      const DigitalStage::Api::Store * /*store*/) {
+                                      std::weak_ptr<DigitalStage::Api::Store> /*store_ptr*/) {
     onStageChanged();
   }, token_);
-  client_->stageLeft.connect([this](const DigitalStage::Api::Store * /*store*/) {
+  client_->stageLeft.connect([this](std::weak_ptr<DigitalStage::Api::Store> /*store_ptr*/) {
     onStageChanged();
   }, token_);
   client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device,
-                                           const DigitalStage::Api::Store *store) {
+                                           std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       if (device.active) {
@@ -76,7 +84,11 @@ void ConnectionService::attachHandlers() {
     }
   }, token_);
   client_->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
-                                             const DigitalStage::Api::Store *store) {
+                                             std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     if (store->isReady()) {
       // We safely can ignore here, if this is the local stage device, since we wait for ready
       auto local_stage_device_id = store->getStageDeviceId();
@@ -105,7 +117,11 @@ void ConnectionService::attachHandlers() {
       }
     }
   }, token_);
-  client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer, const DigitalStage::Api::Store *store) {
+  client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer, std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     auto local_stage_device_id = store->getStageDeviceId();
     assert(offer.to == *local_stage_device_id);
     assert(offer.from != *local_stage_device_id);
@@ -124,7 +140,11 @@ void ConnectionService::attachHandlers() {
     peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   }, token_);
   client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer,
-                                    const DigitalStage::Api::Store *store) {
+                                    std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     auto local_stage_device_id = store->getStageDeviceId();
     assert(answer.to == *local_stage_device_id);
     assert(answer.from != *local_stage_device_id);
@@ -134,7 +154,11 @@ void ConnectionService::attachHandlers() {
     }
   }, token_);
   client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice,
-                                       const DigitalStage::Api::Store *store) {
+                                       std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     auto local_stage_device_id = store->getStageDeviceId();
     assert(ice.to == *local_stage_device_id);
     assert(ice.from != *local_stage_device_id);
@@ -147,7 +171,11 @@ void ConnectionService::attachHandlers() {
 
 void ConnectionService::onStageChanged() {
   PLOGD << "handleStageChanged()";
-  auto *store = client_->getStore();
+  auto store_ptr = client_->getStore();
+  if(store_ptr.expired()) {
+    return;
+  }
+  auto store = store_ptr.lock();
   if (store->isReady()) {
     auto stage_id = store->getStageId();
     if (stage_id) {
@@ -258,10 +286,12 @@ void ConnectionService::fetchStatistics() {
     std::this_thread::sleep_for(std::chrono::seconds(2));
     for (const auto &item: peer_connections_) {
       auto time = item.second->getRoundTripTime();
-      if (time) {
-        auto stage_device = client_->getStore()->stageDevices.get(item.first);
+      auto store_ptr = client_->getStore();
+      if (time && !store_ptr.expired()) {
+        auto store = store_ptr.lock();
+        auto stage_device = store->stageDevices.get(item.first);
         if (stage_device) {
-          auto user = client_->getStore()->users.get(stage_device->userId);
+          auto user = store->users.get(stage_device->userId);
           if (user) {
             PLOGI << user->name << "@" << item.first << ": " << time->count() << "ms RTT";
           } else {
