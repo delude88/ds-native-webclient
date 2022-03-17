@@ -304,6 +304,10 @@ void RtAudioIO::stopReceiving() {
   PLOGD << "stopReceiving()";
   initAudio();
 }
+void RtAudioIO::restart() {
+  PLOGD << "restart()";
+  initAudio();
+}
 [[maybe_unused]] unsigned int RtAudioIO::getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,
                                                              std::optional<RtAudio::StreamParameters> outputParameters,
                                                              unsigned int sample_rate) {

@@ -226,12 +226,24 @@ void AudioIO::attachHandlers() {
       }
     }
   }, token_);
+  client_->stageJoined.connect([this](const std::string&, const std::optional<std::string>&, const std::weak_ptr<DigitalStage::Api::Store>& store_ptr) {
+    if(!store_ptr.expired() && store_ptr.lock()->isReady()) {
+      restart();
+    }
+  }, token_);
+  client_->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store>&) {
+    PLOGD << "unPublishAll without sending";
+    mutex_.lock();
+    std::fill( std::begin( published_channels_ ), std::end( published_channels_ ), false );
+    input_channel_mapping_.clear();
+    mutex_.unlock();
+  }, token_);
 }
 
 void AudioIO::publishChannel(int channel) {
+  PLOGD << "publishChannel " << channel;
   if (!published_channels_[channel] && (input_channel_mapping_.count(channel) == 0U)) {
     published_channels_[channel] = true;
-    PLOGD << "publishChannel " << channel;
     auto store = client_->getStore().lock();
     auto stage_id = store->getStageId();
     nlohmann::json payload {

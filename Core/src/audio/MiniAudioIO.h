@@ -22,6 +22,7 @@ class MiniAudioIO : public AudioIO {
   void stopSending() override;
   void startReceiving() override;
   void stopReceiving() override;
+  void restart() override;
 
  private:
   std::atomic<bool> initialized_{};

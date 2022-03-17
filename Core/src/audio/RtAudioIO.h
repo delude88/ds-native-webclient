@@ -26,6 +26,7 @@ class [[maybe_unused]] RtAudioIO :
   void stopSending() override;
   void startReceiving() override;
   void stopReceiving() override;
+  void restart() override;
 
  private:
   [[maybe_unused]] unsigned int getLowestBufferSize(std::optional<RtAudio::StreamParameters> inputParameters,

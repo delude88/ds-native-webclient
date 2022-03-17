@@ -187,6 +187,10 @@ void MiniAudioIO::stopReceiving() {
     }
   }
 }
+void MiniAudioIO::restart() {
+  stopSending();
+  startSending();
+}
 std::vector<nlohmann::json> MiniAudioIO::enumerateDevices(const DigitalStage::Api::Store &store) {
   auto sound_cards = std::vector<nlohmann::json>();
 

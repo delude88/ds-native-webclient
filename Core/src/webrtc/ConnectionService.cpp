@@ -24,9 +24,9 @@ ConnectionService::~ConnectionService() {
 
 void ConnectionService::attachHandlers() {
   PLOGD << "attachHandlers()";
-  client_->ready.connect([this](std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
+  client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     PLOGD << "ready";
-    if(store_ptr.expired()) {
+    if (store_ptr.expired()) {
       return;
     }
     auto store = store_ptr.lock();
@@ -34,17 +34,35 @@ void ConnectionService::attachHandlers() {
     if (!turn_urls.empty()) {
       auto turn_user = store->getTurnUsername();
       auto turn_secret = store->getTurnPassword();
-      if (turn_user && turn_secret) {
-        for (const auto &turn_url: turn_urls) {
-          std::string delimiter = ":";
-          auto host = turn_url.substr(0, turn_url.find(delimiter));
-          auto port = turn_url.substr(turn_url.find(delimiter));
-          PLOGD << "emblace";
-          //configuration_.iceServers.emplace_back(host, port, *turn_user, *turn_secret);
-          //configuration_.iceServers.push_back(rtc::IceServer(host, port, *turn_user, *turn_secret));
-          PLOGI << "Using turn server:" << *turn_user << ":" << *turn_secret << "@" << host << ":" << port;
+
+      for (const auto &turn_url: turn_urls) {
+        auto num_delimiters = std::count(turn_url.begin(), turn_url.end(), ':');
+        if (num_delimiters > 2) {
+          PLOGE << "Invalid stun/turn url: " << turn_url;
+          break;
+        }
+        if (num_delimiters > 1) {
+          auto last_delimiter_pos = turn_url.rfind(':');
+          std::string host(turn_url.substr(0, last_delimiter_pos + 1));
+          auto port = std::stoi(turn_url.substr(last_delimiter_pos + 1));
+          if (turn_user && turn_secret) {
+            PLOGI << "Using TURN server:" << *turn_user << ":" << *turn_secret << "@" << host << ":" << port;
+            configuration_.iceServers.emplace_back(host, port, *turn_user, *turn_secret);
+          } else {
+            PLOGI << "Using STUN server:" << host << ":" << port;
+            configuration_.iceServers.emplace_back(turn_url, port);
+          }
+        } else {
+          if (turn_user && turn_secret) {
+            PLOGI << "Using TURN server:" << *turn_user << ":" << *turn_secret << "@" << turn_url << ":3478";
+            configuration_.iceServers.emplace_back(turn_url, 3478, *turn_user, *turn_secret);
+          } else {
+            PLOGI << "Using STUN server:" << turn_url << ":3478";
+            configuration_.iceServers.emplace_back(turn_url);
+          }
         }
       }
+
     } else {
       PLOGI << "Using public google STUN servers as fallback";
       configuration_.iceServers.emplace_back("stun:stun.l.google.com:19302");
@@ -55,15 +73,15 @@ void ConnectionService::attachHandlers() {
   }, token_);
   client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
                                       const std::optional<DigitalStage::Types::ID_TYPE> &,
-                                      std::weak_ptr<DigitalStage::Api::Store> /*store_ptr*/) {
+                                      const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
     onStageChanged();
   }, token_);
-  client_->stageLeft.connect([this](std::weak_ptr<DigitalStage::Api::Store> /*store_ptr*/) {
+  client_->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
     onStageChanged();
   }, token_);
   client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device,
-                                           std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
-    if(store_ptr.expired()) {
+                                           const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    if (store_ptr.expired()) {
       return;
     }
     auto store = store_ptr.lock();
@@ -75,8 +93,13 @@ void ConnectionService::attachHandlers() {
           PLOGW << "Ignoring recently added non-native stage device";
           return;
         }
-        PLOGI << "Connecting to recently added native stage device " << device._id;
+#elif USE_ONLY_WEBRTC_DEVICES
+        if (device.type != "native" && device.type != "browser") {
+          PLOGW << "Ignoring recently added non-webrtc stage device";
+          return;
+        }
 #endif
+        PLOGI << "Connecting to recently added native stage device " << device._id;
         std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // WRITE
         auto local_stage_device_id = store->getStageDeviceId();
         createPeerConnection(device._id, *local_stage_device_id);
@@ -84,8 +107,8 @@ void ConnectionService::attachHandlers() {
     }
   }, token_);
   client_->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
-                                             std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
-    if(store_ptr.expired()) {
+                                             const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    if (store_ptr.expired()) {
       return;
     }
     auto store = store_ptr.lock();
@@ -102,6 +125,13 @@ void ConnectionService::attachHandlers() {
             return;
           }
           PLOGI << "Connecting to recently activated native stage device " << _id;
+#elif USE_ONLY_WEBRTC_DEVICES
+          auto device = store->stageDevices.get(_id);
+          if (device->type != "native" && device->type != "browser") {
+            PLOGW << "Ignoring non-native device " << _id;
+            return;
+          }
+          PLOGI << "Connecting to recently activated webrtc stage device " << _id;
 #endif
           std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // maybe WRITE
           if (is_active) {
@@ -117,8 +147,9 @@ void ConnectionService::attachHandlers() {
       }
     }
   }, token_);
-  client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer, std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
-    if(store_ptr.expired()) {
+  client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer,
+                                   const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    if (store_ptr.expired()) {
       return;
     }
     auto store = store_ptr.lock();
@@ -131,6 +162,13 @@ void ConnectionService::attachHandlers() {
       return;
     }
     PLOGI << "Accepting offer from native stage device " << offer.from;
+#elif USE_ONLY_WEBRTC_DEVICES
+    if (store->stageDevices.get(offer.from)->type != "native"
+        && store->stageDevices.get(offer.from)->type != "browser") {
+      PLOGW << "Ignoring offer from non-native stage device" << offer.from;
+      return;
+    }
+    PLOGI << "Accepting offer from webrtc stage device " << offer.from;
 #endif
     std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
     if (!peer_connections_.count(offer.from)) {
@@ -140,8 +178,8 @@ void ConnectionService::attachHandlers() {
     peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   }, token_);
   client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer,
-                                    std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
-    if(store_ptr.expired()) {
+                                    const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    if (store_ptr.expired()) {
       return;
     }
     auto store = store_ptr.lock();
@@ -154,8 +192,8 @@ void ConnectionService::attachHandlers() {
     }
   }, token_);
   client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice,
-                                       std::weak_ptr<DigitalStage::Api::Store> store_ptr) {
-    if(store_ptr.expired()) {
+                                       const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    if (store_ptr.expired()) {
       return;
     }
     auto store = store_ptr.lock();
@@ -172,7 +210,7 @@ void ConnectionService::attachHandlers() {
 void ConnectionService::onStageChanged() {
   PLOGD << "handleStageChanged()";
   auto store_ptr = client_->getStore();
-  if(store_ptr.expired()) {
+  if (store_ptr.expired()) {
     return;
   }
   auto store = store_ptr.lock();
@@ -193,6 +231,12 @@ void ConnectionService::onStageChanged() {
               return;
             }
             PLOGI << "Found existing native stage device " << item._id;
+#elif USE_ONLY_WEBRTC_DEVICES
+            if (item.type != "native" && item.type != "browser") {
+              PLOGW << "Ignoring existing non-native stage device " << item._id;
+              return;
+            }
+            PLOGI << "Found existing webrtc stage device " << item._id;
 #endif
             PLOGD << "Request token";
             std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE

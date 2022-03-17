@@ -61,31 +61,6 @@ if (CMAKE_RUN_CLANG_TIDY)
     unset(clang_tidy_sha1)
 endif ()
 
-# include-what-you-use
-option(CMAKE_RUN_IWYU "Run include-what-you-use with the compiler." OFF)
-if (CMAKE_RUN_IWYU)
-    find_program(IWYU_COMMAND NAMES include-what-you-use iwyu)
-    if (NOT IWYU_COMMAND)
-        message(WARNING "CMAKE_RUN_IWYU is ON but include-what-you-use is not found!")
-    else ()
-        set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE
-                "${IWYU_COMMAND};-Xiwyu;--cxx17ns;--output=iwyu.log")
-        list(APPEND CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${CMAKE_IWYU_OPTIONS})
-        message(STATUS "Using include-what-you-use")
-    endif ()
-endif ()
-
-# Clazy is a Qt oriented code checker based on clang framework. Krazy's little brother.
-set(CMAKE_RUN_CLAZY OFF CACHE BOOL "Add clazy check for builds")
-if (ENABLE_CLAZY)
-    find_program(CLAZY_EXECUTABLE NAMES clazy PATHS /usr/local/llvm/bin /usr/local/bin /opt/clazy/bin)
-    if (CLAZY_EXECUTABLE)
-        message(STATUS "clazy found: ${CLAZY_EXECUTABLE}")
-    else ()
-        message(AUTHOR_WARNING "clazy not found. ")
-    endif ()
-endif ()
-
 
 #################################################
 #

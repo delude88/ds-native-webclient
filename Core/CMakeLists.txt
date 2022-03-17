@@ -23,6 +23,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_L
 #
 #################################################
 add_compile_definitions(USE_ONLY_NATIVE_DEVICES)
+add_compile_definitions(USE_ONLY_WEBRTC_DEVICES)
 option(USE_RT_AUDIO "Use RtAudio as audio engine" ON)
 
 

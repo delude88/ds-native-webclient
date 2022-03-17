@@ -21,6 +21,7 @@ set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
 set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
 set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
 set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
+add_compile_definitions(USE_ONLY_WEBRTC_DEVICES)
 
 
 #################################################

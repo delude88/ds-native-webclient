@@ -53,6 +53,7 @@ class AudioIO {
   virtual void stopSending() = 0;
   virtual void startReceiving() = 0;
   virtual void stopReceiving() = 0;
+  virtual void restart() = 0;
   void publishChannel(int channel);
   void unPublishChannel(int channel);
   void unPublishAll();
