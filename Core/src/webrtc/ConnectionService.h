@@ -24,7 +24,6 @@ class ConnectionService {
   explicit ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client);
   ~ConnectionService();
 
-  [[maybe_unused]] void broadcastFloat(const std::string &audio_track_id, float data);
   void broadcastBytes(const std::string &audio_track_id, const std::byte *data, size_t size);
   void broadcastFloats(const std::string &audio_track_id, const float *data, size_t size);
 

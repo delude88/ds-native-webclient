@@ -36,40 +36,24 @@ void ConnectionService::attachHandlers() {
       auto turn_secret = store->getTurnPassword();
 
       for (const auto &turn_url: turn_urls) {
-        auto num_delimiters = std::count(turn_url.begin(), turn_url.end(), ':');
-        if (num_delimiters > 2) {
-          PLOGE << "Invalid stun/turn url: " << turn_url;
-          break;
-        }
-        if (num_delimiters > 1) {
-          auto last_delimiter_pos = turn_url.rfind(':');
-          std::string host(turn_url.substr(0, last_delimiter_pos + 1));
-          auto port = std::stoi(turn_url.substr(last_delimiter_pos + 1));
-          if (turn_user && turn_secret) {
-            PLOGI << "Using TURN server:" << *turn_user << ":" << *turn_secret << "@" << host << ":" << port;
-            configuration_.iceServers.emplace_back(host, port, *turn_user, *turn_secret);
+        std::string url(turn_url);
+        if(turn_user && turn_secret) {
+          if(url.find("turn:") || url.find("turns:")) {
+            url.insert(turn_url.find(':') + 1, *turn_user + ":" + *turn_secret + "@");
           } else {
-            PLOGI << "Using STUN server:" << host << ":" << port;
-            configuration_.iceServers.emplace_back(turn_url, port);
+            url = *turn_user + ":" +  *turn_secret + "@" + url;
           }
+          PLOGI << "Using TURN server: " << url;
         } else {
-          if (turn_user && turn_secret) {
-            PLOGI << "Using TURN server:" << *turn_user << ":" << *turn_secret << "@" << turn_url << ":3478";
-            configuration_.iceServers.emplace_back(turn_url, 3478, *turn_user, *turn_secret);
-          } else {
-            PLOGI << "Using STUN server:" << turn_url << ":3478";
-            configuration_.iceServers.emplace_back(turn_url);
-          }
+          PLOGI << "Using STUN server: " << url;
         }
+        configuration_.iceServers.emplace_back(url);
       }
-
     } else {
       PLOGI << "Using public google STUN servers as fallback";
       configuration_.iceServers.emplace_back("stun:stun.l.google.com:19302");
     }
-    PLOGD << "ready middle";
     onStageChanged();
-    PLOGD << "ready end";
   }, token_);
   client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
                                       const std::optional<DigitalStage::Types::ID_TYPE> &,
@@ -318,11 +302,6 @@ void ConnectionService::broadcastFloats(const std::string &audio_track_id, const
   auto *buffer = new std::byte[buffer_size];
   serialize(data, size, buffer);
   broadcastBytes(audio_track_id, buffer, buffer_size);
-}
-[[maybe_unused]] void ConnectionService::broadcastFloat(const std::string &audio_track_id, const float data) {
-  std::byte buffer[4];
-  serializeFloat(data, buffer);
-  broadcastBytes(audio_track_id, buffer, 4);
 }
 
 void ConnectionService::fetchStatistics() {
