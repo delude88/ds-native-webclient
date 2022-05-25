@@ -15,12 +15,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_L
 #   Environment configuration
 #
 #################################################
-set(SIGNUP_URL "https://dev.dstage.org/account/signup" CACHE STRING "Url link to sign up page")
-set(AUTH_URL "https://auth.dstage.org" CACHE STRING "Auth server url")
-set(API_URL "wss://api.dstage.org" CACHE STRING "API server websocket url (wss://...)")
-set(STAGE_URL "https://dev.dstage.org/stage" CACHE STRING "Url link to active stage page")
-set(SETTINGS_URL "https://dev.dstage.org/devices" CACHE STRING "Url link to settings page")
-
+set(SIGNUP_URL "https://web.dev.digital-stage.net/account/signup" CACHE STRING "Url link to sign up page")
+set(AUTH_URL "https:///auth.dev.digital-stage.net" CACHE STRING "Auth server url")
+set(API_URL "wss://api.dev.digital-stage.net" CACHE STRING "API server websocket url (wss://...)")
+set(STAGE_URL "https://web.dev.digital-stage.net/stage" CACHE STRING "Url link to active stage page")
+set(SETTINGS_URL "https://web.dev.digital-stage.net/devices" CACHE STRING "Url link to settings page")
 
 #################################################
 #
