@@ -203,7 +203,7 @@ void ConnectionService::onStageChanged() {
     if (stage_id) {
       auto stage = store->stages.get(*stage_id);
       assert(stage);
-      if (stage->audioType == "mediasoup") {
+      if (stage->audioType == "browser") {
         auto local_stage_device_id = store->getStageDeviceId();
         assert(local_stage_device_id);
         auto stage_devices = store->stageDevices.getAll();
@@ -241,6 +241,8 @@ void ConnectionService::onStageChanged() {
           }
         }
       }
+    } else {
+      PLOGE << "Not inside any stage";
     }
   }
 }

@@ -105,7 +105,7 @@ target_link_libraries(${target}
         plog::plog
         )
 if (APPLE)
-    enable_language(OBJC)
+    enable_language(OBJCXX)
     find_library(CORE_FOUNDATION Foundation)
     find_library(AV_FOUNDATION AVFoundation)
     target_sources(${target}

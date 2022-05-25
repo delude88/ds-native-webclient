@@ -520,7 +520,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
       } else {
         if(!falling_back_) {
           falling_back_ = true;
-          PLOGD << "No render information for audio track - falling back to simple mixing";
+          //PLOGD << "No render information for audio track - falling back to simple mixing";
         }
         renderFallback(input, outLeft, outRight, frame_size, volume_info);
       }

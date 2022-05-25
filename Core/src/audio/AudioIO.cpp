@@ -249,7 +249,8 @@ void AudioIO::publishChannel(int channel) {
     nlohmann::json payload {
         {"stageId", *stage_id},
         {"type", "native"},
-        {"sourceChannel", channel}
+        {"sourceChannel", channel},
+        {"channelId", channel}
     };
     PLOGD << "Publishing audio track";
     client_->send(DigitalStage::Api::SendEvents::CREATE_AUDIO_TRACK,
