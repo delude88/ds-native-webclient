@@ -494,7 +494,7 @@ void AudioRenderer<T>::render(const std::string &audio_track_id,
       if (audio_tracks_.count(audio_track_id) != 0) {
         if(falling_back_) {
           falling_back_ = false;
-          PLOGD << "Disabling fallback since all requirements are fulfilled";
+          //PLOGD << "Disabling fallback since all requirements are fulfilled";
         }
         try {
           CMonoBuffer<float> input_buffer(frame_size);
