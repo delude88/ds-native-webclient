@@ -165,6 +165,17 @@ void PeerConnection::send(const std::string &audio_track_id, const std::byte *da
     PLOGW << "Could not send: " << err.what();
   }
 }
+void PeerConnection::close(const std::string &audio_track_id) {
+  std::unique_lock<std::mutex> lock(senders_mutex_);
+  if (senders_.count(audio_track_id) != 0 && senders_[audio_track_id]->isOpen()) {
+    try {
+      PLOGD << "Closing send data channel";
+      senders_[audio_track_id]->close();
+    } catch (std::exception &err) {
+      PLOGW << "Could not close: " << err.what();
+    }
+  }
+}
 
 std::optional<std::chrono::milliseconds> PeerConnection::getRoundTripTime() {
   return peer_connection_->rtt();

@@ -32,6 +32,10 @@ class AudioIO {
       /* num_output_channels */ std::size_t,
       /* frame_count */ std::size_t>
       onDuplex;
+  sigslot::signal<
+      /* audio_track_Id */ std::string
+  >
+      onClose;
  protected:
   /*
   virtual void onCaptureCallback(const std::string &audio_track_id,
@@ -43,7 +47,7 @@ class AudioIO {
                                 std::size_t num_output_channels,
                                 std::size_t frame_count
   ) = 0;*/
-  // TODO: Check if a shared_ptr can be used here instaed of an waek ptr
+  // TODO: Check if a shared_ptr can be used here instead of an weak ptr
   virtual std::vector<nlohmann::json> enumerateDevices(std::shared_ptr<DigitalStage::Api::Store> store) = 0;
   virtual void setAudioDriver(const std::string &audio_driver) = 0;
   virtual void setInputSoundCard(const DigitalStage::Types::SoundCard &sound_card,

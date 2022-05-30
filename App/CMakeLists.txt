@@ -64,6 +64,7 @@ set_target_properties(${target} PROPERTIES OUTPUT_NAME "Digital Stage Connector"
 set(RESOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/assets/splash.png
         ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon@2x.png
         ${CMAKE_CURRENT_SOURCE_DIR}/assets/logo-full.png
         )
 if (APPLE)

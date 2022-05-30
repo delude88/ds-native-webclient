@@ -20,7 +20,7 @@
 #include <memory>
 #include <atomic>
 
-#define RECEIVER_BUFFER 2000
+#define RECEIVER_BUFFER 4096
 
 class Client {
  public:
@@ -34,6 +34,7 @@ class Client {
                         float **data,
                         std::size_t num_channels,
                         std::size_t frame_count);
+  void onClose(const std::string &audio_track_id);
 
  private:
   void attachHandlers();

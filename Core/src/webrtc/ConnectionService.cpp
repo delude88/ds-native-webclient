@@ -37,11 +37,11 @@ void ConnectionService::attachHandlers() {
 
       for (const auto &turn_url: turn_urls) {
         std::string url(turn_url);
-        if(turn_user && turn_secret) {
-          if(url.find("turn:") || url.find("turns:")) {
+        if (turn_user && turn_secret) {
+          if (url.find("turn:") || url.find("turns:")) {
             url.insert(turn_url.find(':') + 1, *turn_user + ":" + *turn_secret + "@");
           } else {
-            url = *turn_user + ":" +  *turn_secret + "@" + url;
+            url = *turn_user + ":" + *turn_secret + "@" + url;
           }
           PLOGI << "Using TURN server: " << url;
         } else {
@@ -97,9 +97,8 @@ void ConnectionService::attachHandlers() {
     }
     auto store = store_ptr.lock();
     if (store->isReady()) {
-      // We safely can ignore here, if this is the local stage device, since we wait for ready
       auto local_stage_device_id = store->getStageDeviceId();
-      if (_id != *local_stage_device_id) {
+      if (local_stage_device_id && _id != *local_stage_device_id) {
         if (update.contains("active")) {
           bool is_active = update["active"];
 #if USE_ONLY_NATIVE_DEVICES
@@ -138,28 +137,30 @@ void ConnectionService::attachHandlers() {
     }
     auto store = store_ptr.lock();
     auto local_stage_device_id = store->getStageDeviceId();
-    assert(offer.to == *local_stage_device_id);
-    assert(offer.from != *local_stage_device_id);
+    if (local_stage_device_id) {
+      assert(offer.to == *local_stage_device_id);
+      assert(offer.from != *local_stage_device_id);
 #if USE_ONLY_NATIVE_DEVICES
-    if (store->stageDevices.get(offer.from)->type != "native") {
+      if (store->stageDevices.get(offer.from)->type != "native") {
       PLOGW << "Ignoring offer from non-native stage device" << offer.from;
       return;
     }
     PLOGI << "Accepting offer from native stage device " << offer.from;
 #elif USE_ONLY_WEBRTC_DEVICES
-    if (store->stageDevices.get(offer.from)->type != "native"
-        && store->stageDevices.get(offer.from)->type != "browser") {
-      PLOGW << "Ignoring offer from non-native stage device" << offer.from;
-      return;
-    }
-    PLOGI << "Accepting offer from webrtc stage device " << offer.from;
+      if (store->stageDevices.get(offer.from)->type != "native"
+          && store->stageDevices.get(offer.from)->type != "browser") {
+        PLOGW << "Ignoring offer from non-native stage device" << offer.from;
+        return;
+      }
+      PLOGI << "Accepting offer from webrtc stage device " << offer.from;
 #endif
-    std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
-    if (!peer_connections_.count(offer.from)) {
-      createPeerConnection(offer.from, offer.to);
+      std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
+      if (!peer_connections_.count(offer.from)) {
+        createPeerConnection(offer.from, offer.to);
+      }
+      assert(peer_connections_[offer.from]);
+      peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
     }
-    assert(peer_connections_[offer.from]);
-    peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
   }, token_);
   client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer,
                                     const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
@@ -168,11 +169,13 @@ void ConnectionService::attachHandlers() {
     }
     auto store = store_ptr.lock();
     auto local_stage_device_id = store->getStageDeviceId();
-    assert(answer.to == *local_stage_device_id);
-    assert(answer.from != *local_stage_device_id);
-    std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_); // READ
-    if (peer_connections_.count(answer.from)) {
-      peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
+    if (local_stage_device_id) {
+      assert(answer.to == *local_stage_device_id);
+      assert(answer.from != *local_stage_device_id);
+      std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_); // READ
+      if (peer_connections_.count(answer.from)) {
+        peer_connections_.at(answer.from)->setRemoteSessionDescription(answer.answer);
+      }
     }
   }, token_);
   client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice,
@@ -182,11 +185,13 @@ void ConnectionService::attachHandlers() {
     }
     auto store = store_ptr.lock();
     auto local_stage_device_id = store->getStageDeviceId();
-    assert(ice.to == *local_stage_device_id);
-    assert(ice.from != *local_stage_device_id);
-    std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_); // READ
-    if (ice.iceCandidate && peer_connections_.count(ice.from)) {
-      peer_connections_.at(ice.from)->addRemoteIceCandidate(*ice.iceCandidate);
+    if (local_stage_device_id) {
+      assert(ice.to == *local_stage_device_id);
+      assert(ice.from != *local_stage_device_id);
+      std::shared_lock<std::shared_mutex> shared_lock(peer_connections_mutex_); // READ
+      if (ice.iceCandidate && peer_connections_.count(ice.from)) {
+        peer_connections_.at(ice.from)->addRemoteIceCandidate(*ice.iceCandidate);
+      }
     }
   }, token_);
 }
@@ -304,6 +309,12 @@ void ConnectionService::broadcastFloats(const std::string &audio_track_id, const
   auto *buffer = new std::byte[buffer_size];
   serialize(data, size, buffer);
   broadcastBytes(audio_track_id, buffer, buffer_size);
+}
+
+void ConnectionService::close(const std::string &audio_track_id) {
+  for (const auto &item: peer_connections_) {
+    item.second->close(audio_track_id);
+  }
 }
 
 void ConnectionService::fetchStatistics() {

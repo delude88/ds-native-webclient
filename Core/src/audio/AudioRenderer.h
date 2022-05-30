@@ -65,7 +65,7 @@ class AudioRenderer {
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageMember &stage_member,
                                                                            const std::shared_ptr<DigitalStage::Api::Store>& store);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
-                                                                           std::shared_ptr<DigitalStage::Api::Store> store);
+                                                                           std::shared_ptr<DigitalStage::Api::Store>& store);
 
   void setListenerPosition(const DigitalStage::Types::ThreeDimensionalProperties &position);
   void setAudioTrackPosition(const std::string &audio_track_id,

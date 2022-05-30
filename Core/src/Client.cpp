@@ -223,10 +223,15 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
   //delete [] left;
   //delete [] right;
 }
+void Client::onClose(const std::string &audio_track_id) {
+  PLOGD << "Closing data channel of local audio track " << audio_track_id;
+  connection_service_->close(audio_track_id);
+}
 void Client::attachAudioHandlers() {
   audio_io_->onPlayback.connect(&Client::onPlaybackCallback, this);
   audio_io_->onCapture.connect(&Client::onCaptureCallback, this);
   audio_io_->onDuplex.connect(&Client::onDuplexCallback, this);
+  audio_io_->onClose.connect(&Client::onClose, this);
 }
 void Client::changeReceiverSize(unsigned int receiver_buffer) {
   PLOGD << "changeReceiverSize to" << receiver_buffer;

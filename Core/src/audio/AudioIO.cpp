@@ -219,6 +219,8 @@ void AudioIO::attachHandlers() {
       if (local_device_id && audio_track.deviceId == *local_device_id && audio_track.sourceChannel) {
         mutex_.lock();
         if (input_channel_mapping_.count(*audio_track.sourceChannel) != 0U) {
+          auto audio_track_id = input_channel_mapping_[*audio_track.sourceChannel];
+          onClose(audio_track_id);
           input_channel_mapping_.erase(*audio_track.sourceChannel);
           PLOGD << "Removed local track for channel " << *audio_track.sourceChannel;
         }
