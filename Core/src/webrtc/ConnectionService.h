@@ -31,8 +31,9 @@ class ConnectionService {
 
   sigslot::signal<std::string, std::vector<std::byte>> onData;
  private:
+  static bool IsSupported(const DigitalStage::Api::StageDevice& stage_device);
   void attachHandlers();
-  void onStageChanged();
+  void syncPeerConnections();
   void createPeerConnection(const std::string &stage_device_id,
                             const std::string &local_stage_device_id);
   void closePeerConnection(const std::string &stage_device_id);

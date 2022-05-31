@@ -22,7 +22,6 @@ wxIMPLEMENT_APP(App);
 
 bool App::OnInit() {
   static plog::ConsoleAppender<plog::TxtFormatter> console_appender;
-  plog::init(plog::debug, &console_appender);
 
 #ifdef __APPLE__
   // Special macOS routine (get microphone access rights)

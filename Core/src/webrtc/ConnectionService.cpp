@@ -25,6 +25,9 @@ ConnectionService::~ConnectionService() {
 void ConnectionService::attachHandlers() {
   PLOGD << "attachHandlers()";
   client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    /**
+     * Fetch STUN/TURN related data and initially call syncPeerConnections
+     */
     PLOGD << "ready";
     if (store_ptr.expired()) {
       return;
@@ -53,81 +56,24 @@ void ConnectionService::attachHandlers() {
       PLOGI << "Using public google STUN servers as fallback";
       configuration_.iceServers.emplace_back("stun:stun.l.google.com:19302");
     }
-    onStageChanged();
+    syncPeerConnections();
   }, token_);
   client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
                                       const std::optional<DigitalStage::Types::ID_TYPE> &,
                                       const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
-    onStageChanged();
+    syncPeerConnections();
   }, token_);
   client_->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
-    onStageChanged();
+    syncPeerConnections();
   }, token_);
-  client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device,
-                                           const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
-    if (store_ptr.expired()) {
-      return;
-    }
-    auto store = store_ptr.lock();
-    if (store->isReady()) {
-      // We safely can ignore here, if this is the local stage device, since we wait for ready
-      if (device.active) {
-#if USE_ONLY_NATIVE_DEVICES
-        if (device.type != "native") {
-          PLOGW << "Ignoring recently added non-native stage device";
-          return;
-        }
-#elif USE_ONLY_WEBRTC_DEVICES
-        if (device.type != "native" && device.type != "browser") {
-          PLOGW << "Ignoring recently added non-webrtc stage device";
-          return;
-        }
-#endif
-        PLOGI << "Connecting to recently added native stage device " << device._id;
-        std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // WRITE
-        auto local_stage_device_id = store->getStageDeviceId();
-        createPeerConnection(device._id, *local_stage_device_id);
-      }
-    }
+  client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice & /*device*/,
+                                           const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
+    syncPeerConnections();
   }, token_);
-  client_->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
-                                             const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
-    if (store_ptr.expired()) {
-      return;
-    }
-    auto store = store_ptr.lock();
-    if (store->isReady()) {
-      auto local_stage_device_id = store->getStageDeviceId();
-      if (local_stage_device_id && _id != *local_stage_device_id) {
-        if (update.contains("active")) {
-          bool is_active = update["active"];
-#if USE_ONLY_NATIVE_DEVICES
-          auto device = store->stageDevices.get(_id);
-          if (device->type != "native") {
-            PLOGW << "Ignoring non-native device " << _id;
-            return;
-          }
-          PLOGI << "Connecting to recently activated native stage device " << _id;
-#elif USE_ONLY_WEBRTC_DEVICES
-          auto device = store->stageDevices.get(_id);
-          if (device->type != "native" && device->type != "browser") {
-            PLOGW << "Ignoring non-native device " << _id;
-            return;
-          }
-          PLOGI << "Connecting to recently activated webrtc stage device " << _id;
-#endif
-          std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // maybe WRITE
-          if (is_active) {
-            if (!peer_connections_.count(_id)) {
-              createPeerConnection(_id, *local_stage_device_id);
-            }
-          } else {
-            if (peer_connections_.count(_id)) {
-              closePeerConnection(_id);
-            }
-          }
-        }
-      }
+  client_->stageDeviceChanged.connect([this](const std::string & /*_id*/, const nlohmann::json &update,
+                                             const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
+    if (update.contains("active")) {
+      syncPeerConnections();
     }
   }, token_);
   client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer,
@@ -140,25 +86,20 @@ void ConnectionService::attachHandlers() {
     if (local_stage_device_id) {
       assert(offer.to == *local_stage_device_id);
       assert(offer.from != *local_stage_device_id);
-#if USE_ONLY_NATIVE_DEVICES
-      if (store->stageDevices.get(offer.from)->type != "native") {
-      PLOGW << "Ignoring offer from non-native stage device" << offer.from;
-      return;
-    }
-    PLOGI << "Accepting offer from native stage device " << offer.from;
-#elif USE_ONLY_WEBRTC_DEVICES
-      if (store->stageDevices.get(offer.from)->type != "native"
-          && store->stageDevices.get(offer.from)->type != "browser") {
+      auto stage_device = store->stageDevices.get(offer.from);
+      if(!stage_device) {
+        PLOGE << "Got offer from an unknown stage device";
+        return;
+      }
+      if(!IsSupported(*stage_device)) {
         PLOGW << "Ignoring offer from non-native stage device" << offer.from;
         return;
       }
       PLOGI << "Accepting offer from webrtc stage device " << offer.from;
-#endif
       std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
       if (!peer_connections_.count(offer.from)) {
         createPeerConnection(offer.from, offer.to);
       }
-      assert(peer_connections_[offer.from]);
       peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
     }
   }, token_);
@@ -196,8 +137,8 @@ void ConnectionService::attachHandlers() {
   }, token_);
 }
 
-void ConnectionService::onStageChanged() {
-  PLOGD << "handleStageChanged()";
+void ConnectionService::syncPeerConnections() {
+  PLOGD << "syncPeerConnections()";
   auto store_ptr = client_->getStore();
   if (store_ptr.expired()) {
     return;
@@ -210,44 +151,41 @@ void ConnectionService::onStageChanged() {
       assert(stage);
       if (stage->audioType == "browser") {
         auto local_stage_device_id = store->getStageDeviceId();
-        assert(local_stage_device_id);
-        auto stage_devices = store->stageDevices.getAll();
-        for (const auto &item: stage_devices) {
-          if (item._id != *local_stage_device_id) {
-#if USE_ONLY_NATIVE_DEVICES
-            if (item.type != "native") {
-              PLOGW << "Ignoring existing non-native stage device " << item._id;
-              return;
-            }
-            PLOGI << "Found existing native stage device " << item._id;
-#elif USE_ONLY_WEBRTC_DEVICES
-            if (item.type != "native" && item.type != "browser") {
-              PLOGW << "Ignoring existing non-native stage device " << item._id;
-              return;
-            }
-            PLOGI << "Found existing webrtc stage device " << item._id;
-#endif
-            PLOGD << "Request token";
-            std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // READ and maybe WRITE
-            PLOGD << "GOT token";
-            if (item.active) {
-              // Active
-              if (!peer_connections_.count(item._id)) {
-                // But no connection yet
-                createPeerConnection(item._id, *local_stage_device_id);
-              }
-            } else {
-              // Not active
-              if (peer_connections_.count(item._id)) {
-                // But connection is still alive
-                closePeerConnection(item._id);
+        if (local_stage_device_id) {
+          // Assure, that we are connected to all active devices and disconnected from all inactive
+          auto stage_devices = store->stageDevices.getAll();
+          for (const auto &item: stage_devices) {
+            if (item._id != *local_stage_device_id) { // <-- not myself
+              if (IsSupported(item)) { // <-- and of supported type
+                std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_);
+                if (item.active) {
+                  // Assure that we are connected
+                  if (!peer_connections_.count(item._id)) {
+                    // But no connection yet
+                    createPeerConnection(item._id, *local_stage_device_id);
+                  }
+                } else {
+                  // Assure that we are NOT connected
+                  if (peer_connections_.count(item._id)) {
+                    // But connection is still alive
+                    closePeerConnection(item._id);
+                  }
+                }
               }
             }
           }
         }
+      } else {
+        // This stage is not supported, disconnect from all
+        for (const auto &item : peer_connections_) {
+          closePeerConnection(item.first);
+        }
       }
     } else {
-      PLOGE << "Not inside any stage";
+      // Outside any stage, disconnect from all
+      for (const auto &item : peer_connections_) {
+        closePeerConnection(item.first);
+      }
     }
   }
 }
@@ -315,6 +253,10 @@ void ConnectionService::close(const std::string &audio_track_id) {
   for (const auto &item: peer_connections_) {
     item.second->close(audio_track_id);
   }
+}
+
+bool ConnectionService::IsSupported(const DigitalStage::Api::StageDevice& stage_device) {
+  return stage_device.type == "native" || stage_device.type == "browser";
 }
 
 void ConnectionService::fetchStatistics() {
