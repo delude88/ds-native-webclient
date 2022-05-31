@@ -5,11 +5,12 @@
 #include "ConnectionService.h"
 #include "../utils/conversion.h"
 #include <optional>
+#include <utility>
 #include <DigitalStage/Api/Events.h>          // for PeerConnection
 #include <plog/Log.h>
 
-ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client)
-    : client_(std::move(client)),
+ConnectionService::ConnectionService(std::weak_ptr<DigitalStage::Api::Client> client_ptr)
+    : client_ptr_(std::move(client_ptr)),
       configuration_(rtc::Configuration()),
       is_fetching_statistics_(true),
       token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
@@ -17,14 +18,20 @@ ConnectionService::ConnectionService(std::shared_ptr<DigitalStage::Api::Client> 
   statistics_thread_ = std::thread(&ConnectionService::fetchStatistics, this);
 }
 ConnectionService::~ConnectionService() {
+  PLOGD << "Stopping connection service";
   is_fetching_statistics_ = false;
   if (statistics_thread_.joinable())
     statistics_thread_.join();
+
 }
 
 void ConnectionService::attachHandlers() {
+  if(client_ptr_.expired()) {
+    return;
+  }
+  auto client = client_ptr_.lock();
   PLOGD << "attachHandlers()";
-  client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+  client->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     PLOGD << "ready";
     if (store_ptr.expired()) {
       return;
@@ -55,16 +62,16 @@ void ConnectionService::attachHandlers() {
     }
     onStageChanged();
   }, token_);
-  client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
-                                      const std::optional<DigitalStage::Types::ID_TYPE> &,
-                                      const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
+  client->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &,
+                                     const std::optional<DigitalStage::Types::ID_TYPE> &,
+                                     const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
     onStageChanged();
   }, token_);
-  client_->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
+  client->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
     onStageChanged();
   }, token_);
-  client_->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device,
-                                           const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+  client->stageDeviceAdded.connect([this](const DigitalStage::Types::StageDevice &device,
+                                          const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
     }
@@ -84,14 +91,15 @@ void ConnectionService::attachHandlers() {
         }
 #endif
         PLOGI << "Connecting to recently added native stage device " << device._id;
+
         std::lock_guard<std::shared_mutex> lock_guard(peer_connections_mutex_); // WRITE
         auto local_stage_device_id = store->getStageDeviceId();
         createPeerConnection(device._id, *local_stage_device_id);
       }
     }
   }, token_);
-  client_->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
-                                             const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+  client->stageDeviceChanged.connect([this](const std::string &_id, const nlohmann::json &update,
+                                            const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
     }
@@ -130,8 +138,8 @@ void ConnectionService::attachHandlers() {
       }
     }
   }, token_);
-  client_->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer,
-                                   const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+  client->p2pOffer.connect([this](const DigitalStage::Types::P2POffer &offer,
+                                  const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
     }
@@ -140,6 +148,7 @@ void ConnectionService::attachHandlers() {
     if (local_stage_device_id) {
       assert(offer.to == *local_stage_device_id);
       assert(offer.from != *local_stage_device_id);
+      //TODO: Assertion failed: (offer.from != *local_stage_device_id), function operator(), file ConnectionService.cpp, line 144.
 #if USE_ONLY_NATIVE_DEVICES
       if (store->stageDevices.get(offer.from)->type != "native") {
       PLOGW << "Ignoring offer from non-native stage device" << offer.from;
@@ -162,8 +171,8 @@ void ConnectionService::attachHandlers() {
       peer_connections_[offer.from]->setRemoteSessionDescription(offer.offer);
     }
   }, token_);
-  client_->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer,
-                                    const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+  client->p2pAnswer.connect([this](const DigitalStage::Types::P2PAnswer &answer,
+                                   const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
     }
@@ -178,8 +187,8 @@ void ConnectionService::attachHandlers() {
       }
     }
   }, token_);
-  client_->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice,
-                                       const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+  client->iceCandidate.connect([this](const DigitalStage::Types::IceCandidate &ice,
+                                      const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
     }
@@ -198,7 +207,10 @@ void ConnectionService::attachHandlers() {
 
 void ConnectionService::onStageChanged() {
   PLOGD << "handleStageChanged()";
-  auto store_ptr = client_->getStore();
+  if (client_ptr_.expired()) {
+    return;
+  }
+  auto store_ptr = client_ptr_.lock()->getStore();
   if (store_ptr.expired()) {
     return;
   }
@@ -253,34 +265,43 @@ void ConnectionService::onStageChanged() {
 }
 void ConnectionService::createPeerConnection(const std::string &stage_device_id,
                                              const std::string &local_stage_device_id) {
+
   // And (double) check if the connection has not been created by a thread we had to probably wait for
   if (peer_connections_.count(stage_device_id)) {
     return;
   }
   bool polite = local_stage_device_id.compare(stage_device_id) > 0;
-  peer_connections_[stage_device_id] = std::make_shared<PeerConnection>(configuration_, polite);
-  peer_connections_[stage_device_id]->onLocalIceCandidate = [this, local_stage_device_id, stage_device_id](
+  peer_connections_[stage_device_id] = std::make_unique<PeerConnection>(configuration_, polite);
+  peer_connections_[stage_device_id]->onLocalIceCandidate = [local_stage_device_id, stage_device_id, this](
       const DigitalStage::Types::IceCandidateInit &ice_candidate_init) {
+    if(client_ptr_.expired()) {
+      return;
+    }
+    auto client = client_ptr_.lock();
     DigitalStage::Types::IceCandidate ice_candidate;
     ice_candidate.to = stage_device_id;
     ice_candidate.from = local_stage_device_id;
     ice_candidate.iceCandidate = ice_candidate_init;
-    client_->send(DigitalStage::Api::SendEvents::SEND_ICE_CANDIDATE, ice_candidate);
+    client->send(DigitalStage::Api::SendEvents::SEND_ICE_CANDIDATE, ice_candidate);
   };
-  peer_connections_[stage_device_id]->onLocalSessionDescription = [this, local_stage_device_id, stage_device_id](
+  peer_connections_[stage_device_id]->onLocalSessionDescription = [local_stage_device_id, stage_device_id, this](
       const DigitalStage::Types::SessionDescriptionInit &session_description_init) {
+    if(client_ptr_.expired()) {
+      return;
+    }
+    auto client = client_ptr_.lock();
     if (session_description_init.type == "offer") {
       DigitalStage::Types::P2POffer offer;
       offer.to = stage_device_id;
       offer.from = local_stage_device_id;
       offer.offer = session_description_init;
-      client_->send(DigitalStage::Api::SendEvents::SEND_P2P_OFFER, offer);
+      client->send(DigitalStage::Api::SendEvents::SEND_P2P_OFFER, offer);
     } else if (session_description_init.type == "answer") {
       DigitalStage::Types::P2PAnswer answer;
       answer.to = stage_device_id;
       answer.from = local_stage_device_id;
       answer.answer = session_description_init;
-      client_->send(DigitalStage::Api::SendEvents::SEND_P2P_ANSWER, answer);
+      client->send(DigitalStage::Api::SendEvents::SEND_P2P_ANSWER, answer);
     }
   };
   peer_connections_[stage_device_id]->onData = [this](const std::string &audio_track_id,
@@ -320,11 +341,17 @@ void ConnectionService::close(const std::string &audio_track_id) {
 void ConnectionService::fetchStatistics() {
   while (is_fetching_statistics_) {
     std::this_thread::sleep_for(std::chrono::seconds(2));
+    if(client_ptr_.expired()) {
+      return;
+    }
+    auto store_ptr = client_ptr_.lock()->getStore();
+    if(store_ptr.expired()) {
+      return;
+    }
+    auto store = store_ptr.lock();
     for (const auto &item: peer_connections_) {
       auto time = item.second->getRoundTripTime();
-      auto store_ptr = client_->getStore();
-      if (time && !store_ptr.expired()) {
-        auto store = store_ptr.lock();
+      if (time) {
         auto stage_device = store->stageDevices.get(item.first);
         if (stage_device) {
           auto user = store->users.get(stage_device->userId);

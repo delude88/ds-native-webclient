@@ -10,7 +10,7 @@
 
 class MiniAudioIO : public AudioIO {
  public:
-  explicit MiniAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
+  explicit MiniAudioIO(std::weak_ptr<DigitalStage::Api::Client> client);
   ~MiniAudioIO() override;
  protected:
   std::vector<json> enumerateDevices(const DigitalStage::Api::Store &store) override;

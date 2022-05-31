@@ -14,7 +14,7 @@ class [[maybe_unused]] RtAudioIO :
     public AudioIO {
 
  public:
-  [[maybe_unused]] explicit RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
+  [[maybe_unused]] explicit RtAudioIO(std::weak_ptr<DigitalStage::Api::Client> client);
   ~RtAudioIO() override;
  protected:
   std::vector<nlohmann::json> enumerateDevices(std::shared_ptr<DigitalStage::Api::Store> store) override;

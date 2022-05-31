@@ -32,7 +32,7 @@ bool App::OnInit() {
 #endif
 
   // Core
-  device_id_ = std::to_string(deviceid::get());
+  device_uuid_ = std::to_string(deviceid::get());
   auth_service_ = std::make_unique<DigitalStage::Auth::AuthService>(AUTH_URL);
 
   // wxWidgets widgets
@@ -196,7 +196,7 @@ void App::start() {
   api_client_ = std::make_shared<DigitalStage::Api::Client>(API_URL);
   client_ = std::make_unique<Client>(api_client_);// Describe this device
   nlohmann::json initial_device_information{
-      {"uuid", device_id_},
+      {"uuid", device_uuid_},
       {"type", "native"},
       {"canAudio", true},
       {"sendAudio", true},
@@ -216,18 +216,26 @@ void App::start() {
     if (!expected) {
       PLOGE << "Disconnected unexpected - calling stop()";
       stop();
+    } else {
+      PLOGI << "Disconnected successfully";
     }
   });
-  PLOGE << "Connecting ...";
+  PLOGI << "Connecting ...";
   api_client_->connect(*token_, initial_device_information);
+
+  api_client_->localDeviceReady.connect([this](const DigitalStage::Api::Device& device, const std::weak_ptr<DigitalStage::Api::Store>&) {
+    device_id_ = device._id;
+  });
 }
 void App::stop() {
-  PLOGE << "Stopping";
+  PLOGI << "Stopping";
   client_.reset();
+  PLOGI << "Disconnecting";
+  api_client_->disconnect();
   api_client_.reset();
 }
 void App::restart() {
-  PLOGE << "Restarting";
+  PLOGI << "Restarting";
   stop();
   start();
 }
@@ -237,7 +245,10 @@ void App::openStage() {
 }
 
 void App::openSettings() {
+  if(!device_id_) {
+    return;
+  }
   auto uri = std::string(SETTINGS_URL);
-  uri += "/" + device_id_;
+  uri += "/" + *device_id_;
   wxLaunchDefaultBrowser(uri);
 }

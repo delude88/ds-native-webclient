@@ -9,7 +9,7 @@
 #include <utility>
 #include <plog/Log.h>
 
-[[maybe_unused]] RtAudioIO::RtAudioIO(std::shared_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)), is_running_(true) {
+[[maybe_unused]] RtAudioIO::RtAudioIO(std::weak_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)), is_running_(true) {
 }
 
 RtAudioIO::~RtAudioIO() {
@@ -104,7 +104,10 @@ void RtAudioIO::initAudio() {
   }
 
   // Capture all dependencies
-  auto store_ptr = client_->getStore();
+  if(client_ptr_.expired()) {
+    return;
+  }
+  auto store_ptr = client_ptr_.lock()->getStore();
   if(store_ptr.expired()) {
     return;
   }

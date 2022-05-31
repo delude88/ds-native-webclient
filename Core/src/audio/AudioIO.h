@@ -13,7 +13,7 @@ using ChannelMap = std::unordered_map<std::size_t, std::string>;
 
 class AudioIO {
  public:
-  explicit AudioIO(std::shared_ptr<DigitalStage::Api::Client> client);
+  explicit AudioIO(std::weak_ptr<DigitalStage::Api::Client> client);
   virtual ~AudioIO();
 
   sigslot::signal<
@@ -72,7 +72,7 @@ class AudioIO {
    * Source channel <-> audio_track_id (online)
    */
   ChannelMap input_channel_mapping_;
-  std::shared_ptr<DigitalStage::Api::Client> client_;
+  std::weak_ptr<DigitalStage::Api::Client> client_ptr_;
 
  private:
   void attachHandlers();

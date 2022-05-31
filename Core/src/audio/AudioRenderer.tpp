@@ -7,10 +7,10 @@
 #include <cmath>
 
 template<class T>
-AudioRenderer<T>::AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart)
-    : fs_(cmrc::clientres::get_filesystem()),
-      client_(std::move(client)),
-      audio_mixer_(std::make_unique<DigitalStage::Audio::AudioMixer<float>>(client_)),
+AudioRenderer<T>::AudioRenderer(const std::weak_ptr<DigitalStage::Api::Client>& client_ptr, bool autostart)
+    : client_ptr_(client_ptr),
+      fs_(cmrc::clientres::get_filesystem()),
+      audio_mixer_(std::make_unique<DigitalStage::Audio::AudioMixer<float>>(client_ptr)),
       initialized_(false),
       current_frame_size_(0),
       token_(std::make_shared<DigitalStage::Api::Client::Token>()) {
@@ -106,7 +106,10 @@ void AudioRenderer<T>::start(unsigned int sample_rate,
   PLOGI << "Loaded HRTF " << hrtf_path;
 
   // Listener
-  auto store_ptr = client_->getStore();
+  if(client_ptr_.expired()) {
+    return;
+  }
+  auto store_ptr = client_ptr_.lock()->getStore();
   if (store_ptr.expired()) {
     return;
   }
@@ -172,9 +175,14 @@ void AudioRenderer<T>::autoInit(const DigitalStage::Types::Stage &stage,
 
 template<class T>
 void AudioRenderer<T>::attachHandlers(bool autostart) {
+  if(client_ptr_.expired()) {
+    return;
+  }
+  auto client = client_ptr_.lock();
+
   // Automatically init means listening to the selected sound card and init each time the sampleRate and bufferSize seems valid
   if (autostart) {
-    client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
+    client->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
       if (store_ptr.expired()) {
         return;
       }
@@ -189,7 +197,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
         }
       }
     }, token_);
-    client_->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &stage_id,
+    client->stageJoined.connect([this](const DigitalStage::Types::ID_TYPE &stage_id,
                                         const optional<DigitalStage::Types::ID_TYPE> &,
                                         const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
       if (store_ptr.expired()) {
@@ -205,10 +213,10 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
         }
       }
     }, token_);
-    client_->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store> & /*store*/) {
+    client->stageLeft.connect([this](const std::weak_ptr<DigitalStage::Api::Store> & /*store*/) {
       stop();
     }, token_);
-    client_->outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
+    client->outputSoundCardChanged.connect([this](const std::string &, const nlohmann::json &update,
                                                    const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
       if (store_ptr.expired()) {
         return;
@@ -226,7 +234,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
         }
       }
     }, token_);
-    client_->outputSoundCardSelected.connect([this](const std::optional<std::string> &,
+    client->outputSoundCardSelected.connect([this](const std::optional<std::string> &,
                                                     const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
       if (store_ptr.expired()) {
         return;
@@ -245,7 +253,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
     }, token_);
   }
 
-  client_->stageChanged.connect([this](const std::string &_id, const nlohmann::json &update,
+  client->stageChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                        const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
@@ -263,7 +271,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track,
+  client->audioTrackAdded.connect([this](const DigitalStage::Types::AudioTrack &audio_track,
                                           const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
@@ -290,7 +298,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       mutex_.unlock();
     }
   }, token_);
-  client_->audioTrackChanged.connect([this](const std::string &_id, const nlohmann::json &update,
+  client->audioTrackChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                             const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
@@ -307,7 +315,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       }
     }
   }, token_);
-  client_->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track,
+  client->audioTrackRemoved.connect([this](const DigitalStage::Types::AudioTrack &audio_track,
                                             const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (!store_ptr.expired() && store_ptr.lock()->isReady() && initialized_) {
       mutex_.lock();
@@ -316,7 +324,7 @@ void AudioRenderer<T>::attachHandlers(bool autostart) {
       mutex_.unlock();
     }
   }, token_);
-  client_->stageMemberChanged.connect([this](const std::string &_id, const nlohmann::json &update,
+  client->stageMemberChanged.connect([this](const std::string &_id, const nlohmann::json &update,
                                              const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     if (store_ptr.expired()) {
       return;
@@ -378,8 +386,7 @@ void AudioRenderer<T>::setAudioTrackPosition(const string &audio_track_id,
   }
 }
 template<class T>
-DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(const DigitalStage::Types::StageMember &stage_member,
-                                                                                    const std::shared_ptr<DigitalStage::Api::Store> &store) {
+DigitalStage::Types::ThreeDimensionalProperties AudioRenderer<T>::calculatePosition(const DigitalStage::Types::StageMember &stage_member) {
   PLOGD << "calculatePosition of StageMember";
   return {"cardoid", stage_member.x, stage_member.y, stage_member.z, stage_member.rX, stage_member.rY, stage_member.rZ};
 }

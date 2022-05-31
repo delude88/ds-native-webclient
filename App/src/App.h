@@ -41,7 +41,8 @@ class App : public wxApp {
   void start();
   void stop();
 
-  std::string device_id_;
+  std::string device_uuid_;
+  std::optional<std::string> device_id_;
   std::optional<std::string> token_;
   std::unique_ptr<DigitalStage::Auth::AuthService> auth_service_;
   std::shared_ptr<DigitalStage::Api::Client> api_client_;

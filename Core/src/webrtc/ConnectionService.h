@@ -21,7 +21,7 @@
 
 class ConnectionService {
  public:
-  explicit ConnectionService(std::shared_ptr<DigitalStage::Api::Client> client);
+  explicit ConnectionService(std::weak_ptr<DigitalStage::Api::Client> client_ptr);
   ~ConnectionService();
 
   void broadcastBytes(const std::string &audio_track_id, const std::byte *data, size_t size);
@@ -38,13 +38,14 @@ class ConnectionService {
   void closePeerConnection(const std::string &stage_device_id);
   void fetchStatistics();
 
-  std::shared_ptr<DigitalStage::Api::Client> client_;
-  std::unordered_map<std::string, std::shared_ptr<PeerConnection>> peer_connections_;
+  std::unordered_map<std::string, std::unique_ptr<PeerConnection>> peer_connections_;
   std::shared_mutex peer_connections_mutex_;
 
   rtc::Configuration configuration_;
 
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;
+
+  std::weak_ptr<DigitalStage::Api::Client> client_ptr_;
 
   std::thread statistics_thread_;
   std::atomic<bool> is_fetching_statistics_;

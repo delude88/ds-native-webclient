@@ -6,7 +6,7 @@
 #include "../utils/miniaudio.h"
 #include <plog/Log.h>
 
-MiniAudioIO::MiniAudioIO(std::shared_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)) {
+MiniAudioIO::MiniAudioIO(std::weak_ptr<DigitalStage::Api::Client> client) : AudioIO(std::move(client)) {
   PLOGD << "MiniAudioIO::MiniAudioIO";
 }
 

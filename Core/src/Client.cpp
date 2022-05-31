@@ -20,13 +20,12 @@
 #include "audio/MiniAudioIO.h"
 #endif
 
-Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
-    api_client_(std::move(api_client)),
-    audio_renderer_(std::make_unique<AudioRenderer<float>>(api_client_, true)),
-    connection_service_(std::make_unique<ConnectionService>(api_client_)),
+Client::Client(const std::weak_ptr<DigitalStage::Api::Client>& api_client_ptr) :
+    audio_renderer_(std::make_unique<AudioRenderer<float>>(api_client_ptr, true)),
+    connection_service_(std::make_unique<ConnectionService>(api_client_ptr)),
     receiver_buffer_(RECEIVER_BUFFER) {
 #ifdef USE_RT_AUDIO
-  audio_io_ = std::make_unique<RtAudioIO>(api_client_);
+  audio_io_ = std::make_unique<RtAudioIO>(api_client_ptr);
 #else
   audio_io_ = std::make_unique<MiniAudioIO>(api_client_);
 #endif
@@ -48,14 +47,14 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
 #ifdef USE_CIRCULAR_QUEUE
 
 #else
-    for (int v = 0; v < values_size; v++) {
-      channels_[audio_track_id]->put(values[v]);
+    for (int value = 0; value < values_size; value++) {
+      channels_[audio_track_id]->put(values[value]);
     }
 #endif
     delete[] values;
     lock.unlock();  // May be useless here
   });
-  attachHandlers();
+  attachHandlers(api_client_ptr);
   attachAudioHandlers();
 
   is_ready_ = true;
@@ -66,7 +65,6 @@ Client::~Client() {
   audio_io_.reset();
   connection_service_.reset();
   audio_renderer_.reset();
-  api_client_.reset();
 }
 
 void Client::onCaptureCallback(const std::string &audio_track_id, const float *data, const std::size_t frame_count) {
@@ -84,8 +82,8 @@ void Client::onCaptureCallback(const std::string &audio_track_id, const float *d
 #ifdef USE_CIRCULAR_QUEUE
   channels_[audio_track_id]->enqueue_many(data, 0, frame_count);
 #else
-  for (int f = 0; f < frame_count; f++) {
-    channels_[audio_track_id]->put(data[f]);
+  for (int frame = 0; frame < frame_count; frame++) {
+    channels_[audio_track_id]->put(data[frame]);
   }
 #endif
   lock.unlock();
@@ -108,8 +106,8 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
         buf[f] = item.second->dequeue();
       }
 #else
-        for (int f = 0; f < frame_count; f++) {
-          buf[f] = item.second->get();
+        for (int frame = 0; frame < frame_count; frame++) {
+          buf[frame] = item.second->get();
         }
 #endif
         audio_renderer_->render(item.first, buf, left, right, frame_count);
@@ -138,8 +136,12 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   //delete [] left;
   //delete [] right;
 }
-void Client::attachHandlers() {
-  api_client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store>& store_ptr) {
+void Client::attachHandlers(const std::weak_ptr<DigitalStage::Api::Client>& api_client_ptr) {
+  if(api_client_ptr.expired()) {
+    return;
+  }
+  auto client = api_client_ptr.lock();
+  client->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store>& store_ptr) {
     PLOGD << "ready";
     if(store_ptr.expired()) {
       return;
@@ -149,7 +151,7 @@ void Client::attachHandlers() {
       changeReceiverSize(local_device->buffer);
     }
   });
-  api_client_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
+  client->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
                                                  const std::weak_ptr<DigitalStage::Api::Store>& /*store_ptr*/) {
     if (update.contains("buffer")) {
       changeReceiverSize(update["buffer"]);
@@ -158,7 +160,7 @@ void Client::attachHandlers() {
 }
 void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &audio_tracks,
                               float **out,
-                              std::size_t num_output_channels,
+                              std::size_t num_output_channels, // NOLINT(bugprone-easily-swappable-parameters)
                               std::size_t frame_count) {
   if (!is_ready_)
     return;
@@ -190,8 +192,8 @@ void Client::onDuplexCallback(const std::unordered_map<std::string, float *> &au
         buf[f] = item.second->dequeue();
       }
 #else
-      for (int f = 0; f < frame_count; f++) {
-        buf[f] = item.second->get();
+      for (int frame = 0; frame < frame_count; frame++) {
+        buf[frame] = item.second->get();
       }
 #endif
       audio_renderer_->render(item.first, buf, left, right, frame_count);

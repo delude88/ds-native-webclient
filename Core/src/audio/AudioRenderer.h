@@ -32,7 +32,7 @@ class AudioRenderer {
     kLarge
   };
 
-  explicit AudioRenderer(std::shared_ptr<DigitalStage::Api::Client> client, bool autostart = false);
+  explicit AudioRenderer(const std::weak_ptr<DigitalStage::Api::Client>& client_ptr, bool autostart = false);
   ~AudioRenderer();
 
   /**
@@ -62,8 +62,7 @@ class AudioRenderer {
   void autoInit(const DigitalStage::Types::Stage &stage, const DigitalStage::Types::SoundCard &sound_card);
 
   void attachHandlers(bool autostart);
-  static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageMember &stage_member,
-                                                                           const std::shared_ptr<DigitalStage::Api::Store>& store);
+  static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::StageMember &stage_member);
   static DigitalStage::Types::ThreeDimensionalProperties calculatePosition(const DigitalStage::Types::AudioTrack &audio_track,
                                                                            std::shared_ptr<DigitalStage::Api::Store>& store);
 
@@ -74,7 +73,6 @@ class AudioRenderer {
   void renderFallback(T *in, T *outLeft, T *outRight, std::size_t frame_size, std::optional<std::pair<T, bool>> volume_info);
 
   std::atomic<std::size_t> current_frame_size_;
-  std::shared_ptr<DigitalStage::Api::Client> client_;
   std::atomic<bool> initialized_;
   cmrc::embedded_filesystem fs_;
   std::shared_ptr<Binaural::CCore> core_;
@@ -82,6 +80,8 @@ class AudioRenderer {
   std::shared_ptr<Binaural::CEnvironment> environment_;
   std::unordered_map<std::string, std::shared_ptr<Binaural::CSingleSourceDSP>> audio_tracks_;
   std::mutex mutex_;
+
+  const std::weak_ptr<DigitalStage::Api::Client>& client_ptr_;
 
   std::unique_ptr<DigitalStage::Audio::AudioMixer<float>> audio_mixer_;
   std::shared_ptr<DigitalStage::Api::Client::Token> token_;

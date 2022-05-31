@@ -24,7 +24,7 @@
 
 class Client {
  public:
-  explicit Client(std::shared_ptr<DigitalStage::Api::Client> api_client);
+  explicit Client(const std::weak_ptr<DigitalStage::Api::Client>& api_client_ptr);
   ~Client();
 
  protected:
@@ -37,7 +37,7 @@ class Client {
   void onClose(const std::string &audio_track_id);
 
  private:
-  void attachHandlers();
+  void attachHandlers(const std::weak_ptr<DigitalStage::Api::Client>& api_client_ptr);
   void attachAudioHandlers();
 
   void changeReceiverSize(unsigned int receiver_buffer);
@@ -51,8 +51,7 @@ class Client {
   std::shared_mutex channels_mutex_;
 
   std::atomic<bool> is_ready_;
-  std::shared_ptr<DigitalStage::Api::Client> api_client_;
   std::unique_ptr<AudioIO> audio_io_;
   std::unique_ptr<AudioRenderer<float>> audio_renderer_;
-  std::shared_ptr<ConnectionService> connection_service_;
+  std::unique_ptr<ConnectionService> connection_service_;
 };
