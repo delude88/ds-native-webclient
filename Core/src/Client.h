@@ -20,7 +20,7 @@
 #include <memory>
 #include <atomic>
 
-#define RECEIVER_BUFFER 4096
+#define RECEIVER_BUFFER 8192
 
 class Client {
  public:

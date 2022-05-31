@@ -38,6 +38,7 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
       channels_[audio_track_id] = std::make_shared<CircularQueue<float>>(receiver_buffer_);
 #else
       channels_[audio_track_id] = std::make_shared<RingBuffer<float>>(receiver_buffer_);
+      PLOGI << "Resulting buffer latency is " << (receiver_buffer_ / 48000) << " seconds";
 #endif
       lock.unlock();
     }
@@ -48,8 +49,8 @@ Client::Client(std::shared_ptr<DigitalStage::Api::Client> api_client) :
 #ifdef USE_CIRCULAR_QUEUE
 
 #else
-    for (int v = 0; v < values_size; v++) {
-      channels_[audio_track_id]->put(values[v]);
+    for (int value = 0; value < values_size; value++) {
+      channels_[audio_track_id]->put(values[value]);
     }
 #endif
     delete[] values;
@@ -139,9 +140,9 @@ void Client::onPlaybackCallback(float *out[], std::size_t num_output_channels, c
   //delete [] right;
 }
 void Client::attachHandlers() {
-  api_client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store>& store_ptr) {
+  api_client_->ready.connect([this](const std::weak_ptr<DigitalStage::Api::Store> &store_ptr) {
     PLOGD << "ready";
-    if(store_ptr.expired()) {
+    if (store_ptr.expired()) {
       return;
     }
     auto local_device = store_ptr.lock()->getLocalDevice();
@@ -150,7 +151,7 @@ void Client::attachHandlers() {
     }
   });
   api_client_->localDeviceChanged.connect([this](const std::string &, const nlohmann::json &update,
-                                                 const std::weak_ptr<DigitalStage::Api::Store>& /*store_ptr*/) {
+                                                 const std::weak_ptr<DigitalStage::Api::Store> & /*store_ptr*/) {
     if (update.contains("buffer")) {
       changeReceiverSize(update["buffer"]);
     }

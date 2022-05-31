@@ -201,6 +201,7 @@ void App::start() {
       {"sendAudio", true},
       {"receiveAudio", true},
       {"canVideo", false},
+      {"buffer", 8192},
       {"name", "Digital Stage Connector"}
   };
   // - always use a UUID when you want Digital Stage to remember this device and its settings
